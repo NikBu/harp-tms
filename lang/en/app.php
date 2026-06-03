@@ -2,12 +2,16 @@
 
 return [
     'navigation' => [
+        'main'     => 'Navigation',
+        'system'   => 'System',
+        'settings' => 'Settings',
         'dashboard'  => 'Dashboard',
         'projects'   => 'Projects',
         'test_cases' => 'Test Cases',
         'test_plans' => 'Test Plans',
         'test_runs'  => 'Test Runs',
         'defects'    => 'Defects',
+        'releases'   => 'Releases',     
         'reports'    => 'Reports',
         'admin'      => 'Administration',
     ],

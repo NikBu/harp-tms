@@ -1,12 +1,16 @@
 <?php
 return [
     'navigation' => [
+        'main'     => 'Навигация',
+        'system'   => 'Система',
+        'settings' => 'Настройки',
         'dashboard'  => 'Дашборд',
         'projects'   => 'Проекты',
         'test_cases' => 'Тест-кейсы',
         'test_plans' => 'Тест-планы',
         'test_runs'  => 'Тест-раны',
         'defects'    => 'Дефекты',
+        'releases' => 'Релизы',
         'reports'    => 'Отчёты',
         'admin'      => 'Администрирование',
     ],

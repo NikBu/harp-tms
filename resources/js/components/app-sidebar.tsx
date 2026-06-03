@@ -1,9 +1,16 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
-import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
-import { NavMain } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
+import { Link, usePage } from '@inertiajs/react';
+import {
+    LayoutDashboard,
+    FolderOpen,
+    ClipboardList,
+    BookOpen,
+    PlayCircle,
+    Bug,
+    Tag,
+    BarChart2,
+    Settings,
+    ShieldCheck,
+} from 'lucide-react';
 import {
     Sidebar,
     SidebarContent,
@@ -12,39 +19,40 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarGroup,
+    SidebarGroupLabel,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
-import type { NavItem } from '@/types';
+import  AppLogo  from '@/components/app-logo';
+import { NavUser } from '@/components/nav-user';
+import { useTrans } from '@/hooks/use-trans';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
+const navItems = [
+    { key: 'dashboard',   href: '/dashboard',   icon: LayoutDashboard },
+    { key: 'projects',    href: '/projects',     icon: FolderOpen },
+    { key: 'test_cases',  href: '/test-cases',   icon: ClipboardList },
+    { key: 'test_plans',  href: '/test-plans',   icon: BookOpen },
+    { key: 'test_runs',   href: '/test-runs',    icon: PlayCircle },
+    { key: 'defects',     href: '/defects',      icon: Bug },
+    { key: 'releases',    href: '/releases',     icon: Tag },
+    { key: 'reports',     href: '/reports',      icon: BarChart2 },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
+const bottomItems = [
+    { key: 'admin',    href: '/admin',    icon: ShieldCheck },
+    { key: 'settings', href: '/settings', icon: Settings },
 ];
 
 export function AppSidebar() {
+    const t = useTrans();
+    const { url } = usePage();
+
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar>
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href="/dashboard">
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
@@ -53,11 +61,52 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <SidebarGroup>
+                    <SidebarGroupLabel>
+                        {t('app.navigation.main')}
+                    </SidebarGroupLabel>
+                    <SidebarMenu>
+                        {navItems.map(({ key, href, icon: Icon }) => (
+                            <SidebarMenuItem key={key}>
+                                <SidebarMenuButton
+                                    asChild
+                                    isActive={url.startsWith(href)}
+                                    tooltip={t(`app.navigation.${key}`)}
+                                >
+                                    <Link href={href}>
+                                        <Icon />
+                                        <span>{t(`app.navigation.${key}`)}</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
+                    </SidebarMenu>
+                </SidebarGroup>
+
+                <SidebarGroup>
+                    <SidebarGroupLabel>
+                        {t('app.navigation.system')}
+                    </SidebarGroupLabel>
+                    <SidebarMenu>
+                        {bottomItems.map(({ key, href, icon: Icon }) => (
+                            <SidebarMenuItem key={key}>
+                                <SidebarMenuButton
+                                    asChild
+                                    isActive={url.startsWith(href)}
+                                    tooltip={t(`app.navigation.${key}`)}
+                                >
+                                    <Link href={href}>
+                                        <Icon />
+                                        <span>{t(`app.navigation.${key}`)}</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        ))}
+                    </SidebarMenu>
+                </SidebarGroup>
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
