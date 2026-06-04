@@ -20,7 +20,7 @@ test('an admin can list suites for any project', function (): void {
     Suite::factory()->count(3)->create(['project_id' => $project->id]);
 
     actingAs($admin)
-        ->get(route('suites.index', $project))
+        ->get(route('projects.suites.index', $project))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('suites/index')
@@ -33,7 +33,7 @@ test('a non-member cannot access suites', function (): void {
     $project = Project::factory()->create(['suite_mode' => Project::SUITE_MULTI]);
 
     actingAs($user)
-        ->get(route('suites.index', $project))
+        ->get(route('projects.suites.index', $project))
         ->assertForbidden();
 });
 
@@ -45,7 +45,7 @@ test('a member can view suites for their project', function (): void {
     Suite::factory()->count(2)->create(['project_id' => $project->id]);
 
     actingAs($user)
-        ->get(route('suites.index', $project))
+        ->get(route('projects.suites.index', $project))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('suites/index')
@@ -60,7 +60,7 @@ test('an admin can create a suite', function (): void {
     $project = Project::factory()->create(['suite_mode' => Project::SUITE_MULTI]);
 
     actingAs($admin)
-        ->post(route('suites.store', $project), [
+        ->post(route('projects.suites.store', $project), [
             'name' => 'Regression',
             'description' => 'Regression suite',
         ])
@@ -78,7 +78,7 @@ test('a member can create a suite in their project', function (): void {
     $project->members()->attach($user, ['role' => 'member']);
 
     actingAs($user)
-        ->post(route('suites.store', $project), [
+        ->post(route('projects.suites.store', $project), [
             'name' => 'Smoke',
         ])
         ->assertRedirect();
@@ -109,7 +109,7 @@ test('a project admin member can delete a suite', function (): void {
 
     actingAs($user)
         ->delete(route('suites.destroy', $suite))
-        ->assertRedirect(route('suites.index', $project));
+        ->assertRedirect(route('projects.suites.index', $project));
 
     expect(Suite::find($suite->id))->toBeNull();
 });
