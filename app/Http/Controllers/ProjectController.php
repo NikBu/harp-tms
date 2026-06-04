@@ -78,10 +78,7 @@ class ProjectController extends Controller
                 $query->whereNull('parent_id')->orderBy('due_on');
             },
         ]);
-        //       $project->loadCount(['testCases', 'testRuns', 'requirements', 'suites']);
-        // loadCount only includes relationships that are already built.
-        // testCases and testRuns will be added once those modules are implemented.
-        $project->loadCount(['requirements', 'suites']);
+        $project->loadCount(['requirements', 'suites', 'testCases']);
 
         return Inertia::render('projects/show', [
             'project' => $project,

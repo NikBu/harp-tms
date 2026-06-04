@@ -2,4 +2,5 @@ export type * from './auth';
 export type * from './navigation';
 export type * from './project';
 export type * from './suite';
+export type * from './test-case';
 export type * from './ui';

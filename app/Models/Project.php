@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -77,6 +78,14 @@ class Project extends Model
     public function milestones(): HasMany
     {
         return $this->hasMany(Milestone::class);
+    }
+
+    /**
+     * @return HasManyThrough<TestCase, Suite, $this>
+     */
+    public function testCases(): HasManyThrough
+    {
+        return $this->hasManyThrough(TestCase::class, Suite::class);
     }
 
     /**
