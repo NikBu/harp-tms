@@ -79,7 +79,9 @@ class ProjectController extends Controller
             },
         ]);
 
-        $project->loadCount(['testCases', 'testRuns', 'requirements', 'suites']);
+        // loadCount only includes relationships that are already built.
+        // testCases and testRuns will be added once those modules are implemented.
+        $project->loadCount(['requirements', 'suites']);
 
         return Inertia::render('projects/show', [
             'project' => $project,
