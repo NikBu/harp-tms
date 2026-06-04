@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     LayoutDashboard,
     FolderOpen,
+    Layers,
     ClipboardList,
     BookOpen,
     PlayCircle,
@@ -29,6 +30,7 @@ import { useTrans } from '@/hooks/use-trans';
 const navItems = [
     { key: 'dashboard',   href: '/dashboard',   icon: LayoutDashboard },
     { key: 'projects',    href: '/projects',     icon: FolderOpen },
+    { key: 'suites',      href: '/projects',     icon: Layers },
     { key: 'test_cases',  href: '/test-cases',   icon: ClipboardList },
     { key: 'test_plans',  href: '/test-plans',   icon: BookOpen },
     { key: 'test_runs',   href: '/test-runs',    icon: PlayCircle },

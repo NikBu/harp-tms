@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\SectionController;
+use App\Http\Controllers\SuiteController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -12,6 +14,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('projects/create', [ProjectController::class, 'create'])->name('projects.create');
     Route::resource('projects', ProjectController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    Route::resource('projects.suites', SuiteController::class)->shallow();
+    Route::resource('projects.suites.sections', SectionController::class)
+        ->shallow()
+        ->only(['store', 'update', 'destroy']);
+    Route::post('projects/{project}/suites/{suite}/sections/reorder', [SectionController::class, 'reorder'])
+        ->name('sections.reorder');
 });
 
 Route::post('/locale', [LocaleController::class, 'update'])
