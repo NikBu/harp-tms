@@ -14,6 +14,9 @@ class RequirementHistory extends Model
     /** @use HasFactory<RequirementHistoryFactory> */
     use HasFactory;
 
+    /** @var string */
+    protected $table = 'requirement_history';
+
     public $timestamps = false;
 
     public const CREATED_AT = 'created_at';
