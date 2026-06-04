@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\DashboardFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['user_id', 'name', 'is_default'])]
 class Dashboard extends Model
 {
-    /** @use HasFactory<\Database\Factories\DashboardFactory> */
+    /** @use HasFactory<DashboardFactory> */
     use HasFactory;
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\SectionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['suite_id', 'parent_id', 'name', 'description', 'depth', 'display_order'])]
 class Section extends Model
 {
-    /** @use HasFactory<\Database\Factories\SectionFactory> */
+    /** @use HasFactory<SectionFactory> */
     use HasFactory;
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\TestRunFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +16,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 #[Fillable(['project_id', 'suite_id', 'plan_id', 'milestone_id', 'name', 'description', 'refs', 'include_all', 'is_completed', 'completed_at', 'created_by', 'assigned_to', 'url', 'passed_count', 'failed_count', 'blocked_count', 'untested_count', 'retest_count', 'skipped_count'])]
 class TestRun extends Model
 {
-    /** @use HasFactory<\Database\Factories\TestRunFactory> */
+    /** @use HasFactory<TestRunFactory> */
     use HasFactory, LogsActivity;
 
     /**

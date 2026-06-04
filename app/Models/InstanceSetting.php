@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\InstanceSettingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable(['key', 'value'])]
 class InstanceSetting extends Model
 {
-    /** @use HasFactory<\Database\Factories\InstanceSettingFactory> */
+    /** @use HasFactory<InstanceSettingFactory> */
     use HasFactory;
 
     /**

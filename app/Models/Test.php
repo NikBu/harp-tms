@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\TestFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 #[Fillable(['run_id', 'case_id', 'assigned_to', 'status', 'case_snapshot'])]
 class Test extends Model
 {
-    /** @use HasFactory<\Database\Factories\TestFactory> */
+    /** @use HasFactory<TestFactory> */
     use HasFactory;
 
     public const STATUSES = ['untested', 'passed', 'failed', 'blocked', 'retest', 'skipped'];

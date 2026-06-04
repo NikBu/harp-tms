@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\TestResultCustomValueFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['test_result_id', 'custom_field_id', 'value_string', 'value_integer', 'value_text', 'value_boolean', 'value_json'])]
 class TestResultCustomValue extends Model
 {
-    /** @use HasFactory<\Database\Factories\TestResultCustomValueFactory> */
+    /** @use HasFactory<TestResultCustomValueFactory> */
     use HasFactory;
 
     public $timestamps = false;

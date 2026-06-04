@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\WatcherFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 #[Fillable(['user_id', 'watchable_type', 'watchable_id'])]
 class Watcher extends Model
 {
-    /** @use HasFactory<\Database\Factories\WatcherFactory> */
+    /** @use HasFactory<WatcherFactory> */
     use HasFactory;
 
     /**

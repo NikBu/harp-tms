@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\ConfigurationGroupFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['project_id', 'name'])]
 class ConfigurationGroup extends Model
 {
-    /** @use HasFactory<\Database\Factories\ConfigurationGroupFactory> */
+    /** @use HasFactory<ConfigurationGroupFactory> */
     use HasFactory;
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\ApiTokenFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Hidden(['token'])]
 class ApiToken extends Model
 {
-    /** @use HasFactory<\Database\Factories\ApiTokenFactory> */
+    /** @use HasFactory<ApiTokenFactory> */
     use HasFactory;
 
     /**

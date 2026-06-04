@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\MilestoneFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 #[Fillable(['project_id', 'parent_id', 'name', 'description', 'refs', 'status', 'start_on', 'due_on', 'completed_at', 'is_completed', 'created_by'])]
 class Milestone extends Model
 {
-    /** @use HasFactory<\Database\Factories\MilestoneFactory> */
+    /** @use HasFactory<MilestoneFactory> */
     use HasFactory, LogsActivity;
 
     public const STATUSES = ['upcoming', 'active', 'completed'];

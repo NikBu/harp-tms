@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\TestPlanEntryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 #[Fillable(['plan_id', 'run_id', 'assigned_to'])]
 class TestPlanEntry extends Model
 {
-    /** @use HasFactory<\Database\Factories\TestPlanEntryFactory> */
+    /** @use HasFactory<TestPlanEntryFactory> */
     use HasFactory;
 
     /**

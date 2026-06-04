@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\TestResultFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['test_id', 'run_id', 'case_id', 'status', 'comment', 'elapsed', 'version', 'created_by', 'assigned_to'])]
 class TestResult extends Model
 {
-    /** @use HasFactory<\Database\Factories\TestResultFactory> */
+    /** @use HasFactory<TestResultFactory> */
     use HasFactory;
 
     public $timestamps = false;

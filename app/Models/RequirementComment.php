@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\RequirementCommentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['requirement_id', 'parent_id', 'user_id', 'body'])]
 class RequirementComment extends Model
 {
-    /** @use HasFactory<\Database\Factories\RequirementCommentFactory> */
+    /** @use HasFactory<RequirementCommentFactory> */
     use HasFactory;
 
     /**

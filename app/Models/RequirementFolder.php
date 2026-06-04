@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\RequirementFolderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['project_id', 'parent_id', 'name', 'display_order'])]
 class RequirementFolder extends Model
 {
-    /** @use HasFactory<\Database\Factories\RequirementFolderFactory> */
+    /** @use HasFactory<RequirementFolderFactory> */
     use HasFactory;
 
     /**

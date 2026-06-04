@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\CustomFieldFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 #[Fillable(['system_name', 'label', 'description', 'field_type', 'applies_to', 'is_global', 'created_by'])]
 class CustomField extends Model
 {
-    /** @use HasFactory<\Database\Factories\CustomFieldFactory> */
+    /** @use HasFactory<CustomFieldFactory> */
     use HasFactory, LogsActivity;
 
     public const FIELD_TYPES = ['string', 'integer', 'text', 'url', 'checkbox', 'dropdown', 'user', 'date', 'milestone', 'steps', 'step_results', 'multi_select'];

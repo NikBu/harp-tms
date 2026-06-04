@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\CustomFieldOptionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['custom_field_id', 'option_key', 'option_label', 'display_order'])]
 class CustomFieldOption extends Model
 {
-    /** @use HasFactory<\Database\Factories\CustomFieldOptionFactory> */
+    /** @use HasFactory<CustomFieldOptionFactory> */
     use HasFactory;
 
     /**

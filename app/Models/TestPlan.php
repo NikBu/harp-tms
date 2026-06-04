@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\TestPlanFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 #[Fillable(['project_id', 'milestone_id', 'name', 'description', 'refs', 'is_completed', 'completed_at', 'created_by', 'start_on', 'end_on'])]
 class TestPlan extends Model
 {
-    /** @use HasFactory<\Database\Factories\TestPlanFactory> */
+    /** @use HasFactory<TestPlanFactory> */
     use HasFactory, LogsActivity;
 
     /**

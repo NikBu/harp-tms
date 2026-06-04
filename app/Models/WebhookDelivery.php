@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\WebhookDeliveryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['webhook_id', 'event', 'payload', 'response_status', 'response_body', 'delivered_at'])]
 class WebhookDelivery extends Model
 {
-    /** @use HasFactory<\Database\Factories\WebhookDeliveryFactory> */
+    /** @use HasFactory<WebhookDeliveryFactory> */
     use HasFactory;
 
     public $timestamps = false;

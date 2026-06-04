@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\SharedStepItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['shared_step_id', 'step_index', 'content', 'expected'])]
 class SharedStepItem extends Model
 {
-    /** @use HasFactory<\Database\Factories\SharedStepItemFactory> */
+    /** @use HasFactory<SharedStepItemFactory> */
     use HasFactory;
 
     /**

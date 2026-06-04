@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\TestCaseStepFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['test_case_id', 'step_index', 'content', 'expected', 'shared_step_id'])]
 class TestCaseStep extends Model
 {
-    /** @use HasFactory<\Database\Factories\TestCaseStepFactory> */
+    /** @use HasFactory<TestCaseStepFactory> */
     use HasFactory;
 
     /**

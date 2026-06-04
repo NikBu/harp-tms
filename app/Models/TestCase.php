@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\TestCaseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 #[Fillable(['suite_id', 'section_id', 'title', 'template', 'case_type', 'priority', 'estimate', 'estimate_forecast', 'preconditions', 'expected_result', 'refs', 'automation_type', 'automation_id', 'status', 'checklist_items', 'bdd_scenario', 'created_by', 'updated_by', 'display_order'])]
 class TestCase extends Model
 {
-    /** @use HasFactory<\Database\Factories\TestCaseFactory> */
+    /** @use HasFactory<TestCaseFactory> */
     use HasFactory, LogsActivity, SoftDeletes;
 
     public const TEMPLATES = ['steps', 'text', 'exploratory', 'bdd', 'checklist'];

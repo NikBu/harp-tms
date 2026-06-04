@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\SuiteFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 #[Fillable(['project_id', 'name', 'description', 'created_by'])]
 class Suite extends Model
 {
-    /** @use HasFactory<\Database\Factories\SuiteFactory> */
+    /** @use HasFactory<SuiteFactory> */
     use HasFactory, LogsActivity;
 
     /**

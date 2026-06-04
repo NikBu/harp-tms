@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\TestCaseParameterDatasetFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['test_case_id', 'dataset_name', 'values', 'display_order'])]
 class TestCaseParameterDataset extends Model
 {
-    /** @use HasFactory<\Database\Factories\TestCaseParameterDatasetFactory> */
+    /** @use HasFactory<TestCaseParameterDatasetFactory> */
     use HasFactory;
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\IntegrationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Hidden(['credentials'])]
 class Integration extends Model
 {
-    /** @use HasFactory<\Database\Factories\IntegrationFactory> */
+    /** @use HasFactory<IntegrationFactory> */
     use HasFactory;
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\DashboardWidgetFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['dashboard_id', 'widget_type', 'title', 'config', 'position_x', 'position_y', 'width', 'height'])]
 class DashboardWidget extends Model
 {
-    /** @use HasFactory<\Database\Factories\DashboardWidgetFactory> */
+    /** @use HasFactory<DashboardWidgetFactory> */
     use HasFactory;
 
     /**

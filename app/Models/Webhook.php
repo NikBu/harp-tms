@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\WebhookFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Hidden(['secret'])]
 class Webhook extends Model
 {
-    /** @use HasFactory<\Database\Factories\WebhookFactory> */
+    /** @use HasFactory<WebhookFactory> */
     use HasFactory;
 
     /**

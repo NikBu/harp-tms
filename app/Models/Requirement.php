@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\RequirementFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 #[Fillable(['project_id', 'folder_id', 'display_id', 'title', 'description', 'type', 'priority', 'status', 'source', 'external_ref', 'assigned_to', 'tags', 'created_by', 'updated_by'])]
 class Requirement extends Model
 {
-    /** @use HasFactory<\Database\Factories\RequirementFactory> */
+    /** @use HasFactory<RequirementFactory> */
     use HasFactory, LogsActivity;
 
     public const TYPES = ['functional', 'non_functional', 'business', 'constraint', 'user_story'];

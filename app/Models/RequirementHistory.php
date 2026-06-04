@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\RequirementHistoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['requirement_id', 'changed_by', 'field_name', 'old_value', 'new_value'])]
 class RequirementHistory extends Model
 {
-    /** @use HasFactory<\Database\Factories\RequirementHistoryFactory> */
+    /** @use HasFactory<RequirementHistoryFactory> */
     use HasFactory;
 
     public $timestamps = false;
