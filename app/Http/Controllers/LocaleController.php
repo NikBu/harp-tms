@@ -1,4 +1,5 @@
 <?php
+
 // app/Http/Controllers/LocaleController.php
 
 namespace App\Http\Controllers;
