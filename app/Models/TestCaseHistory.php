@@ -14,6 +14,9 @@ class TestCaseHistory extends Model
     /** @use HasFactory<TestCaseHistoryFactory> */
     use HasFactory;
 
+    /** @var string */
+    protected $table = 'test_case_history';
+
     public $timestamps = false;
 
     public const CREATED_AT = 'created_at';
