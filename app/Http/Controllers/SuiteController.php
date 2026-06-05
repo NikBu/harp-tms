@@ -29,16 +29,27 @@ class SuiteController extends Controller
 
         return Inertia::render('suites/index', [
             'project' => $project,
-            'suites' => $project->suites()->latest()->paginate(20),
+            'suites'  => $project->suites()->latest()->paginate(20),
         ]);
     }
 
     /**
      * Show the form for creating a new suite.
+     *
+     * For single-suite modes, redirect away if a suite already exists.
      */
-    public function create(Request $request, Project $project): Response
+    public function create(Request $request, Project $project): Response|RedirectResponse
     {
         $this->authorizeProjectAccess($request, $project);
+
+        if ($this->suiteCapReached($project)) {
+            Inertia::flash('toast', [
+                'type'    => 'error',
+                'message' => __('app.suites.single_mode_limit'),
+            ]);
+
+            return to_route('suites.index', $project);
+        }
 
         return Inertia::render('suites/create', [
             'project' => $project,
@@ -52,8 +63,11 @@ class SuiteController extends Controller
     {
         $this->authorizeProjectAccess($request, $project);
 
+        // Enforce single-suite mode at the write layer as well
+        abort_if($this->suiteCapReached($project), 422, __('app.suites.single_mode_limit'));
+
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name'        => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -85,7 +99,7 @@ class SuiteController extends Controller
 
         return Inertia::render('suites/show', [
             'project' => $project,
-            'suite' => $suite,
+            'suite'   => $suite,
         ]);
     }
 
@@ -97,7 +111,7 @@ class SuiteController extends Controller
         $this->authorizeProjectAccess($request, $suite->project);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name'        => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -114,7 +128,7 @@ class SuiteController extends Controller
     public function destroy(Request $request, Suite $suite): RedirectResponse
     {
         $project = $suite->project;
-        $user = $request->user();
+        $user    = $request->user();
 
         $isProjectAdmin = $project->members()
             ->whereKey($user->getKey())
@@ -128,6 +142,28 @@ class SuiteController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('app.suites.deleted')]);
 
         return to_route('suites.index', $project);
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns true when the project's suite mode only allows one suite
+     * AND that suite already exists.
+     *
+     * SUITE_SINGLE (1)          → exactly one suite, no baseline branching
+     * SUITE_SINGLE_BASELINE (2) → one active suite + baseline copies (those are
+     *                             created programmatically, not by the user form)
+     * SUITE_MULTI (3)           → no cap
+     */
+    private function suiteCapReached(Project $project): bool
+    {
+        if ($project->suite_mode === Project::SUITE_MULTI) {
+            return false;
+        }
+
+        return $project->suites()->exists();
     }
 
     /**

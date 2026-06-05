@@ -48,9 +48,9 @@ class ProjectController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name'        => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'suite_mode' => ['required', 'integer', 'in:1,2,3'],
+            'suite_mode'  => ['required', 'integer', 'in:1,2,3'],
         ]);
 
         $validated['created_by'] = Auth::id();
@@ -78,7 +78,13 @@ class ProjectController extends Controller
                 $query->whereNull('parent_id')->orderBy('due_on');
             },
         ]);
-        $project->loadCount(['requirements', 'suites', 'testCases']);
+
+        $project->loadCount([
+            'requirements',
+            'suites',
+            'testCases',
+            'testRuns',   // ← was missing; drives the Test Runs stat card
+        ]);
 
         return Inertia::render('projects/show', [
             'project' => $project,
@@ -93,11 +99,11 @@ class ProjectController extends Controller
         $this->authorizeProjectAccess($request, $project);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'announcement' => ['nullable', 'string'],
+            'name'              => ['required', 'string', 'max:255'],
+            'description'       => ['nullable', 'string'],
+            'announcement'      => ['nullable', 'string'],
             'show_announcement' => ['boolean'],
-            'is_completed' => ['boolean'],
+            'is_completed'      => ['boolean'],
         ]);
 
         $validated['completed_at'] = ($validated['is_completed'] ?? false) ? now() : null;

@@ -75,6 +75,7 @@ return [
         'updated' => 'Suite updated successfully.',
         'deleted' => 'Suite deleted successfully.',
         'empty' => 'No test suites yet.',
+        'single_mode_limit' => 'This project only allows one test suite.',
     ],
     'sections' => [
         'title' => 'Sections',
