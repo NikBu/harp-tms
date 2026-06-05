@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\SuiteController;
@@ -29,16 +30,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->parameters(['cases' => 'testCase']);
     Route::post('cases/{testCase}/copy', [TestCaseController::class, 'copy'])->name('cases.copy');
 
-    // Test Runs (nested under project, shallow)
+    // Test Runs
     Route::resource('projects.runs', TestRunController::class)
         ->shallow()
         ->parameters(['runs' => 'testRun']);
     Route::patch('runs/{testRun}/close', [TestRunController::class, 'close'])->name('runs.close');
     Route::patch('runs/{testRun}/reopen', [TestRunController::class, 'reopen'])->name('runs.reopen');
-
-    // Submit a result for a single test within a run
     Route::post('runs/{testRun}/tests/{test}/results', [TestRunController::class, 'addResult'])
         ->name('runs.tests.results.store');
+
+    // Milestones
+    Route::resource('projects.milestones', MilestoneController::class)
+        ->shallow()
+        ->parameters(['milestones' => 'milestone']);
+    Route::patch('milestones/{milestone}/complete', [MilestoneController::class, 'complete'])
+        ->name('milestones.complete');
+    Route::patch('milestones/{milestone}/reopen', [MilestoneController::class, 'reopen'])
+        ->name('milestones.reopen');
 });
 
 Route::post('/locale', [LocaleController::class, 'update'])
