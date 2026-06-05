@@ -122,7 +122,10 @@ export default function TestCasesCreate({
 
     function moveStep(index: number, direction: -1 | 1) {
         const target = index + direction;
-        if (target < 0 || target >= data.steps.length) return;
+
+        if (target < 0 || target >= data.steps.length) {
+return;
+}
 
         const next = [...data.steps];
         [next[index], next[target]] = [next[target], next[index]];

@@ -12,6 +12,8 @@ import {
     Settings,
     ShieldCheck,
 } from 'lucide-react';
+import  AppLogo  from '@/components/app-logo';
+import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
     SidebarContent,
@@ -23,8 +25,6 @@ import {
     SidebarGroup,
     SidebarGroupLabel,
 } from '@/components/ui/sidebar';
-import  AppLogo  from '@/components/app-logo';
-import { NavUser } from '@/components/nav-user';
 import { useTrans } from '@/hooks/use-trans';
 
 const navItems = [

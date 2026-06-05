@@ -19,7 +19,9 @@ export function useTrans() {
             }
         }
 
-        if (typeof result !== 'string') return key;
+        if (typeof result !== 'string') {
+return key;
+}
 
         // Handle :placeholder replacements
         if (replacements) {
@@ -28,6 +30,7 @@ export function useTrans() {
                 result
             );
         }
+
         return result;
     };
 }

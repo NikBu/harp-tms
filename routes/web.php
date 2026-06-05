@@ -5,6 +5,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\SuiteController;
 use App\Http\Controllers\TestCaseController;
+use App\Http\Controllers\TestRunController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -27,6 +28,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->shallow()
         ->parameters(['cases' => 'testCase']);
     Route::post('cases/{testCase}/copy', [TestCaseController::class, 'copy'])->name('cases.copy');
+
+    // Test Runs (nested under project, shallow)
+    Route::resource('projects.runs', TestRunController::class)
+        ->shallow()
+        ->parameters(['runs' => 'testRun']);
+    Route::patch('runs/{testRun}/close', [TestRunController::class, 'close'])->name('runs.close');
+    Route::patch('runs/{testRun}/reopen', [TestRunController::class, 'reopen'])->name('runs.reopen');
+
+    // Submit a result for a single test within a run
+    Route::post('runs/{testRun}/tests/{test}/results', [TestRunController::class, 'addResult'])
+        ->name('runs.tests.results.store');
 });
 
 Route::post('/locale', [LocaleController::class, 'update'])
