@@ -25,6 +25,7 @@ import {
     TEMPLATE_STEPS,
     TEMPLATE_TEXT,
 } from '@/types/test-case';
+import type { ChecklistItem } from '@/types/test-case';
 
 type StepInput = {
     action: string;
@@ -42,15 +43,17 @@ type TestCaseForm = {
     references: string;
     preconditions: string;
     body: string;
+    bdd_scenario: string;
+    checklist_items: ChecklistItem[];
     steps: StepInput[];
 };
 
 const TEMPLATE_OPTIONS = [
-    { value: TEMPLATE_TEXT, key: 'text' },
-    { value: TEMPLATE_STEPS, key: 'steps' },
+    { value: TEMPLATE_TEXT,        key: 'text' },
+    { value: TEMPLATE_STEPS,       key: 'steps' },
     { value: TEMPLATE_EXPLORATORY, key: 'exploratory' },
-    { value: TEMPLATE_BDD, key: 'bdd' },
-    { value: TEMPLATE_CHECKLIST, key: 'checklist' },
+    { value: TEMPLATE_BDD,         key: 'bdd' },
+    { value: TEMPLATE_CHECKLIST,   key: 'checklist' },
 ];
 
 const PRIORITY_OPTIONS = [
@@ -74,24 +77,26 @@ export default function TestCasesCreate({
 
     const { data, setData, post, processing, errors, transform } =
         useForm<TestCaseForm>({
-        title: '',
-        template: TEMPLATE_STEPS,
-        section_id: '',
-        priority_id: '',
-        type_id: '',
-        estimate: '',
-        references: '',
-        preconditions: '',
-        body: '',
-        steps: [{ action: '', expected: '', display_order: 1 }],
-    });
+            title: '',
+            template: TEMPLATE_STEPS,
+            section_id: '',
+            priority_id: '',
+            type_id: '',
+            estimate: '',
+            references: '',
+            preconditions: '',
+            body: '',
+            bdd_scenario: '',
+            checklist_items: [],
+            steps: [{ action: '', expected: '', display_order: 1 }],
+        });
 
-    const usesSteps =
-        data.template === TEMPLATE_STEPS || data.template === TEMPLATE_BDD;
+    const usesSteps     = data.template === TEMPLATE_STEPS;
+    const usesBdd       = data.template === TEMPLATE_BDD;
     const usesChecklist = data.template === TEMPLATE_CHECKLIST;
-    const usesBody =
-        data.template === TEMPLATE_TEXT ||
-        data.template === TEMPLATE_EXPLORATORY;
+    const usesBody      = data.template === TEMPLATE_TEXT || data.template === TEMPLATE_EXPLORATORY;
+
+    // ── Step helpers ──────────────────────────────────────────────────────────
 
     function setStep(index: number, key: keyof StepInput, value: string) {
         const next = [...data.steps];
@@ -117,10 +122,7 @@ export default function TestCasesCreate({
 
     function moveStep(index: number, direction: -1 | 1) {
         const target = index + direction;
-
-        if (target < 0 || target >= data.steps.length) {
-            return;
-        }
+        if (target < 0 || target >= data.steps.length) return;
 
         const next = [...data.steps];
         [next[index], next[target]] = [next[target], next[index]];
@@ -130,16 +132,40 @@ export default function TestCasesCreate({
         );
     }
 
+    // ── Checklist helpers ─────────────────────────────────────────────────────
+
+    function setChecklistLabel(index: number, label: string) {
+        const next = [...data.checklist_items];
+        next[index] = { ...next[index], label };
+        setData('checklist_items', next);
+    }
+
+    function addChecklistItem() {
+        setData('checklist_items', [
+            ...data.checklist_items,
+            { label: '', is_optional: false },
+        ]);
+    }
+
+    function removeChecklistItem(index: number) {
+        setData(
+            'checklist_items',
+            data.checklist_items.filter((_, i) => i !== index),
+        );
+    }
+
+    // ── Submit ────────────────────────────────────────────────────────────────
+
     function submit(event: React.FormEvent) {
         event.preventDefault();
 
-        const hasSteps = usesSteps || usesChecklist;
-
         transform((current) => ({
             ...current,
-            steps: hasSteps
-                ? current.steps.filter((step) => step.action.trim() !== '')
-                : [],
+            // Only send the relevant content field; clear the others
+            steps:           usesSteps ? current.steps.filter((s) => s.action.trim() !== '') : [],
+            checklist_items: usesChecklist ? current.checklist_items.filter((i) => i.label.trim() !== '') : [],
+            bdd_scenario:    usesBdd ? current.bdd_scenario : '',
+            body:            usesBody ? current.body : '',
         }));
 
         post(store.url(suite.id));
@@ -160,6 +186,8 @@ export default function TestCasesCreate({
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit} className="flex flex-col gap-6">
+
+                            {/* Title */}
                             <div className="grid gap-2">
                                 <Label htmlFor="title">
                                     {t('app.test_cases.fields.title')}
@@ -167,46 +195,37 @@ export default function TestCasesCreate({
                                 <Input
                                     id="title"
                                     value={data.title}
-                                    onChange={(e) =>
-                                        setData('title', e.target.value)
-                                    }
+                                    onChange={(e) => setData('title', e.target.value)}
                                     autoFocus
                                 />
-                                {errors.title ? (
-                                    <p className="text-sm text-destructive">
-                                        {errors.title}
-                                    </p>
-                                ) : null}
+                                {errors.title && (
+                                    <p className="text-sm text-destructive">{errors.title}</p>
+                                )}
                             </div>
 
+                            {/* Template */}
                             <div className="grid gap-2">
                                 <Label htmlFor="template">
                                     {t('app.test_cases.fields.template')}
                                 </Label>
                                 <Select
                                     value={String(data.template)}
-                                    onValueChange={(value) =>
-                                        setData('template', Number(value))
-                                    }
+                                    onValueChange={(v) => setData('template', Number(v))}
                                 >
                                     <SelectTrigger id="template">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {TEMPLATE_OPTIONS.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={String(option.value)}
-                                            >
-                                                {t(
-                                                    `app.test_cases.templates.${option.key}`,
-                                                )}
+                                        {TEMPLATE_OPTIONS.map((opt) => (
+                                            <SelectItem key={opt.value} value={String(opt.value)}>
+                                                {t(`app.test_cases.templates.${opt.key}`)}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
 
+                            {/* Section / Priority / Type / Estimate */}
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="grid gap-2">
                                     <Label htmlFor="section">
@@ -214,30 +233,16 @@ export default function TestCasesCreate({
                                     </Label>
                                     <Select
                                         value={data.section_id || 'none'}
-                                        onValueChange={(value) =>
-                                            setData(
-                                                'section_id',
-                                                value === 'none' ? '' : value,
-                                            )
-                                        }
+                                        onValueChange={(v) => setData('section_id', v === 'none' ? '' : v)}
                                     >
                                         <SelectTrigger id="section">
-                                            <SelectValue
-                                                placeholder={t(
-                                                    'app.test_cases.fields.section',
-                                                )}
-                                            />
+                                            <SelectValue placeholder={t('app.test_cases.fields.section')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">
-                                                —
-                                            </SelectItem>
-                                            {sections.map((section) => (
-                                                <SelectItem
-                                                    key={section.id}
-                                                    value={String(section.id)}
-                                                >
-                                                    {section.name}
+                                            <SelectItem value="none">—</SelectItem>
+                                            {sections.map((s) => (
+                                                <SelectItem key={s.id} value={String(s.id)}>
+                                                    {s.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -250,30 +255,16 @@ export default function TestCasesCreate({
                                     </Label>
                                     <Select
                                         value={data.priority_id || 'none'}
-                                        onValueChange={(value) =>
-                                            setData(
-                                                'priority_id',
-                                                value === 'none' ? '' : value,
-                                            )
-                                        }
+                                        onValueChange={(v) => setData('priority_id', v === 'none' ? '' : v)}
                                     >
                                         <SelectTrigger id="priority">
-                                            <SelectValue
-                                                placeholder={t(
-                                                    'app.test_cases.fields.priority',
-                                                )}
-                                            />
+                                            <SelectValue placeholder={t('app.test_cases.fields.priority')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">
-                                                —
-                                            </SelectItem>
-                                            {PRIORITY_OPTIONS.map((option) => (
-                                                <SelectItem
-                                                    key={option.value}
-                                                    value={option.value}
-                                                >
-                                                    {option.label}
+                                            <SelectItem value="none">—</SelectItem>
+                                            {PRIORITY_OPTIONS.map((opt) => (
+                                                <SelectItem key={opt.value} value={opt.value}>
+                                                    {opt.label}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -287,9 +278,8 @@ export default function TestCasesCreate({
                                     <Input
                                         id="type"
                                         value={data.type_id}
-                                        onChange={(e) =>
-                                            setData('type_id', e.target.value)
-                                        }
+                                        onChange={(e) => setData('type_id', e.target.value)}
+                                        placeholder="e.g. functional"
                                     />
                                 </div>
 
@@ -300,13 +290,13 @@ export default function TestCasesCreate({
                                     <Input
                                         id="estimate"
                                         value={data.estimate}
-                                        onChange={(e) =>
-                                            setData('estimate', e.target.value)
-                                        }
+                                        onChange={(e) => setData('estimate', e.target.value)}
+                                        placeholder="e.g. 1h 30m"
                                     />
                                 </div>
                             </div>
 
+                            {/* References */}
                             <div className="grid gap-2">
                                 <Label htmlFor="references">
                                     {t('app.test_cases.fields.references')}
@@ -314,12 +304,11 @@ export default function TestCasesCreate({
                                 <Input
                                     id="references"
                                     value={data.references}
-                                    onChange={(e) =>
-                                        setData('references', e.target.value)
-                                    }
+                                    onChange={(e) => setData('references', e.target.value)}
                                 />
                             </div>
 
+                            {/* Preconditions */}
                             <div className="grid gap-2">
                                 <Label htmlFor="preconditions">
                                     {t('app.test_cases.fields.preconditions')}
@@ -327,125 +316,124 @@ export default function TestCasesCreate({
                                 <textarea
                                     id="preconditions"
                                     value={data.preconditions}
-                                    onChange={(e) =>
-                                        setData('preconditions', e.target.value)
-                                    }
+                                    onChange={(e) => setData('preconditions', e.target.value)}
                                     rows={3}
                                     className={textareaClass}
                                 />
                             </div>
 
-                            {usesBody ? (
+                            {/* Body (text / exploratory) */}
+                            {usesBody && (
                                 <div className="grid gap-2">
                                     <Label htmlFor="body">
                                         {data.template === TEMPLATE_EXPLORATORY
-                                            ? 'Scenario'
+                                            ? t('app.test_cases.fields.scenario')
                                             : t('app.test_cases.fields.body')}
                                     </Label>
                                     <textarea
                                         id="body"
                                         value={data.body}
-                                        onChange={(e) =>
-                                            setData('body', e.target.value)
-                                        }
+                                        onChange={(e) => setData('body', e.target.value)}
                                         rows={6}
                                         className={textareaClass}
                                     />
                                 </div>
-                            ) : null}
+                            )}
 
-                            {usesSteps || usesChecklist ? (
-                                <div className="grid gap-3">
-                                    <Label>
-                                        {t('app.test_cases.fields.steps')}
+                            {/* BDD scenario (Gherkin) */}
+                            {usesBdd && (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="bdd_scenario">
+                                        {t('app.test_cases.fields.bdd_scenario')}
                                     </Label>
+                                    <textarea
+                                        id="bdd_scenario"
+                                        value={data.bdd_scenario}
+                                        onChange={(e) => setData('bdd_scenario', e.target.value)}
+                                        rows={8}
+                                        placeholder={'Given ...\nWhen ...\nThen ...'}
+                                        className={`${textareaClass} font-mono text-xs`}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Steps (steps template only) */}
+                            {usesSteps && (
+                                <div className="grid gap-3">
+                                    <Label>{t('app.test_cases.fields.steps')}</Label>
                                     {data.steps.map((step, index) => (
-                                        <div
-                                            key={index}
-                                            className="grid gap-2 rounded-md border p-3"
-                                        >
+                                        <div key={index} className="grid gap-2 rounded-md border p-3">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-xs font-medium text-muted-foreground">
                                                     #{index + 1}
                                                 </span>
                                                 <div className="flex items-center gap-1">
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            moveStep(index, -1)
-                                                        }
-                                                    >
+                                                    <Button type="button" variant="ghost" size="icon"
+                                                        onClick={() => moveStep(index, -1)}>
                                                         <ArrowUp className="size-4" />
                                                     </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            moveStep(index, 1)
-                                                        }
-                                                    >
+                                                    <Button type="button" variant="ghost" size="icon"
+                                                        onClick={() => moveStep(index, 1)}>
                                                         <ArrowDown className="size-4" />
                                                     </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            removeStep(index)
-                                                        }
-                                                    >
+                                                    <Button type="button" variant="ghost" size="icon"
+                                                        onClick={() => removeStep(index)}>
                                                         <Trash2 className="size-4" />
                                                     </Button>
                                                 </div>
                                             </div>
                                             <textarea
                                                 value={step.action}
-                                                onChange={(e) =>
-                                                    setStep(
-                                                        index,
-                                                        'action',
-                                                        e.target.value,
-                                                    )
-                                                }
+                                                onChange={(e) => setStep(index, 'action', e.target.value)}
                                                 rows={2}
-                                                placeholder={t(
-                                                    'app.test_cases.fields.action',
-                                                )}
+                                                placeholder={t('app.test_cases.fields.action')}
                                                 className={textareaClass}
                                             />
-                                            {!usesChecklist ? (
-                                                <textarea
-                                                    value={step.expected}
-                                                    onChange={(e) =>
-                                                        setStep(
-                                                            index,
-                                                            'expected',
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    rows={2}
-                                                    placeholder={t(
-                                                        'app.test_cases.fields.expected',
-                                                    )}
-                                                    className={textareaClass}
-                                                />
-                                            ) : null}
+                                            <textarea
+                                                value={step.expected}
+                                                onChange={(e) => setStep(index, 'expected', e.target.value)}
+                                                rows={2}
+                                                placeholder={t('app.test_cases.fields.expected')}
+                                                className={textareaClass}
+                                            />
                                         </div>
                                     ))}
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={addStep}
-                                    >
+                                    <Button type="button" variant="outline" onClick={addStep}>
                                         <Plus className="size-4" />
                                         {t('app.test_cases.fields.steps')}
                                     </Button>
                                 </div>
-                            ) : null}
+                            )}
 
+                            {/* Checklist items */}
+                            {usesChecklist && (
+                                <div className="grid gap-3">
+                                    <Label>{t('app.test_cases.fields.checklist')}</Label>
+                                    {data.checklist_items.map((item, index) => (
+                                        <div key={index} className="flex items-center gap-2">
+                                            <span className="text-xs text-muted-foreground w-6">
+                                                {index + 1}.
+                                            </span>
+                                            <Input
+                                                value={item.label}
+                                                onChange={(e) => setChecklistLabel(index, e.target.value)}
+                                                placeholder={t('app.test_cases.fields.checklist_item')}
+                                                className="flex-1"
+                                            />
+                                            <Button type="button" variant="ghost" size="icon"
+                                                onClick={() => removeChecklistItem(index)}>
+                                                <Trash2 className="size-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    <Button type="button" variant="outline" onClick={addChecklistItem}>
+                                        <Plus className="size-4" />
+                                        {t('app.test_cases.fields.checklist_item')}
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Actions */}
                             <div className="flex gap-2">
                                 <Button type="submit" disabled={processing}>
                                     {t('app.common.create')}
@@ -456,6 +444,7 @@ export default function TestCasesCreate({
                                     </Link>
                                 </Button>
                             </div>
+
                         </form>
                     </CardContent>
                 </Card>
@@ -466,9 +455,6 @@ export default function TestCasesCreate({
 
 TestCasesCreate.layout = {
     breadcrumbs: [
-        {
-            title: 'Projects',
-            href: projectsIndex(),
-        },
+        { title: 'Projects', href: projectsIndex() },
     ],
 };

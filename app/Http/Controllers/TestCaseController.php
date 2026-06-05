@@ -15,8 +15,8 @@ use Inertia\Response;
 class TestCaseController extends Controller
 {
     /**
-     * Map between the integer template contract used by the frontend and the
-     * string template values persisted on the model.
+     * Integer → string template contract shared between frontend and storage.
+     * Order matches the frontend constants in types/test-case.ts.
      *
      * @var array<int, string>
      */
@@ -29,9 +29,6 @@ class TestCaseController extends Controller
     ];
 
     /**
-     * Map between the integer priority contract used by the frontend and the
-     * string priority values persisted on the model.
-     *
      * @var array<int, string>
      */
     private const PRIORITY_MAP = [
@@ -41,9 +38,10 @@ class TestCaseController extends Controller
         4 => 'low',
     ];
 
-    /**
-     * Display a listing of the test cases for the given suite.
-     */
+    // -------------------------------------------------------------------------
+    // Resource actions
+    // -------------------------------------------------------------------------
+
     public function index(Request $request, Suite $suite): Response
     {
         $this->authorizeProjectAccess($request, $suite->project);
@@ -67,9 +65,6 @@ class TestCaseController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for creating a new test case.
-     */
     public function create(Request $request, Suite $suite): Response
     {
         $this->authorizeProjectAccess($request, $suite->project);
@@ -80,29 +75,24 @@ class TestCaseController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created test case in storage.
-     */
     public function store(Request $request, Suite $suite): RedirectResponse
     {
         $this->authorizeProjectAccess($request, $suite->project);
 
         $validated = $this->validateCase($request);
+        $template = self::TEMPLATE_MAP[$validated['template']];
 
         $testCase = $suite->testCases()->create($this->mapAttributes($validated, [
             'created_by' => Auth::id(),
         ]));
 
-        $this->syncSteps($testCase, $request);
+        $this->syncContent($testCase, $template, $request);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.created')]);
 
         return to_route('cases.show', $testCase);
     }
 
-    /**
-     * Display the specified test case.
-     */
     public function show(Request $request, TestCase $testCase): Response
     {
         $this->authorizeProjectAccess($request, $testCase->suite->project);
@@ -124,9 +114,6 @@ class TestCaseController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for editing the specified test case.
-     */
     public function edit(Request $request, TestCase $testCase): Response
     {
         $this->authorizeProjectAccess($request, $testCase->suite->project);
@@ -140,32 +127,27 @@ class TestCaseController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified test case in storage.
-     */
     public function update(Request $request, TestCase $testCase): RedirectResponse
     {
         $this->authorizeProjectAccess($request, $testCase->suite->project);
 
         $validated = $this->validateCase($request);
+        $template = self::TEMPLATE_MAP[$validated['template']];
 
         $testCase->update($this->mapAttributes($validated, [
             'updated_by' => Auth::id(),
         ]));
 
-        if ($request->has('steps')) {
-            $testCase->steps()->delete();
-            $this->syncSteps($testCase, $request);
-        }
+        // Always re-sync content when a full update is submitted
+        $testCase->steps()->delete();
+        $testCase->update(['checklist_items' => null, 'bdd_scenario' => null]);
+        $this->syncContent($testCase, $template, $request);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.updated')]);
 
         return to_route('cases.show', $testCase);
     }
 
-    /**
-     * Remove the specified test case from storage.
-     */
     public function destroy(Request $request, TestCase $testCase): RedirectResponse
     {
         $suite = $testCase->suite;
@@ -186,9 +168,6 @@ class TestCaseController extends Controller
         return to_route('suites.cases.index', $suite);
     }
 
-    /**
-     * Duplicate the test case into another suite within the same project.
-     */
     public function copy(Request $request, TestCase $testCase): RedirectResponse
     {
         $project = $testCase->suite->project;
@@ -212,21 +191,10 @@ class TestCaseController extends Controller
 
         $copy = DB::transaction(function () use ($testCase, $targetSuite, $validated): TestCase {
             $attributes = $testCase->only([
-                'title',
-                'template',
-                'case_type',
-                'priority',
-                'estimate',
-                'estimate_forecast',
-                'preconditions',
-                'expected_result',
-                'refs',
-                'automation_type',
-                'automation_id',
-                'status',
-                'checklist_items',
-                'bdd_scenario',
-                'display_order',
+                'title', 'template', 'case_type', 'priority', 'estimate',
+                'estimate_forecast', 'preconditions', 'expected_result', 'refs',
+                'automation_type', 'automation_id', 'status',
+                'checklist_items', 'bdd_scenario', 'display_order',
             ]);
 
             $attributes['suite_id'] = $targetSuite->id;
@@ -252,8 +220,12 @@ class TestCaseController extends Controller
         return to_route('cases.show', $copy);
     }
 
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
     /**
-     * Validate the request payload for creating or updating a test case.
+     * Validate the incoming test-case payload.
      *
      * @return array<string, mixed>
      */
@@ -262,13 +234,17 @@ class TestCaseController extends Controller
         return $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'template' => ['required', 'integer', 'in:1,2,3,4,5'],
-            'type_id' => ['nullable', 'integer'],
-            'priority_id' => ['nullable', 'integer'],
+            'type_id' => ['nullable', 'string', 'max:100'],
+            'priority_id' => ['nullable', 'integer', 'in:1,2,3,4'],
             'section_id' => ['nullable', 'integer', 'exists:sections,id'],
             'estimate' => ['nullable', 'string', 'max:50'],
             'references' => ['nullable', 'string'],
             'preconditions' => ['nullable', 'string'],
             'body' => ['nullable', 'string'],
+            'bdd_scenario' => ['nullable', 'string'],
+            'checklist_items' => ['nullable', 'array'],
+            'checklist_items.*.label' => ['required_with:checklist_items', 'string'],
+            'checklist_items.*.is_optional' => ['boolean'],
             'steps' => ['nullable', 'array'],
             'steps.*.action' => ['required_with:steps', 'string'],
             'steps.*.expected' => ['nullable', 'string'],
@@ -277,7 +253,7 @@ class TestCaseController extends Controller
     }
 
     /**
-     * Translate the validated frontend payload into the model's column shape.
+     * Map validated payload onto model column names.
      *
      * @param  array<string, mixed>  $validated
      * @param  array<string, mixed>  $extra
@@ -285,23 +261,37 @@ class TestCaseController extends Controller
      */
     private function mapAttributes(array $validated, array $extra = []): array
     {
-        $estimate = $validated['estimate'] ?? null;
-
         return array_merge([
             'title' => $validated['title'],
             'template' => self::TEMPLATE_MAP[$validated['template']],
-            'case_type' => isset($validated['type_id']) ? (string) $validated['type_id'] : null,
-            'priority' => isset($validated['priority_id']) ? (self::PRIORITY_MAP[$validated['priority_id']] ?? null) : null,
+            'case_type' => $validated['type_id'] ?? null,
+            'priority' => isset($validated['priority_id'])
+                ? (self::PRIORITY_MAP[$validated['priority_id']] ?? null)
+                : null,
             'section_id' => $validated['section_id'] ?? null,
-            'estimate' => is_numeric($estimate) ? (int) $estimate : null,
+            'estimate' => self::parseEstimate($validated['estimate'] ?? null),
             'refs' => $validated['references'] ?? null,
             'preconditions' => $validated['preconditions'] ?? null,
+            // expected_result is the generic body; only used for text / exploratory
             'expected_result' => $validated['body'] ?? null,
         ], $extra);
     }
 
     /**
-     * Persist the submitted steps for the given test case.
+     * Persist template-specific content (steps / checklist / BDD scenario).
+     */
+    private function syncContent(TestCase $testCase, string $template, Request $request): void
+    {
+        match ($template) {
+            'steps', 'exploratory' => $this->syncSteps($testCase, $request),
+            'bdd' => $this->syncBdd($testCase, $request),
+            'checklist' => $this->syncChecklist($testCase, $request),
+            default => null, // 'text' — body already stored in expected_result
+        };
+    }
+
+    /**
+     * Persist step rows for steps / exploratory templates.
      */
     private function syncSteps(TestCase $testCase, Request $request): void
     {
@@ -319,14 +309,99 @@ class TestCaseController extends Controller
     }
 
     /**
-     * Shape a test case for the frontend contract defined in test-case.ts.
+     * Persist BDD scenario text into the dedicated column.
+     */
+    private function syncBdd(TestCase $testCase, Request $request): void
+    {
+        // The frontend sends the Gherkin text in `bdd_scenario`; fall back to `body`
+        // for backwards compatibility with any existing saves that used `body`.
+        $scenario = $request->input('bdd_scenario') ?? $request->input('body');
+
+        if ($scenario !== null) {
+            $testCase->update(['bdd_scenario' => $scenario]);
+        }
+    }
+
+    /**
+     * Persist checklist items into the dedicated JSONB column.
+     * Each item: { label: string, is_optional: bool }
+     */
+    private function syncChecklist(TestCase $testCase, Request $request): void
+    {
+        // Support both the new structured `checklist_items` key and the legacy
+        // `steps` array (where `action` becomes the label) for backwards compat.
+        if ($request->filled('checklist_items')) {
+            $items = array_map(
+                fn (array $item): array => [
+                    'label' => $item['label'],
+                    'is_optional' => (bool) ($item['is_optional'] ?? false),
+                ],
+                $request->input('checklist_items'),
+            );
+        } elseif ($request->filled('steps')) {
+            $items = array_map(
+                fn (array $step): array => [
+                    'label' => $step['action'],
+                    'is_optional' => false,
+                ],
+                array_filter(
+                    $request->input('steps'),
+                    fn (array $s): bool => trim($s['action'] ?? '') !== '',
+                ),
+            );
+        } else {
+            return;
+        }
+
+        $testCase->update(['checklist_items' => array_values($items)]);
+    }
+
+    /**
+     * Parse a human-readable estimate string into seconds (integer).
+     *
+     * Accepted formats:
+     *   - "90"          → 90 (treated as seconds, stored as-is)
+     *   - "1h"          → 3600
+     *   - "30m"         → 1800
+     *   - "1h 30m"      → 5400
+     *   - "1h30m"       → 5400
+     */
+    private static function parseEstimate(?string $value): ?int
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        // Pure integer — store as seconds directly
+        if (ctype_digit(trim($value))) {
+            return (int) $value;
+        }
+
+        $seconds = 0;
+        $matched = false;
+
+        if (preg_match('/(\d+)\s*h/i', $value, $m)) {
+            $seconds += (int) $m[1] * 3600;
+            $matched = true;
+        }
+
+        if (preg_match('/(\d+)\s*m/i', $value, $m)) {
+            $seconds += (int) $m[1] * 60;
+            $matched = true;
+        }
+
+        return $matched ? $seconds : null;
+    }
+
+    /**
+     * Shape a test case for the frontend TypeScript contract.
      *
      * @return array<string, mixed>
      */
     private function transformCase(TestCase $testCase): array
     {
-        $template = array_search($testCase->template, self::TEMPLATE_MAP, true);
-        $priority = array_search($testCase->priority, self::PRIORITY_MAP, true);
+        $templateInt = array_search($testCase->template, self::TEMPLATE_MAP, true);
+        $priorityInt = array_search($testCase->priority, self::PRIORITY_MAP, true);
 
         return [
             'id' => $testCase->id,
@@ -334,13 +409,17 @@ class TestCaseController extends Controller
             'section_id' => $testCase->section_id,
             'section' => $testCase->relationLoaded('section') ? $testCase->section : null,
             'title' => $testCase->title,
-            'template' => $template === false ? 2 : $template,
-            'type_id' => is_numeric($testCase->case_type) ? (int) $testCase->case_type : null,
-            'priority_id' => $priority === false ? null : $priority,
-            'estimate' => $testCase->estimate !== null ? (string) $testCase->estimate : null,
+            'template' => $templateInt === false ? 2 : $templateInt,
+            'type_id' => $testCase->case_type,           // stored as string; TS type updated below
+            'priority_id' => $priorityInt === false ? null : $priorityInt,
+            'estimate' => $testCase->estimate !== null
+                ? self::formatEstimate($testCase->estimate)
+                : null,
             'references' => $testCase->refs,
             'preconditions' => $testCase->preconditions,
             'body' => $testCase->expected_result,
+            'bdd_scenario' => $testCase->bdd_scenario,
+            'checklist_items' => $testCase->checklist_items,
             'steps' => $testCase->relationLoaded('steps')
                 ? $testCase->steps->map(fn ($step): array => [
                     'id' => $step->id,
@@ -353,6 +432,33 @@ class TestCaseController extends Controller
             'created_at' => $testCase->created_at,
             'updated_at' => $testCase->updated_at,
         ];
+    }
+
+    /**
+     * Format stored seconds into a human-readable string ("1h 30m").
+     */
+    private static function formatEstimate(int $seconds): string
+    {
+        if ($seconds <= 0) {
+            return '0';
+        }
+
+        $h = intdiv($seconds, 3600);
+        $m = intdiv($seconds % 3600, 60);
+        $s = $seconds % 60;
+
+        $parts = [];
+        if ($h > 0) {
+            $parts[] = "{$h}h";
+        }
+        if ($m > 0) {
+            $parts[] = "{$m}m";
+        }
+        if ($s > 0) {
+            $parts[] = "{$s}s";
+        }
+
+        return implode(' ', $parts);
     }
 
     /**
