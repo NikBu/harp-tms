@@ -70,7 +70,7 @@ class TestPlan extends Model
      */
     public function entries(): HasMany
     {
-        return $this->hasMany(TestPlanEntry::class);
+        return $this->hasMany(TestPlanEntry::class, 'plan_id'); // ← explicit FK
     }
 
     /**

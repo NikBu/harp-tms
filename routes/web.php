@@ -6,6 +6,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\SuiteController;
 use App\Http\Controllers\TestCaseController;
+use App\Http\Controllers\TestPlanController;
 use App\Http\Controllers\TestRunController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('milestones.complete');
     Route::patch('milestones/{milestone}/reopen', [MilestoneController::class, 'reopen'])
         ->name('milestones.reopen');
+
+    // Test Plans
+    Route::resource('projects.plans', TestPlanController::class)
+        ->shallow()
+        ->parameters(['plans' => 'testPlan']);
+    Route::patch('plans/{testPlan}/close', [TestPlanController::class, 'close'])->name('plans.close');
+    Route::patch('plans/{testPlan}/reopen', [TestPlanController::class, 'reopen'])->name('plans.reopen');
+
+    // Plan entries (add/remove runs inside a plan)
+    Route::post('plans/{testPlan}/entries', [TestPlanController::class, 'addEntry'])
+        ->name('plans.entries.store');
+    Route::delete('plans/{testPlan}/entries/{entry}', [TestPlanController::class, 'removeEntry'])
+        ->name('plans.entries.destroy');
 });
 
 Route::post('/locale', [LocaleController::class, 'update'])
