@@ -2,7 +2,7 @@ import type { User } from './auth';
 
 export type SuiteMode = 1 | 2 | 3;
 
-export type ProjectRole = 'project_admin' | 'member' | string;
+export type ProjectRole = 'viewer' | 'tester' | 'author' | 'lead' | 'project_admin';
 
 export type ProjectMember = Pick<User, 'id' | 'name' | 'email'> & {
     pivot: {
