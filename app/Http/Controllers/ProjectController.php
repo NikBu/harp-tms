@@ -48,9 +48,9 @@ class ProjectController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'suite_mode'  => ['required', 'integer', 'in:1,2,3'],
+            'suite_mode' => ['required', 'integer', 'in:1,2,3'],
         ]);
 
         $validated['created_by'] = Auth::id();
@@ -71,23 +71,38 @@ class ProjectController extends Controller
     {
         $this->authorizeProjectAccess($request, $project);
 
+        $user = $request->user();
+
         $project->load([
             'createdBy:id,name',
             'members:id,name,email',
-            'milestones' => function ($query): void {
-                $query->whereNull('parent_id')->orderBy('due_on');
-            },
+            'milestones' => fn ($q) => $q->whereNull('parent_id')->orderBy('due_on'),
         ]);
 
         $project->loadCount([
             'requirements',
             'suites',
             'testCases',
-            'testRuns',   // ← was missing; drives the Test Runs stat card
+            'testRuns',
         ]);
+
+        $canManage = $user->hasRole('admin') || $project->members()
+            ->whereKey($user->getKey())
+            ->wherePivot('role', 'project_admin')
+            ->exists();
+
+        $recentRuns = $project->testRuns()
+            ->where('is_completed', false)
+            ->with('milestone:id,name')
+            ->withCount(['tests'])
+            ->orderByDesc('created_at')
+            ->limit(3)
+            ->get();
 
         return Inertia::render('projects/show', [
             'project' => $project,
+            'canManage' => $canManage,
+            'recentRuns' => $recentRuns,
         ]);
     }
 
@@ -99,11 +114,11 @@ class ProjectController extends Controller
         $this->authorizeProjectAccess($request, $project);
 
         $validated = $request->validate([
-            'name'              => ['required', 'string', 'max:255'],
-            'description'       => ['nullable', 'string'],
-            'announcement'      => ['nullable', 'string'],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'announcement' => ['nullable', 'string'],
             'show_announcement' => ['boolean'],
-            'is_completed'      => ['boolean'],
+            'is_completed' => ['boolean'],
         ]);
 
         $validated['completed_at'] = ($validated['is_completed'] ?? false) ? now() : null;

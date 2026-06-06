@@ -26,6 +26,8 @@ return [
         'search' => 'Search',
         'loading' => 'Loading...',
         'confirm_delete' => 'Are you sure you want to delete this?',
+        'view_all'        => 'View all',
+        'manage'       => 'Manage',
     ],
     'status' => [
         'active' => 'Active',
@@ -66,6 +68,8 @@ return [
             'suites' => 'Suites',
             'milestones' => 'Milestones',
         ],
+        'recent_runs'   => 'Active Runs',
+        'no_active_runs' => 'No active runs.',
     ],
     'settings' => [
     'title'           => 'Project Settings',

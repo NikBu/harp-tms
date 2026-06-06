@@ -1,116 +1,28 @@
-import { Link, usePage } from '@inertiajs/react';
-import {
-    LayoutDashboard,
-    FolderOpen,
-    Layers,
-    ClipboardList,
-    BookOpen,
-    PlayCircle,
-    Bug,
-    Tag,
-    BarChart2,
-    Settings,
-    ShieldCheck,
-} from 'lucide-react';
-import  AppLogo  from '@/components/app-logo';
-import { NavUser } from '@/components/nav-user';
-import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    SidebarGroup,
-    SidebarGroupLabel,
-} from '@/components/ui/sidebar';
-import { useTrans } from '@/hooks/use-trans';
+import { usePage } from '@inertiajs/react';
+import { AdminSidebar } from '@/components/admin-sidebar';
+import { ProjectSidebar } from '@/components/project-sidebar';
+import { GlobalSidebar } from '@/components/global-sidebar';
+import type { ProjectContext } from '@/types/navigation';
 
-const navItems = [
-    { key: 'dashboard',   href: '/dashboard',   icon: LayoutDashboard },
-    { key: 'projects',    href: '/projects',     icon: FolderOpen },
-    { key: 'suites',      href: '/projects',     icon: Layers },
-    { key: 'test_cases',  href: '/test-cases',   icon: ClipboardList },
-    { key: 'test_plans',  href: '/test-plans',   icon: BookOpen },
-    { key: 'test_runs',   href: '/test-runs',    icon: PlayCircle },
-    { key: 'defects',     href: '/defects',      icon: Bug },
-    { key: 'releases',    href: '/releases',     icon: Tag },
-    { key: 'reports',     href: '/reports',      icon: BarChart2 },
-];
-
-const bottomItems = [
-    { key: 'admin',    href: '/admin',    icon: ShieldCheck },
-    { key: 'settings', href: '/settings', icon: Settings },
-];
-
+/**
+ * Top-level sidebar switcher.
+ * Renders one of three sidebar variants based on route context:
+ *   - /admin/*        → AdminSidebar
+ *   - /projects/:id/* → ProjectSidebar
+ *   - everywhere else → GlobalSidebar (dashboard + projects list)
+ */
 export function AppSidebar() {
-    const t = useTrans();
-    const { url } = usePage();
+    const page           = usePage<any>();
+    const currentUrl     = (page as any).url as string ?? '';
+    const project        = page.props.currentProject as ProjectContext | null | undefined;
 
-    return (
-        <Sidebar>
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href="/dashboard">
-                                <AppLogo />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarHeader>
+    if (currentUrl.startsWith('/admin')) {
+        return <AdminSidebar />;
+    }
 
-            <SidebarContent>
-                <SidebarGroup>
-                    <SidebarGroupLabel>
-                        {t('app.navigation.main')}
-                    </SidebarGroupLabel>
-                    <SidebarMenu>
-                        {navItems.map(({ key, href, icon: Icon }) => (
-                            <SidebarMenuItem key={key}>
-                                <SidebarMenuButton
-                                    asChild
-                                    isActive={url.startsWith(href)}
-                                    tooltip={t(`app.navigation.${key}`)}
-                                >
-                                    <Link href={href}>
-                                        <Icon />
-                                        <span>{t(`app.navigation.${key}`)}</span>
-                                    </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
-                    </SidebarMenu>
-                </SidebarGroup>
+    if (project) {
+        return <ProjectSidebar project={project} />;
+    }
 
-                <SidebarGroup>
-                    <SidebarGroupLabel>
-                        {t('app.navigation.system')}
-                    </SidebarGroupLabel>
-                    <SidebarMenu>
-                        {bottomItems.map(({ key, href, icon: Icon }) => (
-                            <SidebarMenuItem key={key}>
-                                <SidebarMenuButton
-                                    asChild
-                                    isActive={url.startsWith(href)}
-                                    tooltip={t(`app.navigation.${key}`)}
-                                >
-                                    <Link href={href}>
-                                        <Icon />
-                                        <span>{t(`app.navigation.${key}`)}</span>
-                                    </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
-                    </SidebarMenu>
-                </SidebarGroup>
-            </SidebarContent>
-
-            <SidebarFooter>
-                <NavUser />
-            </SidebarFooter>
-        </Sidebar>
-    );
+    return <GlobalSidebar />;
 }
