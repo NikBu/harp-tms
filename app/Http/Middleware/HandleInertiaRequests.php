@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Project;
+use App\Models\Suite;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -34,6 +35,8 @@ class HandleInertiaRequests extends Middleware
             'translations' => $this->loadTranslations(),
 
             // Current project context — injected when URL matches /projects/{id}/*
+            // or when a shallow resource route carries a suite/case/run/milestone param
+            // whose model belongs to a project.
             'currentProject' => $this->resolveCurrentProject($request),
 
             // Project switcher list — only the projects the user can access
@@ -48,38 +51,102 @@ class HandleInertiaRequests extends Middleware
     // Helpers
     // ──────────────────────────────────────────────────────────────────
 
-private function resolveCurrentProject(Request $request): ?array
-{
-    if (! $request->user()) return null;
+    private function resolveCurrentProject(Request $request): ?array
+    {
+        if (! $request->user()) return null;
 
-    // Route model binding may already resolve the project as a model instance
-    $routeProject = $request->route('project');
+        $project = $this->findProjectFromRoute($request);
 
-    if ($routeProject instanceof \App\Models\Project) {
-        $project = $routeProject;
-    } elseif ($routeProject) {
-        $project = Project::find((int) $routeProject);
-    } else {
-        // Fallback: parse project ID from URL path
-        if (! preg_match('#/projects/(\d+)#', $request->path(), $m)) {
+        if (! $project) return null;
+
+        $user = $request->user();
+        if (! $user->hasRole('admin') && ! $project->members()->where('user_id', $user->id)->exists()) {
             return null;
         }
-        $project = Project::find((int) $m[1]);
+
+        return [
+            'id'         => $project->id,
+            'name'       => $project->name,
+            'suite_mode' => $project->suite_mode,
+        ];
     }
 
-    if (! $project) return null;
+    /**
+     * Try every possible way to arrive at a Project model from the current route,
+     * in order of specificity:
+     *
+     *  1. Route model binding already resolved a `project` parameter.
+     *  2. URL path contains /projects/{id}/ (non-shallow project-scoped routes).
+     *  3. Route has a `suite` parameter   → load suite → project.
+     *  4. Route has a `testCase` parameter → load case  → suite → project.
+     *  5. Route has a `testRun` parameter  → load run   → project.
+     *  6. Route has a `milestone` parameter → load milestone → project.
+     *  7. Route has a `testPlan` parameter  → load plan  → project.
+     */
+    private function findProjectFromRoute(Request $request): ?Project
+    {
+        // 1 — direct project route param (already resolved by Laravel)
+        $routeProject = $request->route('project');
+        if ($routeProject instanceof Project) {
+            return $routeProject;
+        }
+        if ($routeProject) {
+            return Project::find((int) $routeProject);
+        }
 
-    $user = $request->user();
-    if (! $user->hasRole('admin') && ! $project->members()->where('user_id', $user->id)->exists()) {
+        // 2 — /projects/{id}/* URL pattern
+        if (preg_match('#/projects/(\d+)#', $request->path(), $m)) {
+            return Project::find((int) $m[1]);
+        }
+
+        // 3 — shallow suite route: /suites/{suite}
+        $suite = $request->route('suite');
+        if ($suite instanceof Suite) {
+            return $suite->project;
+        }
+        if ($suite) {
+            $s = Suite::find((int) $suite);
+            return $s?->project;
+        }
+
+        // 4 — shallow test-case route: /cases/{testCase} or /suites/{suite}/cases/{testCase}
+        $testCase = $request->route('testCase');
+        if ($testCase) {
+            $tc = $testCase instanceof \App\Models\TestCase
+                ? $testCase
+                : \App\Models\TestCase::find((int) $testCase);
+            return $tc?->suite?->project;
+        }
+
+        // 5 — shallow test-run route: /runs/{testRun}
+        $testRun = $request->route('testRun');
+        if ($testRun) {
+            $run = $testRun instanceof \App\Models\TestRun
+                ? $testRun
+                : \App\Models\TestRun::find((int) $testRun);
+            return $run?->project;
+        }
+
+        // 6 — shallow milestone route: /milestones/{milestone}
+        $milestone = $request->route('milestone');
+        if ($milestone) {
+            $ms = $milestone instanceof \App\Models\Milestone
+                ? $milestone
+                : \App\Models\Milestone::find((int) $milestone);
+            return $ms?->project;
+        }
+
+        // 7 — shallow test-plan route: /plans/{testPlan}
+        $testPlan = $request->route('testPlan');
+        if ($testPlan) {
+            $plan = $testPlan instanceof \App\Models\TestPlan
+                ? $testPlan
+                : \App\Models\TestPlan::find((int) $testPlan);
+            return $plan?->project;
+        }
+
         return null;
     }
-
-    return [
-        'id'         => $project->id,
-        'name'       => $project->name,
-        'suite_mode' => $project->suite_mode,
-    ];
-}
 
     private function resolveAccessibleProjects(Request $request): array
     {
