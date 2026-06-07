@@ -125,10 +125,15 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
                 {/* ── Context-aware center section ─────────────── */}
                 {isInProject && project ? (
-                    /* Inside a project: show project name + + Add */
+                    /* Inside a project: show separator + project name linked to overview */
                     <div className="ml-4 hidden items-center gap-3 lg:flex">
                         <span className="text-sm text-muted-foreground">/</span>
-                        <span className="text-sm font-medium">{project.name}</span>
+                        <Link
+                            href={`/projects/${project.id}/overview`}
+                            className="text-sm font-medium transition-colors hover:text-foreground text-muted-foreground"
+                        >
+                            {project.name}
+                        </Link>
                     </div>
                 ) : (
                     /* Global view: Dashboard tab */
