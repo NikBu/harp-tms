@@ -18,13 +18,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
-import { index as projectsIndex } from '@/routes/projects';
+import { index as projectsIndex, show as projectShow } from '@/routes/projects';
+import { show as suiteShow } from '@/actions/App/Http/Controllers/SuiteController';
 import type { Project, Section, Suite } from '@/types';
 
 type SuiteWithSections = Suite & { sections: Section[] };
 
 type SectionDialogState =
-    | { mode: 'create'; parentId: number | null; suiteId: number }
+    | { mode: 'create'; parentId: number | null; suiteId: number; projectId: number }
     | { mode: 'edit'; section: Section }
     | null;
 
@@ -98,6 +99,7 @@ function SectionRow({
 }
 
 export default function SuitesShow({
+    project,
     suite,
 }: {
     project: Project;
@@ -109,7 +111,7 @@ export default function SuitesShow({
 
     function openCreate(parentId: number | null) {
         setName('');
-        setDialog({ mode: 'create', parentId, suiteId: suite.id });
+        setDialog({ mode: 'create', parentId, suiteId: suite.id, projectId: suite.project_id });
     }
 
     function openEdit(section: Section) {
@@ -130,7 +132,7 @@ export default function SuitesShow({
 
         if (dialog.mode === 'create') {
             router.post(
-                storeSection.url(dialog.suiteId),
+                storeSection.url({ project: dialog.projectId, suite: dialog.suiteId }),
                 { name, parent_id: dialog.parentId },
                 { onSuccess: closeDialog, preserveScroll: true },
             );
@@ -255,10 +257,10 @@ export default function SuitesShow({
 }
 
 SuitesShow.layout = {
-    breadcrumbs: [
-        {
-            title: 'Projects',
-            href: projectsIndex(),
-        },
+    breadcrumbs: (props: { project: Project; suite: Suite }) => [
+        { title: 'Projects', href: projectsIndex() },
+        { title: props.project.name, href: `/projects/${props.project.id}/overview` },
+        { title: 'Test Cases', href: suiteShow.url(props.suite.id) },
+        { title: props.suite.name },
     ],
 };
