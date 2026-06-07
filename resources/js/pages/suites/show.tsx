@@ -18,8 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTrans } from '@/hooks/use-trans';
-import { index as projectsIndex, show as projectShow } from '@/routes/projects';
-import { show as suiteShow } from '@/actions/App/Http/Controllers/SuiteController';
+import { index as projectsIndex } from '@/routes/projects';
 import type { Project, Section, Suite } from '@/types';
 
 type SuiteWithSections = Suite & { sections: Section[] };
@@ -257,10 +256,7 @@ export default function SuitesShow({
 }
 
 SuitesShow.layout = {
-    breadcrumbs: (props: { project: Project; suite: Suite }) => [
+    breadcrumbs: [
         { title: 'Projects', href: projectsIndex() },
-        { title: props.project.name, href: `/projects/${props.project.id}/overview` },
-        { title: 'Test Cases', href: suiteShow.url(props.suite.id) },
-        { title: props.suite.name },
     ],
 };

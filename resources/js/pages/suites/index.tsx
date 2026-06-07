@@ -11,7 +11,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { index as projectsIndex, show as projectShow } from '@/routes/projects';
+import { index as projectsIndex } from '@/routes/projects';
 import type { PaginatedData, Project, Suite } from '@/types';
 
 function SuiteCard({ suite }: { suite: Suite }) {
@@ -38,11 +38,11 @@ export default function SuitesIndex({
 }) {
     return (
         <>
-            <Head title="Test Cases" />
+            <Head title="Test Suites" />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-semibold">Test Cases</h1>
+                    <h1 className="text-2xl font-semibold">Test Suites</h1>
                     <Button asChild>
                         <Link href={create.url(project.id)}>
                             <Plus className="size-4" />
@@ -96,9 +96,8 @@ export default function SuitesIndex({
 }
 
 SuitesIndex.layout = {
-    breadcrumbs: (props: { project: Project }) => [
+    breadcrumbs: [
         { title: 'Projects', href: projectsIndex() },
-        { title: props.project.name, href: `/projects/${props.project.id}/overview` },
         { title: 'Test Cases' },
     ],
 };
