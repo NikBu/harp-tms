@@ -44,13 +44,13 @@ export function ProjectSidebar({ project }: Props) {
     const todoCount  = (page.props.todoCount as number) ?? 0;
 
     const navItems = [
-        { key: 'overview',   label: 'Overview',    icon: LayoutDashboard, href: `${base}/overview` },
-        { key: 'todo',       label: 'To Do',       icon: ListChecks,      href: `${base}/todo` },
-        { key: 'suites',     label: 'Cases',       icon: ClipboardList,   href: `${base}/suites` },
-        { key: 'runs',       label: 'Runs',        icon: PlayCircle,      href: `${base}/runs` },
-        { key: 'plans',      label: 'Plans',       icon: BookOpen,        href: `${base}/plans` },
-        { key: 'milestones', label: 'Milestones',  icon: MapPin,          href: `${base}/milestones` },
-        { key: 'reports',    label: 'Reports',     icon: BarChart2,       href: `${base}/reports` },
+        { key: 'overview',   label: 'Overview',   icon: LayoutDashboard, href: `${base}/overview`,   extraMatch: null },
+        { key: 'todo',       label: 'To Do',      icon: ListChecks,      href: `${base}/todo`,        extraMatch: null },
+        { key: 'suites',     label: 'Cases',      icon: ClipboardList,   href: `${base}/suites`,      extraMatch: ['/suites/', '/cases/'] },
+        { key: 'runs',       label: 'Runs',       icon: PlayCircle,      href: `${base}/runs`,        extraMatch: ['/runs/'] },
+        { key: 'plans',      label: 'Plans',      icon: BookOpen,        href: `${base}/plans`,       extraMatch: ['/plans/'] },
+        { key: 'milestones', label: 'Milestones', icon: MapPin,          href: `${base}/milestones`,  extraMatch: ['/milestones/'] },
+        { key: 'reports',    label: 'Reports',    icon: BarChart2,       href: `${base}/reports`,     extraMatch: null },
     ];
 
     return (
@@ -100,27 +100,27 @@ export function ProjectSidebar({ project }: Props) {
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarMenu>
-                        {navItems.map(({ key, label, icon: Icon, href }) => (
+                       {navItems.map(({ key, label, icon: Icon, href, extraMatch }) => {
+                        const isActive =
+                            currentUrl.startsWith(href) ||
+                            (extraMatch?.some((pattern) => currentUrl.includes(pattern)) ?? false);
+
+                        return (
                             <SidebarMenuItem key={key}>
-                                <SidebarMenuButton
-                                    asChild
-                                    isActive={currentUrl.startsWith(href)}
-                                >
+                                <SidebarMenuButton asChild isActive={isActive}>
                                     <Link href={href}>
                                         <Icon className="h-4 w-4" />
                                         <span>{label}</span>
                                         {key === 'todo' && todoCount > 0 && (
-                                            <Badge
-                                                variant="secondary"
-                                                className="ml-auto text-xs"
-                                            >
+                                            <Badge variant="secondary" className="ml-auto text-xs">
                                                 {todoCount}
                                             </Badge>
                                         )}
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
-                        ))}
+                        );
+                    })}
                     </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>

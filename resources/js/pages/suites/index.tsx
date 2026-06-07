@@ -11,8 +11,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { useTrans } from '@/hooks/use-trans';
-import { index as projectsIndex } from '@/routes/projects';
+import { index as projectsIndex, show as projectShow } from '@/routes/projects';
 import type { PaginatedData, Project, Suite } from '@/types';
 
 function SuiteCard({ suite }: { suite: Suite }) {
@@ -37,21 +36,17 @@ export default function SuitesIndex({
     project: Project;
     suites: PaginatedData<Suite>;
 }) {
-    const t = useTrans();
-
     return (
         <>
-            <Head title={t('app.suites.title')} />
+            <Head title="Test Cases" />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-semibold">
-                        {t('app.suites.title')}
-                    </h1>
+                    <h1 className="text-2xl font-semibold">Test Cases</h1>
                     <Button asChild>
                         <Link href={create.url(project.id)}>
                             <Plus className="size-4" />
-                            {t('app.suites.create')}
+                            New Suite
                         </Link>
                     </Button>
                 </div>
@@ -60,12 +55,12 @@ export default function SuitesIndex({
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-12 text-center">
                         <Layers className="size-10 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground">
-                            {t('app.suites.empty')}
+                            No test suites yet. Create one to start organising your cases.
                         </p>
                         <Button asChild className="mt-2">
                             <Link href={create.url(project.id)}>
                                 <Plus className="size-4" />
-                                {t('app.suites.create')}
+                                New Suite
                             </Link>
                         </Button>
                     </div>
@@ -82,19 +77,13 @@ export default function SuitesIndex({
                                 {suites.links.map((link) => (
                                     <Button
                                         key={link.label}
-                                        variant={
-                                            link.active ? 'default' : 'outline'
-                                        }
+                                        variant={link.active ? 'default' : 'outline'}
                                         size="sm"
                                         disabled={link.url === null}
                                         onClick={() => {
-                                            if (link.url) {
-                                                router.visit(link.url);
-                                            }
+                                            if (link.url) router.visit(link.url);
                                         }}
-                                        dangerouslySetInnerHTML={{
-                                            __html: link.label,
-                                        }}
+                                        dangerouslySetInnerHTML={{ __html: link.label }}
                                     />
                                 ))}
                             </div>
@@ -107,10 +96,9 @@ export default function SuitesIndex({
 }
 
 SuitesIndex.layout = {
-    breadcrumbs: [
-        {
-            title: 'Projects',
-            href: projectsIndex(),
-        },
+    breadcrumbs: (props: { project: Project }) => [
+        { title: 'Projects', href: projectsIndex() },
+        { title: props.project.name, href: `/projects/${props.project.id}/overview` },
+        { title: 'Test Cases' },
     ],
 };
