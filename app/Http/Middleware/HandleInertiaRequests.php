@@ -48,30 +48,38 @@ class HandleInertiaRequests extends Middleware
     // Helpers
     // ──────────────────────────────────────────────────────────────────
 
-    private function resolveCurrentProject(Request $request): ?array
-    {
-        if (! $request->user()) return null;
+private function resolveCurrentProject(Request $request): ?array
+{
+    if (! $request->user()) return null;
 
-        $projectId = $request->route('project')
-            ?? (preg_match('#^/projects/(\d+)#', $request->path(), $m) ? $m[1] : null);
+    // Route model binding may already resolve the project as a model instance
+    $routeProject = $request->route('project');
 
-        if (! $projectId) return null;
-
-        $project = Project::find($projectId);
-        if (! $project) return null;
-
-        // Only expose to users who are members (or admins)
-        $user = $request->user();
-        if (! $user->hasRole('admin') && ! $project->members()->where('user_id', $user->id)->exists()) {
+    if ($routeProject instanceof \App\Models\Project) {
+        $project = $routeProject;
+    } elseif ($routeProject) {
+        $project = Project::find((int) $routeProject);
+    } else {
+        // Fallback: parse project ID from URL path
+        if (! preg_match('#/projects/(\d+)#', $request->path(), $m)) {
             return null;
         }
-
-        return [
-            'id'         => $project->id,
-            'name'       => $project->name,
-            'suite_mode' => $project->suite_mode,
-        ];
+        $project = Project::find((int) $m[1]);
     }
+
+    if (! $project) return null;
+
+    $user = $request->user();
+    if (! $user->hasRole('admin') && ! $project->members()->where('user_id', $user->id)->exists()) {
+        return null;
+    }
+
+    return [
+        'id'         => $project->id,
+        'name'       => $project->name,
+        'suite_mode' => $project->suite_mode,
+    ];
+}
 
     private function resolveAccessibleProjects(Request $request): array
     {
