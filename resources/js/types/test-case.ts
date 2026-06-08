@@ -19,6 +19,14 @@ export interface ChecklistItem {
     is_optional: boolean;
 }
 
+export interface LinkedRequirement {
+    id: number;
+    display_id: string;
+    title: string;
+    priority: string | null;
+    status: string | null;
+}
+
 export interface TestCase {
     id: number;
     suite_id: number;
@@ -26,20 +34,17 @@ export interface TestCase {
     section?: Section;
     title: string;
     template: number;
-    /** Stored as a free-form string (e.g. "functional", "regression") */
     type_id: string | null;
     priority_id: number | null;
-    /** Human-readable estimate string returned by the server, e.g. "1h 30m" */
     estimate: string | null;
     references: string | null;
     preconditions: string | null;
-    /** Body text for text / exploratory templates */
     body: string | null;
-    /** Raw Gherkin text for the BDD template */
     bdd_scenario: string | null;
-    /** Structured checklist items for the checklist template */
     checklist_items: ChecklistItem[] | null;
     steps?: TestCaseStep[];
+    /** Linked requirements — only present on show(), null on list views */
+    requirements?: LinkedRequirement[] | null;
     created_at: string;
     updated_at: string;
 }

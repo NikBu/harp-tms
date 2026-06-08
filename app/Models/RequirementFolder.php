@@ -56,6 +56,6 @@ class RequirementFolder extends Model
      */
     public function requirements(): HasMany
     {
-        return $this->hasMany(Requirement::class);
+        return $this->hasMany(Requirement::class, 'folder_id');
     }
 }

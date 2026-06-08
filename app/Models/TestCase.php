@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Pivots\RequirementTestCase;
 use Database\Factories\TestCaseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -136,8 +137,10 @@ class TestCase extends Model
     public function requirements(): BelongsToMany
     {
         return $this->belongsToMany(Requirement::class, 'requirement_test_case')
-            ->withPivot('created_by', 'created_at')
-            ->withTimestamps(false);
+            ->using(RequirementTestCase::class)
+            ->withPivot('created_by', 'created_at');
+        // No ->withTimestamps() — the pivot has created_at but no updated_at.
+        // withPivot() alone selects exactly those two columns, nothing else.
     }
 
     /**

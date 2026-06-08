@@ -9,6 +9,7 @@ import {
     MapPin,
     PlayCircle,
     BookOpen,
+    ScrollText,
 } from 'lucide-react';
 import { NavUser } from '@/components/nav-user';
 import { Badge } from '@/components/ui/badge';
@@ -41,16 +42,17 @@ export function ProjectSidebar({ project }: Props) {
     const projects   = (page.props.accessibleProjects ?? []) as ProjectContext[];
     const base       = `/projects/${project.id}`;
 
-    const todoCount  = (page.props.todoCount as number) ?? 0;
+    const todoCount = (page.props.todoCount as number) ?? 0;
 
     const navItems = [
-        { key: 'overview',   label: 'Overview',    icon: LayoutDashboard, href: base },
-        { key: 'todo',       label: 'To Do',       icon: ListChecks,      href: `${base}/todo` },
-        { key: 'suites',     label: 'Cases',       icon: ClipboardList,   href: `${base}/suites` },
-        { key: 'runs',       label: 'Runs',        icon: PlayCircle,      href: `${base}/runs` },
-        { key: 'plans',      label: 'Plans',       icon: BookOpen,        href: `${base}/plans` },
-        { key: 'milestones', label: 'Milestones',  icon: MapPin,          href: `${base}/milestones` },
-        { key: 'reports',    label: 'Reports',     icon: BarChart2,       href: `${base}/reports` },
+        { key: 'overview',      label: 'Overview',      icon: LayoutDashboard, href: base },
+        { key: 'todo',          label: 'To Do',         icon: ListChecks,      href: `${base}/todo` },
+        { key: 'suites',        label: 'Cases',         icon: ClipboardList,   href: `${base}/suites` },
+        { key: 'requirements',  label: 'Requirements',  icon: ScrollText,      href: `${base}/requirements` },
+        { key: 'runs',          label: 'Runs',          icon: PlayCircle,      href: `${base}/runs` },
+        { key: 'plans',         label: 'Plans',         icon: BookOpen,        href: `${base}/plans` },
+        { key: 'milestones',    label: 'Milestones',    icon: MapPin,          href: `${base}/milestones` },
+        { key: 'reports',       label: 'Reports',       icon: BarChart2,       href: `${base}/reports` },
     ];
 
     return (

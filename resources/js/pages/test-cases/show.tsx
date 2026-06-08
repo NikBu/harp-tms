@@ -26,8 +26,8 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { index as projectsIndex } from '@/routes/projects';
 import type { Project, Suite } from '@/types';
-import { TEMPLATE_BDD, TEMPLATE_STEPS } from '@/types/test-case';
-import type { TestCase } from '@/types/test-case';
+import { TEMPLATE_BDD, TEMPLATE_CHECKLIST, TEMPLATE_STEPS } from '@/types/test-case';
+import type { LinkedRequirement, TestCase } from '@/types/test-case';
 
 const TEMPLATE_KEYS: Record<number, string> = {
     1: 'text',
@@ -44,12 +44,42 @@ const PRIORITY_KEYS: Record<number, string> = {
     4: 'low',
 };
 
+const STATUS_COLORS: Record<string, string> = {
+    approved:      'text-green-600 dark:text-green-400',
+    'under review': 'text-yellow-600 dark:text-yellow-400',
+    draft:         'text-muted-foreground',
+    obsolete:      'text-destructive',
+};
+
 function MetaRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="grid grid-cols-3 gap-2 border-b py-2 last:border-0">
             <dt className="text-sm text-muted-foreground">{label}</dt>
             <dd className="col-span-2 text-sm">{value}</dd>
         </div>
+    );
+}
+
+function RequirementBadge({ req }: { req: LinkedRequirement }) {
+    const statusColor = req.status ? (STATUS_COLORS[req.status] ?? 'text-muted-foreground') : '';
+
+    return (
+        <li className="flex items-center gap-3 px-4 py-2.5">
+            <span className="font-mono text-xs text-muted-foreground w-28 shrink-0">
+                {req.display_id}
+            </span>
+            <span className="flex-1 truncate text-sm">{req.title}</span>
+            {req.priority && (
+                <span className="text-xs capitalize text-muted-foreground shrink-0">
+                    {req.priority}
+                </span>
+            )}
+            {req.status && (
+                <span className={`text-xs capitalize shrink-0 ${statusColor}`}>
+                    {req.status}
+                </span>
+            )}
+        </li>
     );
 }
 
@@ -65,25 +95,19 @@ export default function TestCasesShow({
     const [copyOpen, setCopyOpen] = useState(false);
     const [targetSuite, setTargetSuite] = useState<string>('');
 
-    const usesSteps =
-        testCase.template === TEMPLATE_STEPS ||
-        testCase.template === TEMPLATE_BDD;
+    const usesSteps     = testCase.template === TEMPLATE_STEPS || testCase.template === TEMPLATE_BDD;
+    const usesChecklist = testCase.template === TEMPLATE_CHECKLIST;
 
     function deleteCase() {
         if (!window.confirm(t('app.common.confirm_delete'))) {
             return;
         }
-
         router.delete(destroy.url(testCase.id));
     }
 
     function submitCopy(event: React.FormEvent) {
         event.preventDefault();
-
-        if (!targetSuite) {
-            return;
-        }
-
+        if (!targetSuite) return;
         router.post(
             copy.url(testCase.id),
             { suite_id: Number(targetSuite) },
@@ -96,6 +120,8 @@ export default function TestCasesShow({
             <Head title={testCase.title} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
+
+                {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                     <h1 className="text-2xl font-semibold">{testCase.title}</h1>
                     <div className="flex shrink-0 items-center gap-2">
@@ -105,10 +131,7 @@ export default function TestCasesShow({
                                 {t('app.common.edit')}
                             </Link>
                         </Button>
-                        <Button
-                            variant="outline"
-                            onClick={() => setCopyOpen(true)}
-                        >
+                        <Button variant="outline" onClick={() => setCopyOpen(true)}>
                             <Copy className="size-4" />
                             {t('app.common.copy')}
                         </Button>
@@ -119,6 +142,7 @@ export default function TestCasesShow({
                     </div>
                 </div>
 
+                {/* Meta */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">
@@ -165,6 +189,7 @@ export default function TestCasesShow({
                     </CardContent>
                 </Card>
 
+                {/* Preconditions */}
                 {testCase.preconditions ? (
                     <Card>
                         <CardHeader>
@@ -180,6 +205,7 @@ export default function TestCasesShow({
                     </Card>
                 ) : null}
 
+                {/* Steps table */}
                 {usesSteps ? (
                     <Card>
                         <CardHeader>
@@ -191,42 +217,63 @@ export default function TestCasesShow({
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b text-left text-muted-foreground">
-                                        <th className="w-12 px-4 py-2 font-medium">
-                                            #
-                                        </th>
+                                        <th className="w-12 px-4 py-2 font-medium">#</th>
                                         <th className="px-4 py-2 font-medium">
                                             {t('app.test_cases.fields.action')}
                                         </th>
                                         <th className="px-4 py-2 font-medium">
-                                            {t(
-                                                'app.test_cases.fields.expected',
-                                            )}
+                                            {t('app.test_cases.fields.expected')}
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {(testCase.steps ?? []).map(
-                                        (step, index) => (
-                                            <tr
-                                                key={step.id}
-                                                className="border-b last:border-0 align-top"
-                                            >
-                                                <td className="px-4 py-2 text-muted-foreground">
-                                                    {index + 1}
-                                                </td>
-                                                <td className="px-4 py-2 whitespace-pre-wrap">
-                                                    {step.action}
-                                                </td>
-                                                <td className="px-4 py-2 whitespace-pre-wrap">
-                                                    {step.expected ?? ''}
-                                                </td>
-                                            </tr>
-                                        ),
-                                    )}
+                                    {(testCase.steps ?? []).map((step, index) => (
+                                        <tr
+                                            key={step.id}
+                                            className="border-b last:border-0 align-top"
+                                        >
+                                            <td className="px-4 py-2 text-muted-foreground">
+                                                {index + 1}
+                                            </td>
+                                            <td className="px-4 py-2 whitespace-pre-wrap">
+                                                {step.action}
+                                            </td>
+                                            <td className="px-4 py-2 whitespace-pre-wrap">
+                                                {step.expected ?? ''}
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </CardContent>
                     </Card>
+
+                ) : usesChecklist && testCase.checklist_items?.length ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">
+                                {t('app.test_cases.fields.checklist')}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="flex flex-col gap-2">
+                                {testCase.checklist_items.map((item, index) => (
+                                    <li key={index} className="flex items-center gap-2 text-sm">
+                                        <span className="text-muted-foreground w-5 shrink-0">
+                                            {index + 1}.
+                                        </span>
+                                        <span>{item.label}</span>
+                                        {item.is_optional && (
+                                            <span className="text-xs text-muted-foreground ml-1">
+                                                ({t('app.common.optional')})
+                                            </span>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        </CardContent>
+                    </Card>
+
                 ) : testCase.body ? (
                     <Card>
                         <CardHeader>
@@ -241,8 +288,44 @@ export default function TestCasesShow({
                         </CardContent>
                     </Card>
                 ) : null}
+
+                {/* BDD scenario (shown alongside steps table for bdd template) */}
+                {testCase.bdd_scenario ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">
+                                {t('app.test_cases.fields.bdd_scenario')}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <pre className="text-sm whitespace-pre-wrap font-mono">
+                                {testCase.bdd_scenario}
+                            </pre>
+                        </CardContent>
+                    </Card>
+                ) : null}
+
+                {/* Linked requirements */}
+                {testCase.requirements && testCase.requirements.length > 0 ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-base">
+                                {t('app.requirements.label')}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <ul className="divide-y">
+                                {testCase.requirements.map((req) => (
+                                    <RequirementBadge key={req.id} req={req} />
+                                ))}
+                            </ul>
+                        </CardContent>
+                    </Card>
+                ) : null}
+
             </div>
 
+            {/* Copy dialog */}
             <Dialog open={copyOpen} onOpenChange={setCopyOpen}>
                 <DialogContent>
                     <form onSubmit={submitCopy} className="grid gap-4">
