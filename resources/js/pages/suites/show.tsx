@@ -1,26 +1,14 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
-    ArrowDownAZ,
-    ArrowUpAZ,
     ChevronDown,
     ChevronRight,
-    Columns3,
-    Filter,
+    GripVertical,
     Pencil,
     Plus,
-    SlidersHorizontal,
     Trash2,
-    UserPlus,
 } from 'lucide-react';
 import { useState } from 'react';
-import {
-    destroy as destroySection,
-    store as storeSection,
-    update as updateSection,
-} from '@/actions/App/Http/Controllers/SectionController';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
@@ -29,151 +17,363 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuRadioGroup,
-    DropdownMenuRadioItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Toggle } from '@/components/ui/toggle';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useTrans } from '@/hooks/use-trans';
+import { cn } from '@/lib/utils';
+import {
+    destroy as destroySection,
+    store as storeSection,
+    update as updateSection,
+} from '@/actions/App/Http/Controllers/SectionController';
+import {
+    create as createCase,
+    destroy as destroyCase,
+    edit as editCase,
+    show as showCase,
+} from '@/actions/App/Http/Controllers/TestCaseController';
 import { index as projectsIndex } from '@/routes/projects';
-import type { Project, Section, Suite } from '@/types';
 
-type SuiteWithSections = Suite & { sections: Section[] };
+interface CaseRow {
+    id: number;
+    suite_id: number;
+    section_id: number | null;
+    title: string;
+    template: number;
+    type_id: string | null;
+    priority_id: number | null;
+    estimate: string | null;
+    references: string | null;
+}
 
-type SectionDialogState =
-    | { mode: 'create'; parentId: number | null; suiteId: number; projectId: number }
-    | { mode: 'edit'; section: Section }
-    | null;
+interface SectionWithCases {
+    id: number;
+    name: string;
+    parent_id: number | null;
+    testCases: CaseRow[];
+    children: SectionWithCases[];
+}
 
-type SortField = 'section' | 'title' | 'priority' | 'type' | 'created_by';
+interface SuiteWithCases {
+    id: number;
+    project_id: number;
+    name: string;
+    description: string | null;
+    sections: SectionWithCases[];
+}
 
-type ColumnKey = 'id' | 'title' | 'priority' | 'type' | 'estimate' | 'references';
+/** A flattened section group ready to render, with its nesting depth. */
+interface SectionGroup {
+    id: number | null;
+    name: string;
+    depth: number;
+    cases: CaseRow[];
+}
 
-const SORT_FIELDS: SortField[] = ['section', 'title', 'priority', 'type', 'created_by'];
+const PRIORITY_KEYS: Record<number, string> = {
+    1: 'critical',
+    2: 'high',
+    3: 'medium',
+    4: 'low',
+};
 
-const COLUMN_KEYS: ColumnKey[] = ['id', 'title', 'priority', 'type', 'estimate', 'references'];
+const PRIORITY_CLASSES: Record<number, string> = {
+    1: 'border-transparent bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+    2: 'border-transparent bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+    3: 'border-transparent bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
+    4: 'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+};
 
-function SectionRow({
-    section,
-    depth,
-    collapsed,
-    onAddChild,
-    onEdit,
+/**
+ * Depth-first flatten of the section tree into an ordered list of groups.
+ * Each subsection keeps its nesting depth so headers can be indented.
+ */
+function flattenSections(
+    sections: SectionWithCases[],
+    depth: number,
+): SectionGroup[] {
+    const groups: SectionGroup[] = [];
+
+    for (const section of sections) {
+        groups.push({
+            id: section.id,
+            name: section.name,
+            depth,
+            cases: section.testCases ?? [],
+        });
+
+        if (section.children && section.children.length > 0) {
+            groups.push(...flattenSections(section.children, depth + 1));
+        }
+    }
+
+    return groups;
+}
+
+function PriorityBadge({ priorityId }: { priorityId: number | null }) {
+    const t = useTrans();
+
+    if (priorityId === null || !(priorityId in PRIORITY_KEYS)) {
+        return <span className="text-muted-foreground">—</span>;
+    }
+
+    return (
+        <span
+            className={cn(
+                'inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-medium',
+                PRIORITY_CLASSES[priorityId],
+            )}
+        >
+            {t(`app.test_cases.priorities.${PRIORITY_KEYS[priorityId]}`)}
+        </span>
+    );
+}
+
+function CasesTable({
+    cases,
+    suiteId,
     onDelete,
 }: {
-    section: Section;
-    depth: number;
-    collapsed: boolean;
-    onAddChild: (parentId: number) => void;
-    onEdit: (section: Section) => void;
-    onDelete: (section: Section) => void;
+    cases: CaseRow[];
+    suiteId: number;
+    onDelete: (testCase: CaseRow) => void;
 }) {
     const t = useTrans();
 
     return (
-        <>
-            <div
-                className="flex items-center justify-between gap-2 rounded-md border p-3"
-                style={{ marginLeft: `${depth * 1.5}rem` }}
+        <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+                <thead>
+                    <tr className="border-b text-left text-xs text-muted-foreground">
+                        <th className="w-8 px-2 py-2" />
+                        <th className="w-8 px-2 py-2" />
+                        <th className="w-20 px-3 py-2 font-medium">ID</th>
+                        <th className="px-3 py-2 font-medium">
+                            {t('app.test_cases.fields.title')}
+                        </th>
+                        <th className="w-28 px-3 py-2 font-medium">
+                            {t('app.test_cases.fields.priority')}
+                        </th>
+                        <th className="w-32 px-3 py-2 font-medium">
+                            {t('app.test_cases.fields.type')}
+                        </th>
+                        <th className="w-24 px-3 py-2 font-medium">
+                            {t('app.test_cases.fields.estimate')}
+                        </th>
+                        <th className="w-32 px-3 py-2 font-medium">
+                            {t('app.test_cases.fields.references')}
+                        </th>
+                        <th className="w-24 px-3 py-2 text-right font-medium" />
+                    </tr>
+                </thead>
+                <tbody>
+                    {cases.map((testCase) => (
+                        <tr
+                            key={testCase.id}
+                            className="group border-b last:border-0 hover:bg-muted/50"
+                        >
+                            <td className="px-2 py-2 align-middle">
+                                <GripVertical className="size-4 cursor-grab text-muted-foreground/40" />
+                            </td>
+                            <td className="px-2 py-2 align-middle">
+                                <Checkbox aria-label={testCase.title} />
+                            </td>
+                            <td className="px-3 py-2 align-middle">
+                                <Link
+                                    href={showCase.url(testCase.id)}
+                                    className="text-xs text-muted-foreground hover:underline"
+                                >
+                                    C{testCase.id}
+                                </Link>
+                            </td>
+                            <td className="px-3 py-2 align-middle">
+                                <Link
+                                    href={showCase.url(testCase.id)}
+                                    className="font-medium hover:underline"
+                                >
+                                    {testCase.title}
+                                </Link>
+                            </td>
+                            <td className="px-3 py-2 align-middle">
+                                <PriorityBadge
+                                    priorityId={testCase.priority_id}
+                                />
+                            </td>
+                            <td className="px-3 py-2 align-middle text-muted-foreground">
+                                {testCase.type_id ?? '—'}
+                            </td>
+                            <td className="px-3 py-2 align-middle text-muted-foreground">
+                                {testCase.estimate ?? '—'}
+                            </td>
+                            <td className="px-3 py-2 align-middle text-muted-foreground">
+                                {testCase.references ?? '—'}
+                            </td>
+                            <td className="px-3 py-2 align-middle">
+                                <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        asChild
+                                        title={t('app.common.edit')}
+                                    >
+                                        <Link href={editCase.url(testCase.id)}>
+                                            <Pencil className="size-4" />
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => onDelete(testCase)}
+                                        title={t('app.common.delete')}
+                                    >
+                                        <Trash2 className="size-4" />
+                                    </Button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            <Link
+                href={createCase.url(suiteId)}
+                className="flex items-center gap-2 border-t px-4 py-2 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             >
-                <div className="flex min-w-0 items-center gap-2">
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate text-sm font-medium">
-                        {section.name}
-                    </span>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onAddChild(section.id)}
-                        title={t('app.sections.add_subsection')}
-                    >
-                        <Plus className="size-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEdit(section)}
-                        title={t('app.sections.edit')}
-                    >
-                        <Pencil className="size-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onDelete(section)}
-                        title={t('app.common.delete')}
-                    >
-                        <Trash2 className="size-4" />
-                    </Button>
-                </div>
-            </div>
-
-            {!collapsed &&
-                (section.children ?? []).map((child) => (
-                    <SectionRow
-                        key={child.id}
-                        section={child}
-                        depth={depth + 1}
-                        collapsed={collapsed}
-                        onAddChild={onAddChild}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
-                    />
-                ))}
-        </>
+                <Plus className="size-4" />
+                {t('app.test_cases.add')}
+            </Link>
+        </div>
     );
 }
 
-export default function SuitesShow({
-    project,
-    suite,
+function SectionGroupBlock({
+    group,
+    suiteId,
+    expanded,
+    onToggle,
+    onEditSection,
+    onDeleteSection,
+    onDeleteCase,
 }: {
-    project: Project;
-    suite: SuiteWithSections;
+    group: SectionGroup;
+    suiteId: number;
+    expanded: boolean;
+    onToggle: () => void;
+    onEditSection: (group: SectionGroup) => void;
+    onDeleteSection: (group: SectionGroup) => void;
+    onDeleteCase: (testCase: CaseRow) => void;
 }) {
     const t = useTrans();
+    const ChevronIcon = expanded ? ChevronDown : ChevronRight;
+
+    return (
+        <div className="rounded-md border">
+            <div
+                className="group flex items-center gap-2 border-b bg-muted/40 px-2 py-2"
+                style={{ paddingLeft: `${0.5 + group.depth * 1.25}rem` }}
+            >
+                <button
+                    type="button"
+                    onClick={onToggle}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                >
+                    <ChevronIcon className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="truncate text-sm font-semibold">
+                        {group.name}
+                    </span>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                        {group.cases.length}
+                    </span>
+                </button>
+
+                {group.id !== null ? (
+                    <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onEditSection(group)}
+                            title={t('app.sections.edit')}
+                        >
+                            <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onDeleteSection(group)}
+                            title={t('app.common.delete')}
+                        >
+                            <Trash2 className="size-4" />
+                        </Button>
+                    </div>
+                ) : null}
+            </div>
+
+            {expanded ? (
+                <CasesTable
+                    cases={group.cases}
+                    suiteId={suiteId}
+                    onDelete={onDeleteCase}
+                />
+            ) : null}
+        </div>
+    );
+}
+
+type SectionDialogState =
+    | { mode: 'create'; parentId: number | null }
+    | { mode: 'edit'; sectionId: number }
+    | null;
+
+export default function SuitesShow({
+    suite,
+    unsectioned_cases,
+}: {
+    suite: SuiteWithCases;
+    unsectioned_cases: CaseRow[];
+}) {
+    const t = useTrans();
+
+    const sectionGroups = flattenSections(suite.sections, 0);
+
+    const groups: SectionGroup[] = [
+        {
+            id: null,
+            name: t('app.test_cases.unsectioned'),
+            depth: 0,
+            cases: unsectioned_cases,
+        },
+        ...sectionGroups,
+    ];
+
+    const [collapsed, setCollapsed] = useState<Set<number | null>>(new Set());
     const [dialog, setDialog] = useState<SectionDialogState>(null);
     const [name, setName] = useState('');
 
-    // ── Toolbar state (frontend-only) ──────────────────────────────────────
-    const [sortField, setSortField] = useState<SortField>('section');
-    const [sortAsc, setSortAsc] = useState(true);
-    const [collapsed, setCollapsed] = useState(false);
-    const [showDeleted, setShowDeleted] = useState(false);
-    const [columns, setColumns] = useState<Record<ColumnKey, boolean>>({
-        id: true,
-        title: true,
-        priority: true,
-        type: true,
-        estimate: false,
-        references: false,
-    });
-    const [selected] = useState<number[]>([]);
+    function toggle(id: number | null) {
+        setCollapsed((prev) => {
+            const next = new Set(prev);
 
-    function openCreate(parentId: number | null) {
-        setName('');
-        setDialog({ mode: 'create', parentId, suiteId: suite.id, projectId: suite.project_id });
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+
+            return next;
+        });
     }
 
-    function openEdit(section: Section) {
-        setName(section.name);
-        setDialog({ mode: 'edit', section });
+    function openCreateSection(parentId: number | null) {
+        setName('');
+        setDialog({ mode: 'create', parentId });
+    }
+
+    function openEditSection(group: SectionGroup) {
+        if (group.id === null) {
+            return;
+        }
+
+        setName(group.name);
+        setDialog({ mode: 'edit', sectionId: group.id });
     }
 
     function closeDialog() {
@@ -189,37 +389,47 @@ export default function SuitesShow({
 
         if (dialog.mode === 'create') {
             router.post(
-                storeSection.url({ project: dialog.projectId, suite: dialog.suiteId }),
+                storeSection.url({
+                    project: suite.project_id,
+                    suite: suite.id,
+                }),
                 { name, parent_id: dialog.parentId },
                 { onSuccess: closeDialog, preserveScroll: true },
             );
         } else {
             router.patch(
-                updateSection.url(dialog.section.id),
+                updateSection.url(dialog.sectionId),
                 { name },
                 { onSuccess: closeDialog, preserveScroll: true },
             );
         }
     }
 
-    function deleteSection(section: Section) {
+    function deleteSection(group: SectionGroup) {
+        if (group.id === null) {
+            return;
+        }
+
         if (!window.confirm(t('app.common.confirm_delete'))) {
             return;
         }
 
-        router.delete(destroySection.url(section.id), {
-            preserveScroll: true,
-        });
+        router.delete(destroySection.url(group.id), { preserveScroll: true });
     }
 
-    const createCaseHref = `/suites/${suite.id}/cases/create`;
-    const addSectionHref = `/suites/${suite.id}?action=add_section`;
+    function deleteCase(testCase: CaseRow) {
+        if (!window.confirm(t('app.common.confirm_delete'))) {
+            return;
+        }
+
+        router.delete(destroyCase.url(testCase.id), { preserveScroll: true });
+    }
 
     return (
         <>
             <Head title={suite.name} />
 
-            <div className="flex h-full flex-1 flex-col gap-6 p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <div className="flex items-center justify-between gap-2">
                     <div className="grid gap-1">
                         <h1 className="text-2xl font-semibold">{suite.name}</h1>
@@ -229,224 +439,37 @@ export default function SuitesShow({
                             </p>
                         ) : null}
                     </div>
-                </div>
-
-                {/* ── Toolbar ──────────────────────────────────────────── */}
-                <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2">
-                    {/* Left controls */}
-                    <div className="flex flex-wrap items-center gap-1">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="gap-1.5">
-                                    <SlidersHorizontal className="size-3.5" />
-                                    {t('app.common.sort')}: {t(`app.cases.sort.${sortField}`)}
-                                    <ChevronDown className="size-3 opacity-60" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                                <DropdownMenuLabel>{t('app.common.sort')}</DropdownMenuLabel>
-                                <DropdownMenuRadioGroup
-                                    value={sortField}
-                                    onValueChange={(v) => setSortField(v as SortField)}
-                                >
-                                    {SORT_FIELDS.map((f) => (
-                                        <DropdownMenuRadioItem key={f} value={f}>
-                                            {t(`app.cases.sort.${f}`)}
-                                        </DropdownMenuRadioItem>
-                                    ))}
-                                </DropdownMenuRadioGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
+                    <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
-                            size="icon"
-                            className="size-8"
-                            onClick={() => setSortAsc((v) => !v)}
-                            title={sortAsc ? t('app.cases.sort_asc') : t('app.cases.sort_desc')}
+                            onClick={() => openCreateSection(null)}
                         >
-                            {sortAsc ? (
-                                <ArrowUpAZ className="size-4" />
-                            ) : (
-                                <ArrowDownAZ className="size-4" />
-                            )}
+                            <Plus className="size-4" />
+                            {t('app.sections.add')}
                         </Button>
-
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="outline" size="sm" className="gap-1.5">
-                                    <Filter className="size-3.5" />
-                                    {t('app.common.filter')}: {t('app.common.none')}
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>{t('app.cases.filters_soon')}</TooltipContent>
-                        </Tooltip>
-
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setCollapsed((v) => !v)}
-                        >
-                            {collapsed ? t('app.common.expand_all') : t('app.common.collapse_all')}
-                        </Button>
-
-                        <Toggle
-                            size="sm"
-                            pressed={showDeleted}
-                            onPressedChange={setShowDeleted}
-                            className="gap-1.5 text-xs"
-                        >
-                            {t('app.cases.display_deleted')}
-                        </Toggle>
-                        {showDeleted && (
-                            <Badge variant="secondary" className="text-xs">
-                                {t('app.cases.deleted_shown')}
-                            </Badge>
-                        )}
-                    </div>
-
-                    {/* Right controls */}
-                    <div className="ml-auto flex flex-wrap items-center gap-1">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button size="sm" className="gap-1.5">
-                                    <Plus className="size-3.5" />
-                                    {t('app.cases.add_case')}
-                                    <ChevronDown className="size-3 opacity-70" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                    <Link href={createCaseHref}>
-                                        {t('app.test_cases.create')}
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem asChild>
-                                    <Link href={addSectionHref}>
-                                        {t('app.sections.add')}
-                                    </Link>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="gap-1.5">
-                                    <UserPlus className="size-3.5" />
-                                    {t('app.common.assign_to')}
-                                    <ChevronDown className="size-3 opacity-60" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem disabled>
-                                    {t('app.cases.feature_soon')}
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="gap-1.5">
-                                    <Pencil className="size-3.5" />
-                                    {t('app.common.edit')}
-                                    <ChevronDown className="size-3 opacity-60" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem disabled={selected.length === 0}>
-                                    {t('app.cases.edit_selected')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                    {t('app.cases.edit_all')}
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5"
-                            disabled={selected.length === 0}
-                        >
-                            <Trash2 className="size-3.5" />
-                            {t('app.common.delete')}
-                            {selected.length > 0 && ` (${selected.length})`}
-                        </Button>
-
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="gap-1.5">
-                                    <Columns3 className="size-3.5" />
-                                    {t('app.common.columns')}
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>{t('app.common.columns')}</DropdownMenuLabel>
-                                {COLUMN_KEYS.map((col) => (
-                                    <DropdownMenuCheckboxItem
-                                        key={col}
-                                        checked={columns[col]}
-                                        onCheckedChange={(checked) =>
-                                            setColumns((prev) => ({ ...prev, [col]: !!checked }))
-                                        }
-                                    >
-                                        {t(`app.cases.columns.${col}`)}
-                                    </DropdownMenuCheckboxItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
-
-                <Card>
-                    <CardContent className="grid gap-2">
-                        <h2 className="text-lg font-medium">
-                            {t('app.sections.title')}
-                        </h2>
-
-                        {suite.sections.length === 0 ? (
-                            <p className="py-4 text-sm text-muted-foreground">
-                                {t('app.sections.empty')}
-                            </p>
-                        ) : (
-                            <div className="grid gap-2">
-                                {suite.sections.map((section) => (
-                                    <SectionRow
-                                        key={section.id}
-                                        section={section}
-                                        depth={0}
-                                        collapsed={collapsed}
-                                        onAddChild={openCreate}
-                                        onEdit={openEdit}
-                                        onDelete={deleteSection}
-                                    />
-                                ))}
-                            </div>
-                        )}
-
-                        <div className="pt-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => openCreate(null)}
-                            >
+                        <Button asChild>
+                            <Link href={createCase.url(suite.id)}>
                                 <Plus className="size-4" />
-                                {t('app.sections.add')}
-                            </Button>
-                        </div>
+                                {t('app.test_cases.add')}
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
 
-                        {/* Visible columns indicator (frontend column toggles) */}
-                        <div className="flex flex-wrap items-center gap-1 pt-1 text-xs text-muted-foreground">
-                            <Checkbox checked disabled className="invisible size-0" />
-                            <span>{t('app.common.columns')}:</span>
-                            {COLUMN_KEYS.filter((c) => columns[c]).map((c) => (
-                                <Badge key={c} variant="outline" className="text-xs">
-                                    {t(`app.cases.columns.${c}`)}
-                                </Badge>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
+                <div className="grid gap-3">
+                    {groups.map((group) => (
+                        <SectionGroupBlock
+                            key={group.id === null ? 'unsectioned' : group.id}
+                            group={group}
+                            suiteId={suite.id}
+                            expanded={!collapsed.has(group.id)}
+                            onToggle={() => toggle(group.id)}
+                            onEditSection={openEditSection}
+                            onDeleteSection={deleteSection}
+                            onDeleteCase={deleteCase}
+                        />
+                    ))}
+                </div>
             </div>
 
             <Dialog
@@ -487,7 +510,9 @@ export default function SuitesShow({
                             >
                                 {t('app.common.cancel')}
                             </Button>
-                            <Button type="submit">{t('app.common.save')}</Button>
+                            <Button type="submit">
+                                {t('app.common.save')}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -497,7 +522,5 @@ export default function SuitesShow({
 }
 
 SuitesShow.layout = {
-    breadcrumbs: [
-        { title: 'Projects', href: projectsIndex() },
-    ],
+    breadcrumbs: [{ title: 'Projects', href: projectsIndex() }],
 };

@@ -6,8 +6,6 @@ import {
     Search,
     ShieldCheck,
 } from 'lucide-react';
-import AppLogo from '@/components/app-logo';
-import AppLogoIcon from '@/components/app-logo-icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +15,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -88,7 +87,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const addItems = useAddItems(currentUrl, t, project?.id);
 
     return (
-        <div className="border-b border-sidebar-border/80 bg-background">
+        <div className="sticky top-0 z-50 border-b border-sidebar-border/80 bg-background/80 backdrop-blur-sm">
             <div className="mx-auto flex h-12 items-center gap-3 px-4">
 
                 {/* ── Mobile menu trigger ───────────────────────── */}
@@ -104,7 +103,8 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             <SheetTitle className="sr-only">{t('app.navigation.main')}</SheetTitle>
                             <SheetHeader className="flex h-12 items-center border-b border-sidebar-border px-4">
                                 <Link href={dashboard()}>
-                                    <AppLogoIcon className="h-6 w-6 fill-current" />
+                                    <img src="/logo-main.png" alt="HARP TMS" className="h-7 w-auto object-contain dark:hidden" />
+                                    <img src="/logo-main.png" alt="HARP TMS" className="hidden h-7 w-auto object-contain invert dark:block" />
                                 </Link>
                             </SheetHeader>
                             <nav className="flex flex-col gap-1 p-3 text-sm">
@@ -138,7 +138,10 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
                 {/* ── Logo ─────────────────────────────────────── */}
                 <Link href={dashboard()} className="flex shrink-0 items-center" prefetch>
-                    <AppLogo />
+                    {/* Light mode logo */}
+                    <img src="/logo-main.png" alt="HARP TMS" className="h-10 w-auto object-contain dark:hidden" />
+                    {/* Dark mode logo — replace /logo-dark.png with actual asset when ready */}
+                    <img src="/logo-main.png" alt="HARP TMS" className="hidden h-10 w-auto object-contain invert dark:block" />
                 </Link>
 
                 {/* ── Context-aware center section ─────────────── */}
@@ -169,7 +172,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </nav>
                 )}
 
-                {/* ── Right side ───────────────────────────────── */}
+                {/* ── Right side ───────────────────────────────��─ */}
                 <div className="ml-auto flex items-center gap-2">
 
                     {/* + Add dropdown — only inside a project and for permitted roles */}
@@ -197,6 +200,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         <Search className="h-4 w-4 opacity-70" />
                         <span className="sr-only">{t('app.common.search')}</span>
                     </Button>
+
+                    {/* Theme toggle */}
+                    <ThemeToggle />
 
                     {/* Administration button — site admins only, not already in admin */}
                     {isSiteAdmin && !isInAdmin && (
