@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\Section;
 use App\Models\Suite;
+use App\Models\TestCase;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +15,33 @@ use Inertia\Response;
 
 class SuiteController extends Controller
 {
+    /**
+     * Maximum section nesting depth to eager-load for the cases view.
+     */
+    private const MAX_SECTION_DEPTH = 10;
+
+    /**
+     * Integer → template-name contract shared with the frontend.
+     *
+     * @var array<int, string>
+     */
+    private const TEMPLATE_MAP = [
+        1 => 'text',
+        2 => 'steps',
+        3 => 'exploratory',
+        4 => 'bdd',
+        5 => 'checklist',
+    ];
+
+    /**
+     * @var array<int, string>
+     */
+    private const PRIORITY_MAP = [
+        1 => 'critical',
+        2 => 'high',
+        3 => 'medium',
+        4 => 'low',
+    ];
     /**
      * Display a listing of the suites for the given project.
      */
@@ -81,7 +111,7 @@ class SuiteController extends Controller
     }
 
     /**
-     * Display the specified suite with its section tree.
+     * Display the specified suite with its section tree and test cases.
      */
     public function show(Request $request, Suite $suite): Response
     {
@@ -89,36 +119,85 @@ class SuiteController extends Controller
 
         $this->authorizeProjectAccess($request, $project);
 
-        // Eager-load the full section tree with test cases at each level.
-        // sections → children → children (3 levels deep is sufficient for TMS use cases)
         $suite->load([
-            'sections' => function ($query): void {
+            'sections' => function (HasMany $query): void {
                 $query->whereNull('parent_id')
                     ->orderBy('display_order')
-                    ->with([
-                        'testCases' => fn ($q) => $q->orderBy('display_order')->orderBy('id'),
-                        'children' => fn ($q) => $q->orderBy('display_order')->with([
-                            'testCases' => fn ($q2) => $q2->orderBy('display_order')->orderBy('id'),
-                            'children' => fn ($q2) => $q2->orderBy('display_order')->with([
-                                'testCases' => fn ($q3) => $q3->orderBy('display_order')->orderBy('id'),
-                            ]),
-                        ]),
-                    ]);
+                    ->orderBy('id')
+                    ->with($this->sectionEagerLoad(self::MAX_SECTION_DEPTH));
             },
         ]);
 
-        // Cases not assigned to any section
         $unsectionedCases = $suite->testCases()
             ->whereNull('section_id')
             ->orderBy('display_order')
             ->orderBy('id')
-            ->get();
+            ->get()
+            ->map(fn (TestCase $case): array => $this->transformCase($case))
+            ->all();
+
+        $sections = $suite->sections
+            ->map(fn (Section $section): array => $this->transformSection($section))
+            ->all();
 
         return Inertia::render('suites/show', [
-            'project'          => $project,
-            'suite'            => $suite,
+            'project'           => $project,
+            'suite'             => [
+                'id'          => $suite->id,
+                'project_id'  => $suite->project_id,
+                'name'        => $suite->name,
+                'description' => $suite->description,
+                'sections'    => $sections,
+            ],
             'unsectioned_cases' => $unsectionedCases,
         ]);
+    }
+
+    /**
+     * Build a nested eager-load array for sections and their test cases,
+     * descending up to the given depth.
+     *
+     * @return array<string, callable>
+     */
+    private function sectionEagerLoad(int $depth): array
+    {
+        $orderCases = function (HasMany $query): void {
+            $query->orderBy('display_order')->orderBy('id');
+        };
+
+        if ($depth <= 0) {
+            return ['testCases' => $orderCases];
+        }
+
+        return [
+            'testCases' => $orderCases,
+            'children'  => function (HasMany $query) use ($depth): void {
+                $query->orderBy('display_order')
+                    ->orderBy('id')
+                    ->with($this->sectionEagerLoad($depth - 1));
+            },
+        ];
+    }
+
+    /**
+     * Transform a section (and its children recursively) into the array shape
+     * consumed by the suite cases view.
+     *
+     * @return array{id: int, name: string, parent_id: int|null, testCases: array<int, array<string, mixed>>, children: array<int, array<string, mixed>>}
+     */
+    private function transformSection(Section $section): array
+    {
+        return [
+            'id'        => $section->id,
+            'name'      => $section->name,
+            'parent_id' => $section->parent_id,
+            'testCases' => $section->testCases
+                ->map(fn (TestCase $case): array => $this->transformCase($case))
+                ->all(),
+            'children'  => $section->children
+                ->map(fn (Section $child): array => $this->transformSection($child))
+                ->all(),
+        ];
     }
 
     /**
@@ -199,5 +278,60 @@ class SuiteController extends Controller
             $project->members()->whereKey($user->getKey())->exists(),
             403
         );
+    }
+
+    /**
+     * Transform a test case into the array shape consumed by the cases view.
+     *
+     * Mirrors the contract produced by TestCaseController so the frontend
+     * `TestCase` type is shared across views.
+     *
+     * @return array<string, mixed>
+     */
+    private function transformCase(TestCase $testCase): array
+    {
+        $templateInt = array_search($testCase->template, self::TEMPLATE_MAP, true);
+        $priorityInt = array_search($testCase->priority, self::PRIORITY_MAP, true);
+
+        return [
+            'id'          => $testCase->id,
+            'suite_id'    => $testCase->suite_id,
+            'section_id'  => $testCase->section_id,
+            'title'       => $testCase->title,
+            'template'    => $templateInt === false ? 2 : $templateInt,
+            'type_id'     => $testCase->case_type,
+            'priority_id' => $priorityInt === false ? null : $priorityInt,
+            'estimate'    => $testCase->estimate !== null
+                ? self::formatEstimate($testCase->estimate)
+                : null,
+            'references'  => $testCase->refs,
+        ];
+    }
+
+    /**
+     * Format an estimate (in seconds) into a human-readable string.
+     */
+    private static function formatEstimate(int $seconds): string
+    {
+        if ($seconds <= 0) {
+            return '0';
+        }
+
+        $h = intdiv($seconds, 3600);
+        $m = intdiv($seconds % 3600, 60);
+        $s = $seconds % 60;
+
+        $parts = [];
+        if ($h > 0) {
+            $parts[] = "{$h}h";
+        }
+        if ($m > 0) {
+            $parts[] = "{$m}m";
+        }
+        if ($s > 0) {
+            $parts[] = "{$s}s";
+        }
+
+        return implode(' ', $parts);
     }
 }

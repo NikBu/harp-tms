@@ -138,12 +138,21 @@ return [
         'deleted' => 'Test case deleted successfully.',
         'copied' => 'Test case copied successfully.',
         'empty' => 'No test cases yet.',
+        'add' => 'Add Case',
+        'unsectioned' => 'Test Cases',
+        'count' => ':count cases',
         'templates' => [
             'text' => 'Text',
             'steps' => 'Steps',
             'exploratory' => 'Exploratory',
             'bdd' => 'BDD',
             'checklist' => 'Checklist',
+        ],
+        'priorities' => [
+            'critical' => 'Critical',
+            'high' => 'High',
+            'medium' => 'Medium',
+            'low' => 'Low',
         ],
         'fields' => [
             'title' => 'Title',
