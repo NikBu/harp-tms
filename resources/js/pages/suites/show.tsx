@@ -1,26 +1,17 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
+    ArrowDownUp,
     ChevronDown,
     ChevronRight,
-    GripVertical,
+    Columns3,
+    Filter,
     Pencil,
     Plus,
     Trash2,
+    UserPlus,
 } from 'lucide-react';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useTrans } from '@/hooks/use-trans';
-import { cn } from '@/lib/utils';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import {
     destroy as destroySection,
     store as storeSection,
@@ -29,46 +20,69 @@ import {
 import {
     create as createCase,
     destroy as destroyCase,
-    edit as editCase,
-    show as showCase,
 } from '@/actions/App/Http/Controllers/TestCaseController';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useTrans } from '@/hooks/use-trans';
 import { index as projectsIndex } from '@/routes/projects';
+import type { Section, Suite } from '@/types';
+import type { TestCase } from '@/types/test-case';
 
-interface CaseRow {
-    id: number;
-    suite_id: number;
-    section_id: number | null;
-    title: string;
-    template: number;
-    type_id: string | null;
-    priority_id: number | null;
-    estimate: string | null;
-    references: string | null;
-}
+/**
+ * The suite/show endpoint loads sections with their `children`. When the
+ * backend also eager-loads `testCases`, the toolbar operates on them; until
+ * then the case-aware controls simply work against an empty set.
+ */
+type SectionWithCases = Section & {
+    testCases?: TestCase[];
+    children?: SectionWithCases[];
+};
 
-interface SectionWithCases {
-    id: number;
-    name: string;
-    parent_id: number | null;
-    testCases: CaseRow[];
-    children: SectionWithCases[];
-}
+type SuiteWithSections = Suite & { sections: SectionWithCases[] };
 
-interface SuiteWithCases {
-    id: number;
-    project_id: number;
-    name: string;
-    description: string | null;
-    sections: SectionWithCases[];
-}
+type SectionDialogState =
+    | {
+          mode: 'create';
+          parentId: number | null;
+          suiteId: number;
+          projectId: number;
+      }
+    | { mode: 'edit'; section: Section }
+    | null;
 
-/** A flattened section group ready to render, with its nesting depth. */
-interface SectionGroup {
-    id: number | null;
-    name: string;
-    depth: number;
-    cases: CaseRow[];
-}
+type SortField = 'id' | 'title' | 'priority' | 'type' | 'estimate';
+type SortDir = 'asc' | 'desc';
+
+type ColumnKey = 'priority' | 'type' | 'estimate' | 'references';
+
+const COLUMN_KEYS: ColumnKey[] = ['priority', 'type', 'estimate', 'references'];
+
+const DEFAULT_COLUMNS: Record<ColumnKey, boolean> = {
+    priority: true,
+    type: true,
+    estimate: true,
+    references: true,
+};
 
 const PRIORITY_KEYS: Record<number, string> = {
     1: 'critical',
@@ -77,303 +91,338 @@ const PRIORITY_KEYS: Record<number, string> = {
     4: 'low',
 };
 
-const PRIORITY_CLASSES: Record<number, string> = {
-    1: 'border-transparent bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
-    2: 'border-transparent bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-    3: 'border-transparent bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
-    4: 'border-transparent bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-};
+function columnsStorageKey(suiteId: number): string {
+    return `harp_suite_columns_${suiteId}`;
+}
 
-/**
- * Depth-first flatten of the section tree into an ordered list of groups.
- * Each subsection keeps its nesting depth so headers can be indented.
- */
-function flattenSections(
-    sections: SectionWithCases[],
-    depth: number,
-): SectionGroup[] {
-    const groups: SectionGroup[] = [];
+function loadColumns(suiteId: number): Record<ColumnKey, boolean> {
+    if (typeof window === 'undefined') {
+        return { ...DEFAULT_COLUMNS };
+    }
 
-    for (const section of sections) {
-        groups.push({
-            id: section.id,
-            name: section.name,
-            depth,
-            cases: section.testCases ?? [],
-        });
+    try {
+        const raw = window.localStorage.getItem(columnsStorageKey(suiteId));
 
-        if (section.children && section.children.length > 0) {
-            groups.push(...flattenSections(section.children, depth + 1));
+        if (!raw) {
+            return { ...DEFAULT_COLUMNS };
         }
-    }
 
-    return groups;
+        const parsed = JSON.parse(raw) as Partial<Record<ColumnKey, boolean>>;
+
+        return COLUMN_KEYS.reduce(
+            (acc, key) => {
+                acc[key] =
+                    typeof parsed[key] === 'boolean'
+                        ? parsed[key]!
+                        : DEFAULT_COLUMNS[key];
+
+                return acc;
+            },
+            {} as Record<ColumnKey, boolean>,
+        );
+    } catch {
+        return { ...DEFAULT_COLUMNS };
+    }
 }
 
-function PriorityBadge({ priorityId }: { priorityId: number | null }) {
-    const t = useTrans();
-
-    if (priorityId === null || !(priorityId in PRIORITY_KEYS)) {
-        return <span className="text-muted-foreground">—</span>;
+/** Leading numeric value of an estimate string ("2h 30m" → 2); nulls sort last. */
+function estimateValue(estimate: string | null): number {
+    if (estimate === null) {
+        return Number.POSITIVE_INFINITY;
     }
 
-    return (
-        <span
-            className={cn(
-                'inline-flex w-fit items-center rounded-md border px-2 py-0.5 text-xs font-medium',
-                PRIORITY_CLASSES[priorityId],
-            )}
-        >
-            {t(`app.test_cases.priorities.${PRIORITY_KEYS[priorityId]}`)}
-        </span>
-    );
+    const match = estimate.match(/\d+/);
+
+    return match ? Number(match[0]) : Number.POSITIVE_INFINITY;
 }
 
-function CasesTable({
-    cases,
-    suiteId,
+function sortCases(
+    cases: TestCase[],
+    field: SortField,
+    dir: SortDir,
+): TestCase[] {
+    const sorted = [...cases].sort((a, b) => {
+        let comparison = 0;
+
+        switch (field) {
+            case 'id':
+                comparison = a.id - b.id;
+                break;
+            case 'title':
+                comparison = a.title.localeCompare(b.title);
+                break;
+            case 'priority':
+                comparison =
+                    (a.priority_id ?? Number.POSITIVE_INFINITY) -
+                    (b.priority_id ?? Number.POSITIVE_INFINITY);
+                break;
+            case 'type':
+                comparison = (a.type_id ?? '').localeCompare(b.type_id ?? '');
+                break;
+            case 'estimate':
+                comparison =
+                    estimateValue(a.estimate) - estimateValue(b.estimate);
+                break;
+        }
+
+        return dir === 'asc' ? comparison : -comparison;
+    });
+
+    return sorted;
+}
+
+function collectCases(sections: SectionWithCases[]): TestCase[] {
+    return sections.flatMap((section) => [
+        ...(section.testCases ?? []),
+        ...collectCases(section.children ?? []),
+    ]);
+}
+
+function SectionRow({
+    section,
+    depth,
+    collapsed,
+    sortField,
+    sortDir,
+    visibleCols,
+    selectedIds,
+    onToggleCollapse,
+    onToggleSelect,
+    onAddChild,
+    onEdit,
     onDelete,
 }: {
-    cases: CaseRow[];
-    suiteId: number;
-    onDelete: (testCase: CaseRow) => void;
+    section: SectionWithCases;
+    depth: number;
+    collapsed: Set<number>;
+    sortField: SortField;
+    sortDir: SortDir;
+    visibleCols: Record<ColumnKey, boolean>;
+    selectedIds: Set<number>;
+    onToggleCollapse: (sectionId: number) => void;
+    onToggleSelect: (id: number, checked: boolean) => void;
+    onAddChild: (parentId: number) => void;
+    onEdit: (section: Section) => void;
+    onDelete: (section: Section) => void;
 }) {
     const t = useTrans();
+    const isCollapsed = collapsed.has(section.id);
+    const cases = sortCases(section.testCases ?? [], sortField, sortDir);
 
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-                <thead>
-                    <tr className="border-b text-left text-xs text-muted-foreground">
-                        <th className="w-8 px-2 py-2" />
-                        <th className="w-8 px-2 py-2" />
-                        <th className="w-20 px-3 py-2 font-medium">ID</th>
-                        <th className="px-3 py-2 font-medium">
-                            {t('app.test_cases.fields.title')}
-                        </th>
-                        <th className="w-28 px-3 py-2 font-medium">
-                            {t('app.test_cases.fields.priority')}
-                        </th>
-                        <th className="w-32 px-3 py-2 font-medium">
-                            {t('app.test_cases.fields.type')}
-                        </th>
-                        <th className="w-24 px-3 py-2 font-medium">
-                            {t('app.test_cases.fields.estimate')}
-                        </th>
-                        <th className="w-32 px-3 py-2 font-medium">
-                            {t('app.test_cases.fields.references')}
-                        </th>
-                        <th className="w-24 px-3 py-2 text-right font-medium" />
-                    </tr>
-                </thead>
-                <tbody>
-                    {cases.map((testCase) => (
-                        <tr
-                            key={testCase.id}
-                            className="group border-b last:border-0 hover:bg-muted/50"
-                        >
-                            <td className="px-2 py-2 align-middle">
-                                <GripVertical className="size-4 cursor-grab text-muted-foreground/40" />
-                            </td>
-                            <td className="px-2 py-2 align-middle">
-                                <Checkbox aria-label={testCase.title} />
-                            </td>
-                            <td className="px-3 py-2 align-middle">
-                                <Link
-                                    href={showCase.url(testCase.id)}
-                                    className="text-xs text-muted-foreground hover:underline"
-                                >
-                                    C{testCase.id}
-                                </Link>
-                            </td>
-                            <td className="px-3 py-2 align-middle">
-                                <Link
-                                    href={showCase.url(testCase.id)}
-                                    className="font-medium hover:underline"
-                                >
-                                    {testCase.title}
-                                </Link>
-                            </td>
-                            <td className="px-3 py-2 align-middle">
-                                <PriorityBadge
-                                    priorityId={testCase.priority_id}
-                                />
-                            </td>
-                            <td className="px-3 py-2 align-middle text-muted-foreground">
-                                {testCase.type_id ?? '—'}
-                            </td>
-                            <td className="px-3 py-2 align-middle text-muted-foreground">
-                                {testCase.estimate ?? '—'}
-                            </td>
-                            <td className="px-3 py-2 align-middle text-muted-foreground">
-                                {testCase.references ?? '—'}
-                            </td>
-                            <td className="px-3 py-2 align-middle">
-                                <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        asChild
-                                        title={t('app.common.edit')}
-                                    >
-                                        <Link href={editCase.url(testCase.id)}>
-                                            <Pencil className="size-4" />
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => onDelete(testCase)}
-                                        title={t('app.common.delete')}
-                                    >
-                                        <Trash2 className="size-4" />
-                                    </Button>
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-            <Link
-                href={createCase.url(suiteId)}
-                className="flex items-center gap-2 border-t px-4 py-2 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-            >
-                <Plus className="size-4" />
-                {t('app.test_cases.add')}
-            </Link>
-        </div>
-    );
-}
-
-function SectionGroupBlock({
-    group,
-    suiteId,
-    expanded,
-    onToggle,
-    onEditSection,
-    onDeleteSection,
-    onDeleteCase,
-}: {
-    group: SectionGroup;
-    suiteId: number;
-    expanded: boolean;
-    onToggle: () => void;
-    onEditSection: (group: SectionGroup) => void;
-    onDeleteSection: (group: SectionGroup) => void;
-    onDeleteCase: (testCase: CaseRow) => void;
-}) {
-    const t = useTrans();
-    const ChevronIcon = expanded ? ChevronDown : ChevronRight;
-
-    return (
-        <div className="rounded-md border">
+        <>
             <div
-                className="group flex items-center gap-2 border-b bg-muted/40 px-2 py-2"
-                style={{ paddingLeft: `${0.5 + group.depth * 1.25}rem` }}
+                className="flex items-center justify-between gap-2 rounded-md border p-3"
+                style={{ marginLeft: `${depth * 1.5}rem` }}
             >
                 <button
                     type="button"
-                    onClick={onToggle}
-                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    className="flex min-w-0 items-center gap-2 text-left"
+                    onClick={() => onToggleCollapse(section.id)}
                 >
-                    <ChevronIcon className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate text-sm font-semibold">
-                        {group.name}
-                    </span>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        {group.cases.length}
+                    <ChevronRight
+                        className={`size-4 shrink-0 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+                    />
+                    <span className="truncate text-sm font-medium">
+                        {section.name}
                     </span>
                 </button>
-
-                {group.id !== null ? (
-                    <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onEditSection(group)}
-                            title={t('app.sections.edit')}
-                        >
-                            <Pencil className="size-4" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => onDeleteSection(group)}
-                            title={t('app.common.delete')}
-                        >
-                            <Trash2 className="size-4" />
-                        </Button>
-                    </div>
-                ) : null}
+                <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onAddChild(section.id)}
+                        title={t('app.sections.add_subsection')}
+                    >
+                        <Plus className="size-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onEdit(section)}
+                        title={t('app.sections.edit')}
+                    >
+                        <Pencil className="size-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onDelete(section)}
+                        title={t('app.common.delete')}
+                    >
+                        <Trash2 className="size-4" />
+                    </Button>
+                </div>
             </div>
 
-            {expanded ? (
-                <CasesTable
-                    cases={group.cases}
-                    suiteId={suiteId}
-                    onDelete={onDeleteCase}
-                />
+            {!isCollapsed && cases.length > 0 ? (
+                <div
+                    className="overflow-x-auto rounded-md border"
+                    style={{ marginLeft: `${(depth + 1) * 1.5}rem` }}
+                >
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b text-left text-muted-foreground">
+                                <th className="w-10 px-3 py-2" />
+                                <th className="px-3 py-2 font-medium">
+                                    {t('app.test_cases.fields.title')}
+                                </th>
+                                {visibleCols.priority ? (
+                                    <th className="px-3 py-2 font-medium">
+                                        {t('app.test_cases.fields.priority')}
+                                    </th>
+                                ) : null}
+                                {visibleCols.type ? (
+                                    <th className="px-3 py-2 font-medium">
+                                        {t('app.test_cases.fields.type')}
+                                    </th>
+                                ) : null}
+                                {visibleCols.estimate ? (
+                                    <th className="px-3 py-2 font-medium">
+                                        {t('app.test_cases.fields.estimate')}
+                                    </th>
+                                ) : null}
+                                {visibleCols.references ? (
+                                    <th className="px-3 py-2 font-medium">
+                                        {t('app.test_cases.fields.references')}
+                                    </th>
+                                ) : null}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {cases.map((testCase) => (
+                                <tr
+                                    key={testCase.id}
+                                    className="border-b last:border-0 hover:bg-muted/50"
+                                >
+                                    <td className="px-3 py-2">
+                                        <Checkbox
+                                            checked={selectedIds.has(
+                                                testCase.id,
+                                            )}
+                                            onCheckedChange={(checked) =>
+                                                onToggleSelect(
+                                                    testCase.id,
+                                                    checked === true,
+                                                )
+                                            }
+                                            aria-label={testCase.title}
+                                        />
+                                    </td>
+                                    <td className="px-3 py-2 font-medium">
+                                        {testCase.title}
+                                    </td>
+                                    {visibleCols.priority ? (
+                                        <td className="px-3 py-2">
+                                            {testCase.priority_id ? (
+                                                <Badge variant="outline">
+                                                    {
+                                                        PRIORITY_KEYS[
+                                                            testCase.priority_id
+                                                        ]
+                                                    }
+                                                </Badge>
+                                            ) : (
+                                                <span className="text-muted-foreground">
+                                                    —
+                                                </span>
+                                            )}
+                                        </td>
+                                    ) : null}
+                                    {visibleCols.type ? (
+                                        <td className="px-3 py-2 text-muted-foreground">
+                                            {testCase.type_id ?? '—'}
+                                        </td>
+                                    ) : null}
+                                    {visibleCols.estimate ? (
+                                        <td className="px-3 py-2 text-muted-foreground">
+                                            {testCase.estimate ?? '—'}
+                                        </td>
+                                    ) : null}
+                                    {visibleCols.references ? (
+                                        <td className="px-3 py-2 text-muted-foreground">
+                                            {testCase.references ?? '—'}
+                                        </td>
+                                    ) : null}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             ) : null}
-        </div>
+
+            {!isCollapsed
+                ? (section.children ?? []).map((child) => (
+                      <SectionRow
+                          key={child.id}
+                          section={child}
+                          depth={depth + 1}
+                          collapsed={collapsed}
+                          sortField={sortField}
+                          sortDir={sortDir}
+                          visibleCols={visibleCols}
+                          selectedIds={selectedIds}
+                          onToggleCollapse={onToggleCollapse}
+                          onToggleSelect={onToggleSelect}
+                          onAddChild={onAddChild}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
+                      />
+                  ))
+                : null}
+        </>
     );
 }
 
-type SectionDialogState =
-    | { mode: 'create'; parentId: number | null }
-    | { mode: 'edit'; sectionId: number }
-    | null;
-
-export default function SuitesShow({
-    suite,
-    unsectioned_cases,
-}: {
-    suite: SuiteWithCases;
-    unsectioned_cases: CaseRow[];
-}) {
+export default function SuitesShow({ suite }: { suite: SuiteWithSections }) {
     const t = useTrans();
-
-    const sectionGroups = flattenSections(suite.sections, 0);
-
-    const groups: SectionGroup[] = [
-        {
-            id: null,
-            name: t('app.test_cases.unsectioned'),
-            depth: 0,
-            cases: unsectioned_cases,
-        },
-        ...sectionGroups,
-    ];
-
-    const [collapsed, setCollapsed] = useState<Set<number | null>>(new Set());
     const [dialog, setDialog] = useState<SectionDialogState>(null);
     const [name, setName] = useState('');
 
-    function toggle(id: number | null) {
-        setCollapsed((prev) => {
-            const next = new Set(prev);
+    const [sortField, setSortField] = useState<SortField>('id');
+    const [sortDir, setSortDir] = useState<SortDir>('asc');
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+    const [visibleCols, setVisibleCols] = useState<Record<ColumnKey, boolean>>(
+        () => loadColumns(suite.id),
+    );
 
-            if (next.has(id)) {
-                next.delete(id);
-            } else {
-                next.add(id);
-            }
+    const allCases = useMemo(
+        () => collectCases(suite.sections),
+        [suite.sections],
+    );
 
-            return next;
-        });
+    function allSectionIds(sections: SectionWithCases[]): number[] {
+        return sections.flatMap((section) => [
+            section.id,
+            ...allSectionIds(section.children ?? []),
+        ]);
     }
 
-    function openCreateSection(parentId: number | null) {
-        setName('');
-        setDialog({ mode: 'create', parentId });
-    }
-
-    function openEditSection(group: SectionGroup) {
-        if (group.id === null) {
+    useEffect(() => {
+        if (typeof window === 'undefined') {
             return;
         }
 
-        setName(group.name);
-        setDialog({ mode: 'edit', sectionId: group.id });
+        window.localStorage.setItem(
+            columnsStorageKey(suite.id),
+            JSON.stringify(visibleCols),
+        );
+    }, [suite.id, visibleCols]);
+
+    function openCreate(parentId: number | null) {
+        setName('');
+        setDialog({
+            mode: 'create',
+            parentId,
+            suiteId: suite.id,
+            projectId: suite.project_id,
+        });
+    }
+
+    function openEdit(section: Section) {
+        setName(section.name);
+        setDialog({ mode: 'edit', section });
     }
 
     function closeDialog() {
@@ -390,39 +439,112 @@ export default function SuitesShow({
         if (dialog.mode === 'create') {
             router.post(
                 storeSection.url({
-                    project: suite.project_id,
-                    suite: suite.id,
+                    project: dialog.projectId,
+                    suite: dialog.suiteId,
                 }),
                 { name, parent_id: dialog.parentId },
                 { onSuccess: closeDialog, preserveScroll: true },
             );
         } else {
             router.patch(
-                updateSection.url(dialog.sectionId),
+                updateSection.url(dialog.section.id),
                 { name },
                 { onSuccess: closeDialog, preserveScroll: true },
             );
         }
     }
 
-    function deleteSection(group: SectionGroup) {
-        if (group.id === null) {
-            return;
-        }
-
+    function deleteSection(section: Section) {
         if (!window.confirm(t('app.common.confirm_delete'))) {
             return;
         }
 
-        router.delete(destroySection.url(group.id), { preserveScroll: true });
+        router.delete(destroySection.url(section.id), {
+            preserveScroll: true,
+        });
     }
 
-    function deleteCase(testCase: CaseRow) {
-        if (!window.confirm(t('app.common.confirm_delete'))) {
+    function toggleCollapse(sectionId: number) {
+        setCollapsed((current) => {
+            const next = new Set(current);
+
+            if (next.has(sectionId)) {
+                next.delete(sectionId);
+            } else {
+                next.add(sectionId);
+            }
+
+            return next;
+        });
+    }
+
+    const allCollapsed =
+        suite.sections.length > 0 &&
+        allSectionIds(suite.sections).every((id) => collapsed.has(id));
+
+    function toggleCollapseAll() {
+        if (allCollapsed) {
+            setCollapsed(new Set());
+        } else {
+            setCollapsed(new Set(allSectionIds(suite.sections)));
+        }
+    }
+
+    function toggleSelect(id: number, checked: boolean) {
+        setSelectedIds((current) => {
+            const next = new Set(current);
+
+            if (checked) {
+                next.add(id);
+            } else {
+                next.delete(id);
+            }
+
+            return next;
+        });
+    }
+
+    const allSelected =
+        allCases.length > 0 && allCases.every((c) => selectedIds.has(c.id));
+
+    function toggleSelectAll(checked: boolean) {
+        setSelectedIds(
+            checked ? new Set(allCases.map((c) => c.id)) : new Set(),
+        );
+    }
+
+    function editSelected() {
+        if (selectedIds.size === 0) {
+            toast.info(t('app.test_cases.toolbar.select_cases_first'));
+
             return;
         }
 
-        router.delete(destroyCase.url(testCase.id), { preserveScroll: true });
+        toast.info(t('app.test_cases.toolbar.bulk_edit_not_implemented'));
+    }
+
+    function deleteSelected() {
+        if (selectedIds.size === 0) {
+            toast.info(t('app.test_cases.toolbar.select_cases_first'));
+
+            return;
+        }
+
+        if (
+            !window.confirm(
+                t('app.test_cases.toolbar.delete_confirm', {
+                    count: String(selectedIds.size),
+                }),
+            )
+        ) {
+            return;
+        }
+
+        selectedIds.forEach((id) => {
+            router.delete(destroyCase.url(id), { preserveScroll: true });
+        });
+
+        setSelectedIds(new Set());
     }
 
     return (
@@ -430,46 +552,254 @@ export default function SuitesShow({
             <Head title={suite.name} />
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                <div className="flex items-center justify-between gap-2">
-                    <div className="grid gap-1">
-                        <h1 className="text-2xl font-semibold">{suite.name}</h1>
-                        {suite.description ? (
-                            <p className="text-sm text-muted-foreground">
-                                {suite.description}
-                            </p>
-                        ) : null}
-                    </div>
-                    <div className="flex items-center gap-2">
+                <div className="grid gap-1">
+                    <h1 className="text-2xl font-semibold">{suite.name}</h1>
+                    {suite.description ? (
+                        <p className="text-sm text-muted-foreground">
+                            {suite.description}
+                        </p>
+                    ) : null}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1 border-b pb-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <ArrowDownUp className="size-4" />
+                                {t('app.test_cases.toolbar.sort_by')}
+                                <ChevronDown className="size-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                            <DropdownMenuCheckboxItem
+                                checked={sortField === 'id'}
+                                onCheckedChange={() => setSortField('id')}
+                            >
+                                {t('app.test_cases.toolbar.sort_id')}
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                                checked={sortField === 'title'}
+                                onCheckedChange={() => setSortField('title')}
+                            >
+                                {t('app.test_cases.toolbar.sort_title')}
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                                checked={sortField === 'priority'}
+                                onCheckedChange={() => setSortField('priority')}
+                            >
+                                {t('app.test_cases.toolbar.sort_priority')}
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                                checked={sortField === 'type'}
+                                onCheckedChange={() => setSortField('type')}
+                            >
+                                {t('app.test_cases.toolbar.sort_type')}
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                                checked={sortField === 'estimate'}
+                                onCheckedChange={() => setSortField('estimate')}
+                            >
+                                {t('app.test_cases.toolbar.sort_estimate')}
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuCheckboxItem
+                                checked={sortDir === 'asc'}
+                                onCheckedChange={() => setSortDir('asc')}
+                            >
+                                A → Z
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem
+                                checked={sortDir === 'desc'}
+                                onCheckedChange={() => setSortDir('desc')}
+                            >
+                                Z → A
+                            </DropdownMenuCheckboxItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <Filter className="size-4" />
+                                {t('app.test_cases.toolbar.filter')}
+                                <ChevronDown className="size-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                            <DropdownMenuLabel>
+                                {t('app.test_cases.toolbar.no_filters')}
+                            </DropdownMenuLabel>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleCollapseAll}
+                    >
+                        {allCollapsed
+                            ? t('app.test_cases.toolbar.expand_all')
+                            : t('app.test_cases.toolbar.collapse_all')}
+                    </Button>
+
+                    <div className="ml-auto flex flex-wrap items-center gap-1">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <Plus className="size-4" />
+                                    {t('app.test_cases.toolbar.add_case')}
+                                    <ChevronDown className="size-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild>
+                                    <Link href={createCase.url(suite.id)}>
+                                        {t('app.test_cases.toolbar.add_case')}
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    onSelect={() => openCreate(null)}
+                                >
+                                    {t('app.test_cases.toolbar.add_section')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onSelect={() => openCreate(null)}
+                                >
+                                    {t('app.test_cases.toolbar.add_subsection')}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <UserPlus className="size-4" />
+                                    {t('app.test_cases.toolbar.assign_to')}
+                                    <ChevronDown className="size-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                    onSelect={() =>
+                                        toast.info(
+                                            t(
+                                                'app.test_cases.toolbar.assign_not_implemented',
+                                            ),
+                                        )
+                                    }
+                                >
+                                    {t(
+                                        'app.test_cases.toolbar.assign_not_implemented',
+                                    )}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
                         <Button
                             variant="outline"
-                            onClick={() => openCreateSection(null)}
+                            size="sm"
+                            onClick={editSelected}
                         >
-                            <Plus className="size-4" />
-                            {t('app.sections.add')}
+                            <Pencil className="size-4" />
+                            {t('app.test_cases.toolbar.edit_selected')}
+                            {selectedIds.size > 0 ? (
+                                <Badge variant="secondary">
+                                    {selectedIds.size}
+                                </Badge>
+                            ) : null}
                         </Button>
-                        <Button asChild>
-                            <Link href={createCase.url(suite.id)}>
-                                <Plus className="size-4" />
-                                {t('app.test_cases.add')}
-                            </Link>
+
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={deleteSelected}
+                        >
+                            <Trash2 className="size-4" />
+                            {t('app.test_cases.toolbar.delete_selected')}
                         </Button>
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <Columns3 className="size-4" />
+                                    {t('app.test_cases.toolbar.columns')}
+                                    <ChevronDown className="size-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {COLUMN_KEYS.map((key) => (
+                                    <DropdownMenuCheckboxItem
+                                        key={key}
+                                        checked={visibleCols[key]}
+                                        onCheckedChange={(checked) =>
+                                            setVisibleCols((current) => ({
+                                                ...current,
+                                                [key]: checked === true,
+                                            }))
+                                        }
+                                    >
+                                        {t(`app.test_cases.fields.${key}`)}
+                                    </DropdownMenuCheckboxItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
 
-                <div className="grid gap-3">
-                    {groups.map((group) => (
-                        <SectionGroupBlock
-                            key={group.id === null ? 'unsectioned' : group.id}
-                            group={group}
-                            suiteId={suite.id}
-                            expanded={!collapsed.has(group.id)}
-                            onToggle={() => toggle(group.id)}
-                            onEditSection={openEditSection}
-                            onDeleteSection={deleteSection}
-                            onDeleteCase={deleteCase}
-                        />
-                    ))}
-                </div>
+                <Card>
+                    <CardContent className="grid gap-2">
+                        <div className="flex items-center gap-2">
+                            <Checkbox
+                                checked={allSelected}
+                                onCheckedChange={(checked) =>
+                                    toggleSelectAll(checked === true)
+                                }
+                                disabled={allCases.length === 0}
+                                aria-label={t('app.common.select_all')}
+                            />
+                            <h2 className="text-lg font-medium">
+                                {t('app.sections.title')}
+                            </h2>
+                        </div>
+
+                        {suite.sections.length === 0 ? (
+                            <p className="py-4 text-sm text-muted-foreground">
+                                {t('app.sections.empty')}
+                            </p>
+                        ) : (
+                            <div className="grid gap-2">
+                                {suite.sections.map((section) => (
+                                    <SectionRow
+                                        key={section.id}
+                                        section={section}
+                                        depth={0}
+                                        collapsed={collapsed}
+                                        sortField={sortField}
+                                        sortDir={sortDir}
+                                        visibleCols={visibleCols}
+                                        selectedIds={selectedIds}
+                                        onToggleCollapse={toggleCollapse}
+                                        onToggleSelect={toggleSelect}
+                                        onAddChild={openCreate}
+                                        onEdit={openEdit}
+                                        onDelete={deleteSection}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="pt-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => openCreate(null)}
+                            >
+                                <Plus className="size-4" />
+                                {t('app.sections.add')}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             <Dialog
