@@ -64,6 +64,7 @@
 }
 
 :root {
+    --header-height: 3.5rem; /* h-14 = 56px — keep in sync with AppHeader */
     --font-size: 16px;
     --background: #fafbfc;
     --foreground: #0f172a;
@@ -141,6 +142,17 @@
     --sidebar-accent-foreground: #e0e7ff;
     --sidebar-border: #334155;
     --sidebar-ring: #3b82f6;
+}
+
+/*
+ * The shadcn Sidebar inner panel uses `fixed inset-y-0 h-svh`.
+ * Since AppHeader now sits above SidebarProvider, push the fixed panel
+ * down so it starts below the header and doesn't overlap it.
+ * Line 226 of sidebar.tsx: the second div inside [data-slot="sidebar"].
+ */
+[data-slot="sidebar"] > div:last-child {
+    top: var(--header-height) !important;
+    height: calc(100svh - var(--header-height)) !important;
 }
 
 @layer base {

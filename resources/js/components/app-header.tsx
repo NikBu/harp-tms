@@ -6,8 +6,6 @@ import {
     Search,
     ShieldCheck,
 } from 'lucide-react';
-import AppLogo from '@/components/app-logo';
-import AppLogoIcon from '@/components/app-logo-icon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -85,7 +83,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             <SheetTitle className="sr-only">Navigation</SheetTitle>
                             <SheetHeader className="flex h-14 items-center border-b border-sidebar-border px-4">
                                 <Link href={dashboard()}>
-                                    <AppLogoIcon className="h-6 w-6 fill-current" />
+                                    <img src="/logo-main.png" alt="HARP TMS" className="h-7 w-auto object-contain" />
                                 </Link>
                             </SheetHeader>
                             <nav className="flex flex-col gap-1 p-3 text-sm">
@@ -119,7 +117,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
                 {/* ── Logo ─────────────────────────────────────── */}
                 <Link href={dashboard()} className="flex shrink-0 items-center" prefetch>
-                    <AppLogo />
+                    <img src="/logo-main.png" alt="HARP TMS" className="h-8 w-auto object-contain" />
                 </Link>
 
                 {/* ── Context-aware center section ─────────────── */}
@@ -152,7 +150,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </nav>
                 )}
 
-                {/* ── Right side ───────────────────────────────── */}
+                {/* ── Right side ───────────────────────────────��─ */}
                 <div className="ml-auto flex items-center gap-2">
 
                     {/* + Add dropdown — only inside a project and for permitted roles */}
