@@ -40,7 +40,7 @@ import type { TestCase } from '@/types/test-case';
 
 type SectionWithCases = Section & {
     children?: SectionWithCases[];
-    cases?: TestCase[];
+    testCases?: TestCase[];
 };
 
 type SuiteWithData = Suite & {
@@ -146,7 +146,7 @@ function SectionBlock({
     onDeleteCase: (tc: TestCase) => void;
 }) {
     const [open, setOpen] = useState(true);
-    const cases = section.cases ?? [];
+    const cases = section.testCases ?? [];
     const children = section.children ?? [];
     const hasContent = cases.length > 0 || children.length > 0;
 
