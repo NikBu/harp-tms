@@ -31,6 +31,9 @@ return [
         'manage' => 'Manage',
         'select_all' => 'Select all',
         'deselect_all' => 'Deselect all',
+        'settings' => 'Settings',
+        'language' => 'Language',
+        'logout' => 'Log out',
     ],
     'status' => [
         'active' => 'Active',
