@@ -96,11 +96,11 @@ class SuiteController extends Controller
                 $query->whereNull('parent_id')
                     ->orderBy('display_order')
                     ->with([
-                        'cases' => fn ($q) => $q->orderBy('display_order')->orderBy('id'),
+                        'testCases' => fn ($q) => $q->orderBy('display_order')->orderBy('id'),
                         'children' => fn ($q) => $q->orderBy('display_order')->with([
-                            'cases' => fn ($q2) => $q2->orderBy('display_order')->orderBy('id'),
+                            'testCases' => fn ($q2) => $q2->orderBy('display_order')->orderBy('id'),
                             'children' => fn ($q2) => $q2->orderBy('display_order')->with([
-                                'cases' => fn ($q3) => $q3->orderBy('display_order')->orderBy('id'),
+                                'testCases' => fn ($q3) => $q3->orderBy('display_order')->orderBy('id'),
                             ]),
                         ]),
                     ]);
