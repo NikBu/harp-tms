@@ -1,65 +1,28 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
-import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
-import { NavMain } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
-import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-} from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
-import type { NavItem } from '@/types';
+import { usePage } from '@inertiajs/react';
+import { AdminSidebar } from '@/components/admin-sidebar';
+import { ProjectSidebar } from '@/components/project-sidebar';
+import { GlobalSidebar } from '@/components/global-sidebar';
+import type { ProjectContext } from '@/types/navigation';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
-
+/**
+ * Top-level sidebar switcher.
+ * Renders one of three sidebar variants based on route context:
+ *   - /admin/*        → AdminSidebar
+ *   - /projects/:id/* → ProjectSidebar
+ *   - everywhere else → GlobalSidebar (dashboard + projects list)
+ */
 export function AppSidebar() {
-    return (
-        <Sidebar collapsible="icon" variant="inset">
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
-                                <AppLogo />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarHeader>
+    const page           = usePage<any>();
+    const currentUrl     = (page as any).url as string ?? '';
+    const project        = page.props.currentProject as ProjectContext | null | undefined;
 
-            <SidebarContent>
-                <NavMain items={mainNavItems} />
-            </SidebarContent>
+    if (currentUrl.startsWith('/admin')) {
+        return <AdminSidebar />;
+    }
 
-            <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
-                <NavUser />
-            </SidebarFooter>
-        </Sidebar>
-    );
+    if (project) {
+        return <ProjectSidebar project={project} />;
+    }
+
+    return <GlobalSidebar />;
 }

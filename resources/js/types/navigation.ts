@@ -12,3 +12,15 @@ export type NavItem = {
     icon?: LucideIcon | null;
     isActive?: boolean;
 };
+
+export type NavGroup = {
+    label: string;
+    items: NavItem[];
+};
+
+/** Minimal project context shared via Inertia props */
+export type ProjectContext = {
+    id: number;
+    name: string;
+    suite_mode: 1 | 2 | 3;
+};
