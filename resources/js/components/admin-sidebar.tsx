@@ -1,24 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    Bell,
-    BookOpen,
-    Database,
-    FileCode2,
-    Globe,
-    Key,
-    KeyRound,
-    Layers,
-    List,
-    Lock,
-    Mail,
-    Settings,
-    ShieldCheck,
-    Tag,
-    Users,
-    Webhook,
-    CreditCard,
-} from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, Settings, Users } from 'lucide-react';
 import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
@@ -31,72 +12,28 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { cn } from '@/lib/utils';
+import { useTrans } from '@/hooks/use-trans';
 import { dashboard } from '@/routes';
 
 interface AdminNavItem {
+    key: string;
     label: string;
     href: string;
     icon: React.ElementType;
+    exact?: boolean;
 }
-
-interface AdminNavGroup {
-    heading: string;
-    items: AdminNavItem[];
-}
-
-const ADMIN_GROUPS: AdminNavGroup[] = [
-    {
-        heading: 'Site Settings',
-        items: [
-            { label: 'General',         href: '/admin/settings/general',        icon: Settings    },
-            { label: 'Authentication',  href: '/admin/settings/authentication', icon: Lock        },
-            { label: 'Email',           href: '/admin/settings/email',          icon: Mail        },
-            { label: 'API',             href: '/admin/settings/api',            icon: Key         },
-            { label: 'Auditing',        href: '/admin/settings/auditing',       icon: BookOpen    },
-            { label: 'Data Management', href: '/admin/settings/data',           icon: Database    },
-        ],
-    },
-    {
-        heading: 'Users & Roles',
-        items: [
-            { label: 'Users',  href: '/admin/users',  icon: Users      },
-            { label: 'Groups', href: '/admin/groups', icon: List       },
-            { label: 'Roles',  href: '/admin/roles',  icon: ShieldCheck },
-        ],
-    },
-    {
-        heading: 'Projects',
-        items: [
-            { label: 'Projects', href: '/admin/projects', icon: Layers },
-        ],
-    },
-    {
-        heading: 'Customizations',
-        items: [
-            { label: 'Case Fields',   href: '/admin/customizations/case-fields',   icon: FileCode2 },
-            { label: 'Result Fields', href: '/admin/customizations/result-fields', icon: FileCode2 },
-            { label: 'Templates',     href: '/admin/customizations/templates',     icon: Globe     },
-            { label: 'Statuses',      href: '/admin/customizations/statuses',      icon: Tag       },
-        ],
-    },
-    {
-        heading: 'Integration',
-        items: [
-            { label: 'Defect Plugins', href: '/admin/integration/defect-plugins', icon: KeyRound },
-            { label: 'Webhooks',       href: '/admin/integration/webhooks',       icon: Webhook  },
-        ],
-    },
-    {
-        heading: 'Subscription',
-        items: [
-            { label: 'License & Plan', href: '/admin/subscription', icon: CreditCard },
-        ],
-    },
-];
 
 export function AdminSidebar() {
-    const page       = usePage<any>();
-    const currentUrl = (page as any).url as string ?? '';
+    const t = useTrans();
+    const page = usePage<{ url: string }>();
+    const currentUrl = (page as { url?: string }).url ?? '';
+
+    const items: AdminNavItem[] = [
+        { key: 'overview', label: t('app.admin.overview'), href: '/admin', icon: LayoutDashboard, exact: true },
+        { key: 'users', label: t('app.admin.users'), href: '/admin/users', icon: Users },
+        { key: 'settings', label: t('app.admin.settings'), href: '/admin/settings', icon: Settings },
+    ];
 
     return (
         <Sidebar>
@@ -106,7 +43,7 @@ export function AdminSidebar() {
                         <SidebarMenuButton size="lg" asChild>
                             <Link href={dashboard()} className="flex items-center gap-2 text-sm font-medium">
                                 <ArrowLeft className="h-4 w-4 shrink-0" />
-                                <span>Administration</span>
+                                <span>{t('app.admin.title')}</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -114,17 +51,23 @@ export function AdminSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                {ADMIN_GROUPS.map((group) => (
-                    <SidebarGroup key={group.heading}>
-                        <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                            {group.heading}
-                        </SidebarGroupLabel>
-                        <SidebarMenu>
-                            {group.items.map(({ label, href, icon: Icon }) => (
-                                <SidebarMenuItem key={href}>
+                <SidebarGroup>
+                    <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground">
+                        {t('app.admin.title')}
+                    </SidebarGroupLabel>
+                    <SidebarMenu>
+                        {items.map(({ key, label, href, icon: Icon, exact }) => {
+                            const isActive = exact
+                                ? currentUrl === href
+                                : currentUrl === href || currentUrl.startsWith(href + '/');
+
+                            return (
+                                <SidebarMenuItem key={key}>
                                     <SidebarMenuButton
                                         asChild
-                                        isActive={currentUrl === href || currentUrl.startsWith(href + '/')}
+                                        className={cn(
+                                            isActive && 'border-l-2 border-primary bg-primary/5 text-primary',
+                                        )}
                                     >
                                         <Link href={href}>
                                             <Icon className="h-4 w-4" />
@@ -132,10 +75,10 @@ export function AdminSidebar() {
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
-                    </SidebarGroup>
-                ))}
+                            );
+                        })}
+                    </SidebarMenu>
+                </SidebarGroup>
             </SidebarContent>
 
             <SidebarFooter>

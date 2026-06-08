@@ -1,21 +1,27 @@
 <?php
 
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AiController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectSettingsController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RequirementController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\SuiteController;
 use App\Http\Controllers\TestCaseController;
 use App\Http\Controllers\TestPlanController;
 use App\Http\Controllers\TestRunController;
+use App\Http\Controllers\TodoController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('projects/create', [ProjectController::class, 'create'])->name('projects.create');
     Route::resource('projects', ProjectController::class)
@@ -86,6 +92,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('requirements.test-cases.link');
     Route::delete('/requirements/{requirement}/test-cases/{testCase}', [RequirementController::class, 'unlinkTestCase'])
         ->name('requirements.test-cases.unlink');
+
+    // Reports
+    Route::get('projects/{project}/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('projects/{project}/reports/{type}', [ReportController::class, 'show'])->name('reports.show');
+
+    // Integrations
+    Route::get('projects/{project}/integrations', [IntegrationController::class, 'index'])
+        ->name('integrations.index');
+
+    // To-Do
+    Route::get('projects/{project}/todo', [TodoController::class, 'index'])->name('todo.index');
+
+    // AI
+    Route::get('projects/{project}/ai', [AiController::class, 'index'])->name('ai.index');
+
+    // Administration
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', [AdminController::class, 'index'])->name('index');
+        Route::get('/users', [AdminController::class, 'users'])->name('users');
+        Route::patch('/users/{user}/role', [AdminController::class, 'updateRole'])->name('users.role');
+        Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete');
+        Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
+        Route::patch('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
+    });
 });
 
 Route::post('/locale', [LocaleController::class, 'update'])
