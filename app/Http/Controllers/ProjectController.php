@@ -99,10 +99,67 @@ class ProjectController extends Controller
             ->limit(3)
             ->get();
 
+        // Cases link: single-suite projects with exactly one suite jump straight to it.
+        $casesHref = "/projects/{$project->id}/suites";
+
+        if ($project->suite_mode === Project::SUITE_SINGLE && $project->suites_count === 1) {
+            $singleSuite = $project->suites()->oldest('id')->first();
+
+            if ($singleSuite !== null) {
+                $casesHref = "/suites/{$singleSuite->id}";
+            }
+        }
+
+        // Cases grouped by priority (priority stored as string: critical/high/medium/low).
+        $priorityCounts = $project->testCases()
+            ->selectRaw('priority, count(*) as cnt')
+            ->groupBy('priority')
+            ->pluck('cnt', 'priority');
+
+        $casesByPriority = [
+            'critical' => (int) ($priorityCounts['critical'] ?? 0),
+            'high' => (int) ($priorityCounts['high'] ?? 0),
+            'medium' => (int) ($priorityCounts['medium'] ?? 0),
+            'low' => (int) ($priorityCounts['low'] ?? 0),
+        ];
+
+        // Pass/fail breakdown for the most recently created run.
+        $latestRun = $project->testRuns()->orderByDesc('created_at')->first();
+
+        $latestRunStats = $latestRun === null ? null : [
+            'name' => $latestRun->name,
+            'passed' => (int) $latestRun->passed_count,
+            'failed' => (int) $latestRun->failed_count,
+            'blocked' => (int) $latestRun->blocked_count,
+            'retest' => (int) $latestRun->retest_count,
+            'skipped' => (int) $latestRun->skipped_count,
+            'untested' => (int) $latestRun->untested_count,
+        ];
+
+        // Per-milestone progress based on associated runs.
+        $milestoneStats = $project->milestones->map(function ($milestone): array {
+            $total = $milestone->testRuns()->count();
+            $closed = $milestone->testRuns()->where('is_completed', true)->count();
+
+            return [
+                'id' => $milestone->id,
+                'name' => $milestone->name,
+                'is_completed' => (bool) $milestone->is_completed,
+                'due_on' => $milestone->due_on,
+                'run_count' => $total,
+                'progress' => $total > 0 ? (int) round(($closed / $total) * 100) : 0,
+            ];
+        })->values();
+
         return Inertia::render('projects/show', [
-            'project' => $project,
+            'project' => array_merge($project->toArray(), [
+                'cases_href' => $casesHref,
+            ]),
             'canManage' => $canManage,
             'recentRuns' => $recentRuns,
+            'casesByPriority' => $casesByPriority,
+            'latestRunStats' => $latestRunStats,
+            'milestoneStats' => $milestoneStats,
         ]);
     }
 
