@@ -67,7 +67,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const addItems      = useAddItems(currentUrl, project?.id);
 
     return (
-        <div className="border-b border-sidebar-border/80 bg-background">
+        <div className="border-b border-sidebar-border/80 bg-transparent">
             <div className="mx-auto flex h-14 items-center gap-3 px-4">
 
                 {/* ── Mobile menu trigger ───────────────────────── */}
@@ -83,7 +83,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             <SheetTitle className="sr-only">Navigation</SheetTitle>
                             <SheetHeader className="flex h-14 items-center border-b border-sidebar-border px-4">
                                 <Link href={dashboard()}>
-                                    <img src="/logo-main.png" alt="HARP TMS" className="h-7 w-auto object-contain" />
+                                    <img src="/logo-main.png" alt="HARP TMS" className="h-7 w-auto object-contain dark:invert" />
                                 </Link>
                             </SheetHeader>
                             <nav className="flex flex-col gap-1 p-3 text-sm">
@@ -117,7 +117,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
                 {/* ── Logo ─────────────────────────────────────── */}
                 <Link href={dashboard()} className="flex shrink-0 items-center" prefetch>
-                    <img src="/logo-main.png" alt="HARP TMS" className="h-8 w-auto object-contain" />
+                    <img src="/logo-main.png" alt="HARP TMS" className="h-10 w-auto object-contain dark:invert" />
                 </Link>
 
                 {/* ── Context-aware center section ─────────────── */}
