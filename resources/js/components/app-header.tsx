@@ -4,7 +4,6 @@ import {
     LayoutGrid,
     Plus,
     Search,
-    Settings,
     ShieldCheck,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
@@ -15,10 +14,10 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -129,7 +128,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     <div className="ml-4 hidden items-center gap-3 lg:flex">
                         <span className="text-sm text-muted-foreground">/</span>
                         <Link
-                            href={`/projects/${project.id}/overview`}
+                            href={`/projects/${project.id}`}
                             className="text-sm font-medium transition-colors hover:text-foreground text-muted-foreground"
                         >
                             {project.name}
@@ -181,6 +180,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         <Search className="h-4 w-4 opacity-70" />
                         <span className="sr-only">Search</span>
                     </Button>
+
+                    {/* Theme toggle */}
+                    <ThemeToggle />
 
                     {/* Administration button — site admins only, not already in admin */}
                     {isSiteAdmin && !isInAdmin && (
