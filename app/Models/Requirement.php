@@ -112,7 +112,7 @@ class Requirement extends Model
     public function testCases(): BelongsToMany
     {
         return $this->belongsToMany(TestCase::class, 'requirement_test_case')
-            ->withPivot('created_by', 'created_at')
-            ->withTimestamps(false);
+            ->withPivot('created_by')   // ← only non-timestamp extra columns here
+            ->withTimestamps(false);    // ← pivot has created_at but NOT updated_at
     }
 }
