@@ -89,17 +89,35 @@ class SuiteController extends Controller
 
         $this->authorizeProjectAccess($request, $project);
 
+        // Eager-load the full section tree with test cases at each level.
+        // sections → children → children (3 levels deep is sufficient for TMS use cases)
         $suite->load([
             'sections' => function ($query): void {
                 $query->whereNull('parent_id')
                     ->orderBy('display_order')
-                    ->with('children');
+                    ->with([
+                        'cases' => fn ($q) => $q->orderBy('display_order')->orderBy('id'),
+                        'children' => fn ($q) => $q->orderBy('display_order')->with([
+                            'cases' => fn ($q2) => $q2->orderBy('display_order')->orderBy('id'),
+                            'children' => fn ($q2) => $q2->orderBy('display_order')->with([
+                                'cases' => fn ($q3) => $q3->orderBy('display_order')->orderBy('id'),
+                            ]),
+                        ]),
+                    ]);
             },
         ]);
 
+        // Cases not assigned to any section
+        $unsectionedCases = $suite->testCases()
+            ->whereNull('section_id')
+            ->orderBy('display_order')
+            ->orderBy('id')
+            ->get();
+
         return Inertia::render('suites/show', [
-            'project' => $project,
-            'suite'   => $suite,
+            'project'          => $project,
+            'suite'            => $suite,
+            'unsectioned_cases' => $unsectionedCases,
         ]);
     }
 
