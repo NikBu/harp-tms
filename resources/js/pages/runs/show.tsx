@@ -1,23 +1,19 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { CheckCircle2, ChevronDown, Trash2, XCircle } from 'lucide-react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { CheckCircle2, ExternalLink, Trash2, XCircle } from 'lucide-react';
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card, CardContent, CardHeader, CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
 import { index as projectsIndex } from '@/routes/projects';
-import type { TestInstance, TestRun, TestStatus } from '@/types/test-run';
+import type { BulkResultItem, TestInstance, TestRun, TestStatus } from '@/types/test-run';
+
 
 // ── Status helpers ────────────────────────────────────────────────────────────
+
 
 const STATUS_BADGE: Record<TestStatus, string> = {
     untested: 'bg-slate-100 text-slate-600 border-slate-200',
@@ -28,6 +24,7 @@ const STATUS_BADGE: Record<TestStatus, string> = {
     skipped:  'bg-gray-100 text-gray-600 border-gray-200',
 };
 
+
 const STATUS_BAR: Record<TestStatus, string> = {
     passed:   'bg-green-500',
     failed:   'bg-red-500',
@@ -37,6 +34,7 @@ const STATUS_BAR: Record<TestStatus, string> = {
     untested: 'bg-slate-200',
 };
 
+
 function StatusBadge({ status }: { status: TestStatus }) {
     return (
         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${STATUS_BADGE[status]}`}>
@@ -45,15 +43,16 @@ function StatusBadge({ status }: { status: TestStatus }) {
     );
 }
 
-// ── Progress bar ─────────────────────────────────────────────────────────────
+
+// ── Progress bar ──────────────────────────────────────────────────────────────
+
 
 function ProgressBar({ run }: { run: TestRun }) {
-    const total = run.passed_count + run.failed_count + run.blocked_count +
-                  run.untested_count + run.retest_count + run.skipped_count;
+    const total =
+        run.passed_count + run.failed_count + run.blocked_count +
+        run.untested_count + run.retest_count + run.skipped_count;
 
-    if (total === 0) {
-return <div className="h-3 w-full rounded-full bg-muted" />;
-}
+    if (total === 0) return <div className="h-3 w-full rounded-full bg-muted" />;
 
     const segments: { key: TestStatus; count: number }[] = [
         { key: 'passed',   count: run.passed_count },
@@ -78,14 +77,18 @@ return <div className="h-3 w-full rounded-full bg-muted" />;
     );
 }
 
-// ── Result dialog ─────────────────────────────────────────────────────────────
+
+// ── Single result dialog ──────────────────────────────────────────────────────
+
 
 type ResultForm = {
     status: TestStatus;
     comment: string;
     elapsed: string;
     version: string;
+    defect_url: string;
 };
+
 
 function ResultDialog({
     test,
@@ -102,18 +105,17 @@ function ResultDialog({
 }) {
     const t = useTrans();
     const { data, setData, post, processing, reset } = useForm<ResultForm>({
-        status:  test.status === 'untested' ? 'passed' : test.status,
-        comment: '',
-        elapsed: '',
-        version: '',
+        status:     test.status === 'untested' ? 'passed' : test.status,
+        comment:    '',
+        elapsed:    '',
+        version:    '',
+        defect_url: '',
     });
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
         post(`/runs/${runId}/tests/${test.id}/results`, {
-            onSuccess: () => {
- reset(); onClose(); 
-},
+            onSuccess: () => { reset(); onClose(); },
         });
     }
 
@@ -127,6 +129,7 @@ function ResultDialog({
                         </DialogTitle>
                     </DialogHeader>
 
+                    {/* Status picker */}
                     <div className="grid gap-2">
                         <Label>{t('app.runs.result.status')}</Label>
                         <div className="flex flex-wrap gap-2">
@@ -143,6 +146,7 @@ function ResultDialog({
                         </div>
                     </div>
 
+                    {/* Comment */}
                     <div className="grid gap-2">
                         <Label htmlFor="comment">{t('app.runs.result.comment')}</Label>
                         <textarea
@@ -154,6 +158,7 @@ function ResultDialog({
                         />
                     </div>
 
+                    {/* Elapsed + Version */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="elapsed">{t('app.runs.result.elapsed')}</Label>
@@ -161,7 +166,7 @@ function ResultDialog({
                                 id="elapsed"
                                 value={data.elapsed}
                                 onChange={(e) => setData('elapsed', e.target.value)}
-                                placeholder="e.g. 5m"
+                                placeholder="e.g. 5m or 1h 30m"
                                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             />
                         </div>
@@ -175,6 +180,19 @@ function ResultDialog({
                                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             />
                         </div>
+                    </div>
+
+                    {/* Defect URL */}
+                    <div className="grid gap-2">
+                        <Label htmlFor="defect_url">{t('app.runs.result.defect_url')}</Label>
+                        <input
+                            id="defect_url"
+                            type="url"
+                            value={data.defect_url}
+                            onChange={(e) => setData('defect_url', e.target.value)}
+                            placeholder="https://jira.example.com/browse/BUG-123"
+                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        />
                     </div>
 
                     <DialogFooter>
@@ -191,7 +209,193 @@ function ResultDialog({
     );
 }
 
+
+// ── Bulk result dialog ────────────────────────────────────────────────────────
+
+
+function BulkResultDialog({
+    tests,
+    runId,
+    open,
+    onClose,
+    statuses,
+}: {
+    tests: TestInstance[];
+    runId: number;
+    open: boolean;
+    onClose: () => void;
+    statuses: TestStatus[];
+}) {
+    const t = useTrans();
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [bulkStatus, setBulkStatus]   = useState<TestStatus>('passed');
+    const [comment, setComment]         = useState('');
+    const [version, setVersion]         = useState('');
+    const [processing, setProcessing]   = useState(false);
+
+    function toggleAll() {
+        if (selectedIds.size === tests.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(tests.map(t => t.id)));
+        }
+    }
+
+    function toggleOne(id: number) {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    }
+
+    function submit(e: React.FormEvent) {
+        e.preventDefault();
+        if (selectedIds.size === 0) return;
+
+        const results: BulkResultItem[] = Array.from(selectedIds).map(test_id => ({
+            test_id,
+            status: bulkStatus,
+            comment: comment || undefined,
+            version: version || undefined,
+        }));
+
+        setProcessing(true);
+        router.post(
+            `/runs/${runId}/bulk-results`,
+            // Inertia v3 RequestPayload = Record<string, FormDataConvertible>.
+            // A nested array of objects doesn't satisfy that constraint at the
+            // type level, so we JSON-encode it and decode on the Laravel side.
+            { results: JSON.stringify(results) },
+            {
+                onFinish: () => { setProcessing(false); onClose(); },
+            },
+        );
+    }
+
+    const untested = tests.filter(t => t.status === 'untested');
+
+    return (
+        <Dialog open={open} onOpenChange={onClose}>
+            <DialogContent className="max-w-lg">
+                <form onSubmit={submit} className="grid gap-4">
+                    <DialogHeader>
+                        <DialogTitle>{t('app.runs.bulk.title')}</DialogTitle>
+                    </DialogHeader>
+
+                    {/* Status + Version row */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                            <Label>{t('app.runs.result.status')}</Label>
+                            <div className="flex flex-wrap gap-1.5">
+                                {statuses.filter(s => s !== 'untested').map(s => (
+                                    <button
+                                        key={s}
+                                        type="button"
+                                        onClick={() => setBulkStatus(s)}
+                                        className={`rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize transition-opacity ${STATUS_BADGE[s]} ${bulkStatus === s ? 'opacity-100 ring-2 ring-offset-1 ring-current' : 'opacity-60 hover:opacity-90'}`}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="bulk-version">{t('app.runs.result.version')}</Label>
+                            <input
+                                id="bulk-version"
+                                value={version}
+                                onChange={e => setVersion(e.target.value)}
+                                placeholder="e.g. 1.4.2"
+                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Comment */}
+                    <div className="grid gap-2">
+                        <Label htmlFor="bulk-comment">{t('app.runs.result.comment')}</Label>
+                        <textarea
+                            id="bulk-comment"
+                            value={comment}
+                            onChange={e => setComment(e.target.value)}
+                            rows={2}
+                            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        />
+                    </div>
+
+                    {/* Test selector */}
+                    <div className="grid gap-1.5">
+                        <div className="flex items-center justify-between">
+                            <Label>{t('app.runs.bulk.select_tests')}</Label>
+                            <button
+                                type="button"
+                                onClick={toggleAll}
+                                className="text-xs text-primary hover:underline"
+                            >
+                                {selectedIds.size === tests.length
+                                    ? t('app.common.deselect_all')
+                                    : t('app.common.select_all')}
+                            </button>
+                        </div>
+                        <div className="max-h-56 overflow-y-auto rounded-md border divide-y">
+                            {tests.map(test => (
+                                <label
+                                    key={test.id}
+                                    className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-muted/50"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedIds.has(test.id)}
+                                        onChange={() => toggleOne(test.id)}
+                                        className="size-4 rounded border-input accent-primary"
+                                    />
+                                    <span className="flex-1 truncate">{test.case?.title ?? `Test #${test.id}`}</span>
+                                    <StatusBadge status={test.status} />
+                                </label>
+                            ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            {selectedIds.size} {t('app.runs.bulk.selected')}
+                            {untested.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedIds(new Set(untested.map(t => t.id)))}
+                                    className="ml-2 text-primary hover:underline"
+                                >
+                                    {t('app.runs.bulk.select_untested')}
+                                </button>
+                            )}
+                        </p>
+                    </div>
+
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={onClose}>
+                            {t('app.common.cancel')}
+                        </Button>
+                        <Button type="submit" disabled={processing || selectedIds.size === 0}>
+                            {t('app.runs.bulk.submit', { count: String(selectedIds.size) })}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+
 // ── Main page ─────────────────────────────────────────────────────────────────
+
+
+const STATUS_COUNTS: Record<TestStatus, keyof TestRun> = {
+    passed:   'passed_count',
+    failed:   'failed_count',
+    blocked:  'blocked_count',
+    retest:   'retest_count',
+    skipped:  'skipped_count',
+    untested: 'untested_count',
+};
+
 
 export default function RunsShow({
     run,
@@ -202,9 +406,7 @@ export default function RunsShow({
 }) {
     const t = useTrans();
     const [activeTest, setActiveTest] = useState<TestInstance | null>(null);
-
-    const total = run.passed_count + run.failed_count + run.blocked_count +
-                  run.untested_count + run.retest_count + run.skipped_count;
+    const [showBulk, setShowBulk]     = useState(false);
 
     function toggleClose() {
         if (run.is_completed) {
@@ -215,19 +417,14 @@ export default function RunsShow({
     }
 
     function deleteRun() {
-        if (!window.confirm(t('app.common.confirm_delete'))) {
-return;
-}
-
+        if (!window.confirm(t('app.common.confirm_delete'))) return;
         router.delete(`/runs/${run.id}`);
     }
 
-    // Group tests by section name for display
     const grouped = (run.tests ?? []).reduce<Record<string, TestInstance[]>>((acc, test) => {
         const key = test.case?.section?.name ?? t('app.test_cases.no_section');
         acc[key] = acc[key] ?? [];
         acc[key].push(test);
-
         return acc;
     }, {});
 
@@ -247,6 +444,11 @@ return;
                         </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
+                        {!run.is_completed && (run.tests ?? []).length > 0 && (
+                            <Button variant="outline" onClick={() => setShowBulk(true)}>
+                                {t('app.runs.bulk.button')}
+                            </Button>
+                        )}
                         <Button variant="outline" onClick={toggleClose}>
                             {run.is_completed
                                 ? <><XCircle className="size-4" /> {t('app.runs.reopen')}</>
@@ -264,17 +466,13 @@ return;
                     <CardContent className="grid gap-3 pt-4">
                         <ProgressBar run={run} />
                         <div className="flex flex-wrap gap-4 text-sm">
-                            {(['passed', 'failed', 'blocked', 'retest', 'skipped', 'untested'] as TestStatus[]).map((s) => {
-                                const count = run[`${s}_count` as keyof TestRun] as number;
-
-                                return (
-                                    <span key={s} className="flex items-center gap-1">
-                                        <span className={`inline-block size-2.5 rounded-full ${STATUS_BAR[s]}`} />
-                                        <span className="capitalize">{s}</span>
-                                        <span className="font-semibold">{count}</span>
-                                    </span>
-                                );
-                            })}
+                            {(['passed', 'failed', 'blocked', 'retest', 'skipped', 'untested'] as const).map((s) => (
+                                <span key={s} className="flex items-center gap-1">
+                                    <span className={`inline-block size-2.5 rounded-full ${STATUS_BAR[s]}`} />
+                                    <span className="capitalize">{s}</span>
+                                    <span className="font-semibold">{run[STATUS_COUNTS[s]] as number}</span>
+                                </span>
+                            ))}
                         </div>
                     </CardContent>
                 </Card>
@@ -292,10 +490,27 @@ return;
                                     <p className="truncate text-sm font-medium">
                                         {test.case?.title ?? `Test #${test.id}`}
                                     </p>
-                                    {test.latest_result?.comment && (
-                                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                            {test.latest_result.comment}
-                                        </p>
+                                    {test.latest_result && (
+                                        <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
+                                            {test.latest_result.comment && (
+                                                <span className="truncate max-w-xs">{test.latest_result.comment}</span>
+                                            )}
+                                            {test.latest_result.defect_url && (
+                                                <a
+                                                    href={test.latest_result.defect_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-0.5 text-destructive hover:underline shrink-0"
+                                                    onClick={e => e.stopPropagation()}
+                                                >
+                                                    <ExternalLink className="size-3" />
+                                                    {t('app.runs.result.defect')}
+                                                </a>
+                                            )}
+                                            {test.latest_result.version && (
+                                                <span className="shrink-0">v{test.latest_result.version}</span>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                                 <div className="flex shrink-0 items-center gap-2">
@@ -324,7 +539,7 @@ return;
                 )}
             </div>
 
-            {/* Result submission dialog */}
+            {/* Single result dialog */}
             {activeTest && (
                 <ResultDialog
                     test={activeTest}
@@ -334,9 +549,19 @@ return;
                     statuses={statuses}
                 />
             )}
+
+            {/* Bulk result dialog */}
+            <BulkResultDialog
+                tests={run.tests ?? []}
+                runId={run.id}
+                open={showBulk}
+                onClose={() => setShowBulk(false)}
+                statuses={statuses}
+            />
         </>
     );
 }
+
 
 RunsShow.layout = {
     breadcrumbs: [

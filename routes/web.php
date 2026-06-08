@@ -53,6 +53,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('runs/{testRun}/reopen', [TestRunController::class, 'reopen'])->name('runs.reopen');
     Route::post('runs/{testRun}/tests/{test}/results', [TestRunController::class, 'addResult'])
         ->name('runs.tests.results.store');
+    Route::post('bulk-results', [TestRunController::class, 'addResults'])->name('runs.results.bulk');
 
     // Milestones
     Route::resource('projects.milestones', MilestoneController::class)

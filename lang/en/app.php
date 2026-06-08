@@ -29,6 +29,8 @@ return [
         'confirm_delete' => 'Are you sure you want to delete this?',
         'view_all' => 'View all',
         'manage' => 'Manage',
+        'select_all' => 'Select all',
+        'deselect_all' => 'Deselect all',
     ],
     'status' => [
         'active' => 'Active',
@@ -191,6 +193,9 @@ return [
             'elapsed' => 'Elapsed',
             'version' => 'Version',
             'submit' => 'Submit Result',
+
+            'defect_url' => 'Defect URL',
+            'defect' => 'Defect',
         ],
         'milestones' => [
             'title' => 'Milestones',
@@ -218,6 +223,16 @@ return [
                 'refs' => 'References',
             ],
         ],
+        'bulk_results_saved' => 'Results saved.',
+        'bulk' => [
+            'button' => 'Set Results',
+            'title' => 'Set Results in Bulk',
+            'select_tests' => 'Select tests',
+            'selected' => 'selected',
+            'select_untested' => 'Select untested',
+            'submit' => 'Save :count results',
+        ],
+
     ],
     'plans' => [
         'title' => 'Test Plans',
