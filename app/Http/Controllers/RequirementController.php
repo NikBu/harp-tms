@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\RequirementFolder;
+use App\Models\TestCase;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,13 +22,17 @@ class RequirementController extends Controller
         $folders = RequirementFolder::query()
             ->where('project_id', $project->id)
             ->whereNull('parent_id')
-            ->with(['children.requirements', 'requirements'])
+            ->with([
+                'children.requirements' => fn ($q) => $q->withCount('testCases'),
+                'requirements' => fn ($q) => $q->withCount('testCases'),
+            ])
             ->orderBy('display_order')
             ->get();
 
         $requirements = Requirement::query()
             ->where('project_id', $project->id)
             ->whereNull('folder_id')
+            ->withCount('testCases')
             ->with(['assignedTo:id,name', 'createdBy:id,name'])
             ->orderByDesc('created_at')
             ->get();
@@ -51,7 +57,7 @@ class RequirementController extends Controller
             'assignedTo:id,name',
             'createdBy:id,name',
             'updatedBy:id,name',
-            'testCases:id,title',
+            'testCases:id,title,priority,status',
         ]);
 
         return Inertia::render('requirements/show', [
@@ -181,13 +187,62 @@ class RequirementController extends Controller
     }
 
     // -------------------------------------------------------------------------
-    // Private helpers
+    // Test case linkage
     // -------------------------------------------------------------------------
 
     /**
-     * Convert a comma-separated tag string into a trimmed, de-duped array.
-     * Returns null when the input is blank so the DB column stays null.
+     * Link one or more test cases to a requirement.
+     * POST /requirements/{requirement}/test-cases
+     *
+     * Body: { test_case_ids: int[] }
      */
+    public function linkTestCases(Request $request, Requirement $requirement): JsonResponse
+    {
+        $this->authorizeProjectAccess($request, $requirement->project);
+
+        $validated = $request->validate([
+            'test_case_ids' => ['required', 'array', 'min:1'],
+            'test_case_ids.*' => ['integer', 'exists:test_cases,id'],
+        ]);
+
+        // Verify every test case belongs to the same project
+        $projectId = $requirement->project_id;
+        $valid = TestCase::query()
+            ->whereIn('id', $validated['test_case_ids'])
+            ->whereHas('suite', fn ($q) => $q->where('project_id', $projectId))
+            ->pluck('id');
+
+        $syncData = $valid->mapWithKeys(fn (int $id): array => [
+            $id => ['created_by' => Auth::id(), 'created_at' => now()],
+        ])->all();
+
+        // syncWithoutDetaching — never removes existing links
+        $requirement->testCases()->syncWithoutDetaching($syncData);
+
+        $requirement->load('testCases:id,title,priority,status');
+
+        return response()->json([
+            'test_cases' => $requirement->testCases,
+        ]);
+    }
+
+    /**
+     * Unlink a single test case from a requirement.
+     * DELETE /requirements/{requirement}/test-cases/{testCase}
+     */
+    public function unlinkTestCase(Request $request, Requirement $requirement, TestCase $testCase): JsonResponse
+    {
+        $this->authorizeProjectAccess($request, $requirement->project);
+
+        $requirement->testCases()->detach($testCase->id);
+
+        return response()->json(['ok' => true]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
     private function parseTags(?string $raw): ?array
     {
         if ($raw === null || trim($raw) === '') {
@@ -205,10 +260,6 @@ class RequirementController extends Controller
         return $tags ?: null;
     }
 
-    /**
-     * Ensure the current user may access the given project.
-     * Mirrors the same helper in TestRunController.
-     */
     private function authorizeProjectAccess(Request $request, Project $project): void
     {
         $user = $request->user();

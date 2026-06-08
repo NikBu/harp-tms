@@ -101,6 +101,7 @@ class TestCaseController extends Controller
             'section:id,name',
             'steps',
             'createdBy:id,name',
+            'requirements:id,display_id,title,priority,status',
         ]);
 
         $suite = $testCase->suite->load('project');
@@ -224,11 +225,6 @@ class TestCaseController extends Controller
     // Private helpers
     // -------------------------------------------------------------------------
 
-    /**
-     * Validate the incoming test-case payload.
-     *
-     * @return array<string, mixed>
-     */
     private function validateCase(Request $request): array
     {
         return $request->validate([
@@ -252,13 +248,6 @@ class TestCaseController extends Controller
         ]);
     }
 
-    /**
-     * Map validated payload onto model column names.
-     *
-     * @param  array<string, mixed>  $validated
-     * @param  array<string, mixed>  $extra
-     * @return array<string, mixed>
-     */
     private function mapAttributes(array $validated, array $extra = []): array
     {
         return array_merge([
@@ -272,27 +261,20 @@ class TestCaseController extends Controller
             'estimate' => self::parseEstimate($validated['estimate'] ?? null),
             'refs' => $validated['references'] ?? null,
             'preconditions' => $validated['preconditions'] ?? null,
-            // expected_result is the generic body; only used for text / exploratory
             'expected_result' => $validated['body'] ?? null,
         ], $extra);
     }
 
-    /**
-     * Persist template-specific content (steps / checklist / BDD scenario).
-     */
     private function syncContent(TestCase $testCase, string $template, Request $request): void
     {
         match ($template) {
             'steps', 'exploratory' => $this->syncSteps($testCase, $request),
             'bdd' => $this->syncBdd($testCase, $request),
             'checklist' => $this->syncChecklist($testCase, $request),
-            default => null, // 'text' — body already stored in expected_result
+            default => null,
         };
     }
 
-    /**
-     * Persist step rows for steps / exploratory templates.
-     */
     private function syncSteps(TestCase $testCase, Request $request): void
     {
         if (! $request->filled('steps')) {
@@ -308,13 +290,8 @@ class TestCaseController extends Controller
         }
     }
 
-    /**
-     * Persist BDD scenario text into the dedicated column.
-     */
     private function syncBdd(TestCase $testCase, Request $request): void
     {
-        // The frontend sends the Gherkin text in `bdd_scenario`; fall back to `body`
-        // for backwards compatibility with any existing saves that used `body`.
         $scenario = $request->input('bdd_scenario') ?? $request->input('body');
 
         if ($scenario !== null) {
@@ -322,14 +299,8 @@ class TestCaseController extends Controller
         }
     }
 
-    /**
-     * Persist checklist items into the dedicated JSONB column.
-     * Each item: { label: string, is_optional: bool }
-     */
     private function syncChecklist(TestCase $testCase, Request $request): void
     {
-        // Support both the new structured `checklist_items` key and the legacy
-        // `steps` array (where `action` becomes the label) for backwards compat.
         if ($request->filled('checklist_items')) {
             $items = array_map(
                 fn (array $item): array => [
@@ -356,23 +327,12 @@ class TestCaseController extends Controller
         $testCase->update(['checklist_items' => array_values($items)]);
     }
 
-    /**
-     * Parse a human-readable estimate string into seconds (integer).
-     *
-     * Accepted formats:
-     *   - "90"          → 90 (treated as seconds, stored as-is)
-     *   - "1h"          → 3600
-     *   - "30m"         → 1800
-     *   - "1h 30m"      → 5400
-     *   - "1h30m"       → 5400
-     */
     private static function parseEstimate(?string $value): ?int
     {
         if ($value === null || trim($value) === '') {
             return null;
         }
 
-        // Pure integer — store as seconds directly
         if (ctype_digit(trim($value))) {
             return (int) $value;
         }
@@ -393,11 +353,6 @@ class TestCaseController extends Controller
         return $matched ? $seconds : null;
     }
 
-    /**
-     * Shape a test case for the frontend TypeScript contract.
-     *
-     * @return array<string, mixed>
-     */
     private function transformCase(TestCase $testCase): array
     {
         $templateInt = array_search($testCase->template, self::TEMPLATE_MAP, true);
@@ -410,7 +365,7 @@ class TestCaseController extends Controller
             'section' => $testCase->relationLoaded('section') ? $testCase->section : null,
             'title' => $testCase->title,
             'template' => $templateInt === false ? 2 : $templateInt,
-            'type_id' => $testCase->case_type,           // stored as string; TS type updated below
+            'type_id' => $testCase->case_type,
             'priority_id' => $priorityInt === false ? null : $priorityInt,
             'estimate' => $testCase->estimate !== null
                 ? self::formatEstimate($testCase->estimate)
@@ -429,14 +384,20 @@ class TestCaseController extends Controller
                     'display_order' => $step->step_index,
                 ])->all()
                 : null,
+            'requirements' => $testCase->relationLoaded('requirements')
+                ? $testCase->requirements->map(fn ($req): array => [
+                    'id' => $req->id,
+                    'display_id' => $req->display_id,
+                    'title' => $req->title,
+                    'priority' => $req->priority,
+                    'status' => $req->status,
+                ])->all()
+                : null,
             'created_at' => $testCase->created_at,
             'updated_at' => $testCase->updated_at,
         ];
     }
 
-    /**
-     * Format stored seconds into a human-readable string ("1h 30m").
-     */
     private static function formatEstimate(int $seconds): string
     {
         if ($seconds <= 0) {
@@ -461,9 +422,6 @@ class TestCaseController extends Controller
         return implode(' ', $parts);
     }
 
-    /**
-     * Ensure the current user may access the given project.
-     */
     private function authorizeProjectAccess(Request $request, Project $project): void
     {
         $user = $request->user();
