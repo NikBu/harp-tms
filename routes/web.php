@@ -81,6 +81,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->shallow()
         ->parameters(['requirements' => 'requirement'])
         ->except(['create']);
+    Route::post('/requirements/{requirement}/test-cases', [RequirementController::class, 'linkTestCases'])
+        ->name('requirements.test-cases.link');
+    Route::delete('/requirements/{requirement}/test-cases/{testCase}', [RequirementController::class, 'unlinkTestCase'])
+        ->name('requirements.test-cases.unlink');
 });
 
 Route::post('/locale', [LocaleController::class, 'update'])

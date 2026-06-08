@@ -25,7 +25,7 @@ import {
     TEMPLATE_STEPS,
     TEMPLATE_TEXT,
 } from '@/types/test-case';
-import type { ChecklistItem } from '@/types/test-case';
+import type { ChecklistItem, LinkedRequirement } from '@/types/test-case';
 
 type StepInput = {
     action: string;
@@ -46,6 +46,7 @@ type TestCaseForm = {
     bdd_scenario: string;
     checklist_items: ChecklistItem[];
     steps: StepInput[];
+    requirement_ids: number[];
 };
 
 const TEMPLATE_OPTIONS = [
@@ -66,12 +67,21 @@ const PRIORITY_OPTIONS = [
 const textareaClass =
     'flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
+const PRIORITY_COLORS: Record<string, string> = {
+    critical: 'text-destructive',
+    high:     'text-orange-500',
+    medium:   'text-yellow-600',
+    low:      'text-muted-foreground',
+};
+
 export default function TestCasesCreate({
     suite,
     sections,
+    requirements,
 }: {
     suite: Suite & { project: Project };
     sections: Section[];
+    requirements: LinkedRequirement[];
 }) {
     const t = useTrans();
 
@@ -89,12 +99,24 @@ export default function TestCasesCreate({
             bdd_scenario: '',
             checklist_items: [],
             steps: [{ action: '', expected: '', display_order: 1 }],
+            requirement_ids: [],
         });
 
     const usesSteps     = data.template === TEMPLATE_STEPS;
     const usesBdd       = data.template === TEMPLATE_BDD;
     const usesChecklist = data.template === TEMPLATE_CHECKLIST;
     const usesBody      = data.template === TEMPLATE_TEXT || data.template === TEMPLATE_EXPLORATORY;
+
+    // ── Requirement toggle ────────────────────────────────────────────────────
+
+    function toggleRequirement(id: number) {
+        setData(
+            'requirement_ids',
+            data.requirement_ids.includes(id)
+                ? data.requirement_ids.filter((r) => r !== id)
+                : [...data.requirement_ids, id],
+        );
+    }
 
     // ── Step helpers ──────────────────────────────────────────────────────────
 
@@ -122,11 +144,7 @@ export default function TestCasesCreate({
 
     function moveStep(index: number, direction: -1 | 1) {
         const target = index + direction;
-
-        if (target < 0 || target >= data.steps.length) {
-return;
-}
-
+        if (target < 0 || target >= data.steps.length) return;
         const next = [...data.steps];
         [next[index], next[target]] = [next[target], next[index]];
         setData(
@@ -164,7 +182,6 @@ return;
 
         transform((current) => ({
             ...current,
-            // Only send the relevant content field; clear the others
             steps:           usesSteps ? current.steps.filter((s) => s.action.trim() !== '') : [],
             checklist_items: usesChecklist ? current.checklist_items.filter((i) => i.label.trim() !== '') : [],
             bdd_scenario:    usesBdd ? current.bdd_scenario : '',
@@ -343,7 +360,7 @@ return;
                                 </div>
                             )}
 
-                            {/* BDD scenario (Gherkin) */}
+                            {/* BDD scenario */}
                             {usesBdd && (
                                 <div className="grid gap-2">
                                     <Label htmlFor="bdd_scenario">
@@ -360,7 +377,7 @@ return;
                                 </div>
                             )}
 
-                            {/* Steps (steps template only) */}
+                            {/* Steps */}
                             {usesSteps && (
                                 <div className="grid gap-3">
                                     <Label>{t('app.test_cases.fields.steps')}</Label>
@@ -408,7 +425,7 @@ return;
                                 </div>
                             )}
 
-                            {/* Checklist items */}
+                            {/* Checklist */}
                             {usesChecklist && (
                                 <div className="grid gap-3">
                                     <Label>{t('app.test_cases.fields.checklist')}</Label>
@@ -433,6 +450,43 @@ return;
                                         <Plus className="size-4" />
                                         {t('app.test_cases.fields.checklist_item')}
                                     </Button>
+                                </div>
+                            )}
+
+                            {/* Requirements */}
+                            {requirements.length > 0 && (
+                                <div className="grid gap-2">
+                                    <Label>{t('app.requirements.label')}</Label>
+                                    <div className="rounded-md border divide-y max-h-56 overflow-y-auto">
+                                        {requirements.map((req) => {
+                                            const checked = data.requirement_ids.includes(req.id);
+                                            return (
+                                                <label
+                                                    key={req.id}
+                                                    className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/40 select-none"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={checked}
+                                                        onChange={() => toggleRequirement(req.id)}
+                                                        className="size-4 rounded border-input accent-primary"
+                                                    />
+                                                    <span className="text-xs text-muted-foreground w-24 shrink-0 font-mono">
+                                                        {req.display_id}
+                                                    </span>
+                                                    <span className="text-sm flex-1 truncate">{req.title}</span>
+                                                    {req.priority && (
+                                                        <span className={`text-xs capitalize shrink-0 ${PRIORITY_COLORS[req.priority] ?? ''}`}>
+                                                            {req.priority}
+                                                        </span>
+                                                    )}
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                    {errors.requirement_ids && (
+                                        <p className="text-sm text-destructive">{errors.requirement_ids}</p>
+                                    )}
                                 </div>
                             )}
 

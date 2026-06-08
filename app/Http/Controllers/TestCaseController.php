@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\Requirement;
 use App\Models\Suite;
 use App\Models\TestCase;
 use Illuminate\Http\RedirectResponse;
@@ -69,9 +70,15 @@ class TestCaseController extends Controller
     {
         $this->authorizeProjectAccess($request, $suite->project);
 
+        $requirements = Requirement::query()
+            ->where('project_id', $suite->project_id)
+            ->orderBy('display_id')
+            ->get(['id', 'display_id', 'title', 'priority', 'status']);
+
         return Inertia::render('test-cases/create', [
             'suite' => $suite->load('project'),
             'sections' => $suite->sections()->orderBy('display_order')->get(),
+            'requirements' => $requirements,
         ]);
     }
 
@@ -88,7 +95,77 @@ class TestCaseController extends Controller
 
         $this->syncContent($testCase, $template, $request);
 
+        // Sync requirement linkage
+        if ($request->filled('requirement_ids')) {
+            $ids = collect($request->input('requirement_ids'))
+                ->filter(fn ($v) => is_int($v) || ctype_digit((string) $v))
+                ->map(fn ($v) => (int) $v)
+                ->all();
+
+            $syncData = array_fill_keys($ids, [
+                'created_by' => Auth::id(),
+                'created_at' => now(),
+            ]);
+
+            $testCase->requirements()->syncWithoutDetaching($syncData);
+        }
+
         Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.created')]);
+
+        return to_route('cases.show', $testCase);
+    }
+
+    public function edit(Request $request, TestCase $testCase): Response
+    {
+        $this->authorizeProjectAccess($request, $testCase->suite->project);
+
+        $testCase->load(['steps', 'requirements:id,display_id,title,priority,status']);
+
+        $requirements = Requirement::query()
+            ->where('project_id', $testCase->suite->project_id)
+            ->orderBy('display_id')
+            ->get(['id', 'display_id', 'title', 'priority', 'status']);
+
+        return Inertia::render('test-cases/edit', [
+            'testCase' => $this->transformCase($testCase),
+            'suite' => $testCase->suite->load('project'),
+            'sections' => $testCase->suite->sections()->orderBy('display_order')->get(),
+            'requirements' => $requirements,
+        ]);
+    }
+
+    public function update(Request $request, TestCase $testCase): RedirectResponse
+    {
+        $this->authorizeProjectAccess($request, $testCase->suite->project);
+
+        $validated = $this->validateCase($request);
+        $template = self::TEMPLATE_MAP[$validated['template']];
+
+        $testCase->update($this->mapAttributes($validated, [
+            'updated_by' => Auth::id(),
+        ]));
+
+        $testCase->steps()->delete();
+        $testCase->update(['checklist_items' => null, 'bdd_scenario' => null]);
+        $this->syncContent($testCase, $template, $request);
+
+        // Full sync — replaces the full set of linked requirements
+        if ($request->has('requirement_ids')) {
+            $ids = collect($request->input('requirement_ids', []))
+                ->filter(fn ($v) => is_int($v) || ctype_digit((string) $v))
+                ->map(fn ($v) => (int) $v)
+                ->all();
+
+            $syncData = array_fill_keys($ids, [
+                'created_by' => Auth::id(),
+                'created_at' => now(),
+            ]);
+
+            // sync() (with detach) — the edit form sends the complete desired state
+            $testCase->requirements()->sync($syncData);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.updated')]);
 
         return to_route('cases.show', $testCase);
     }
@@ -113,40 +190,6 @@ class TestCaseController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name']),
         ]);
-    }
-
-    public function edit(Request $request, TestCase $testCase): Response
-    {
-        $this->authorizeProjectAccess($request, $testCase->suite->project);
-
-        $testCase->load('steps');
-
-        return Inertia::render('test-cases/edit', [
-            'testCase' => $this->transformCase($testCase),
-            'suite' => $testCase->suite->load('project'),
-            'sections' => $testCase->suite->sections()->orderBy('display_order')->get(),
-        ]);
-    }
-
-    public function update(Request $request, TestCase $testCase): RedirectResponse
-    {
-        $this->authorizeProjectAccess($request, $testCase->suite->project);
-
-        $validated = $this->validateCase($request);
-        $template = self::TEMPLATE_MAP[$validated['template']];
-
-        $testCase->update($this->mapAttributes($validated, [
-            'updated_by' => Auth::id(),
-        ]));
-
-        // Always re-sync content when a full update is submitted
-        $testCase->steps()->delete();
-        $testCase->update(['checklist_items' => null, 'bdd_scenario' => null]);
-        $this->syncContent($testCase, $template, $request);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.updated')]);
-
-        return to_route('cases.show', $testCase);
     }
 
     public function destroy(Request $request, TestCase $testCase): RedirectResponse
@@ -245,6 +288,8 @@ class TestCaseController extends Controller
             'steps.*.action' => ['required_with:steps', 'string'],
             'steps.*.expected' => ['nullable', 'string'],
             'steps.*.display_order' => ['nullable', 'integer'],
+            'requirement_ids' => ['nullable', 'array'],
+            'requirement_ids.*' => ['integer', 'exists:requirements,id'],
         ]);
     }
 
