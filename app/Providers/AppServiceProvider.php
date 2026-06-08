@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+
+use App\Models\Requirement;
+use App\Observers\RequirementObserver;
+
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -21,9 +25,17 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
+
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->registerObservers();
+    }
+
+    
+    protected function registerObservers(): void
+    {
+        Requirement::observe(RequirementObserver::class);
     }
 
     /**

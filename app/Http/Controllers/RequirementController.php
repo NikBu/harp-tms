@@ -58,6 +58,7 @@ class RequirementController extends Controller
             'createdBy:id,name',
             'updatedBy:id,name',
             'testCases:id,title,priority,status',
+            'history' => fn ($q) => $q->latest()->limit(50),
         ]);
 
         return Inertia::render('requirements/show', [
@@ -104,8 +105,8 @@ class RequirementController extends Controller
 
         $validated['tags'] = $this->parseTags($validated['tags'] ?? null);
 
-        $count = Requirement::where('project_id', $project->id)->count();
-        $displayId = 'REQ-'.$project->id.'-'.str_pad($count + 1, 4, '0', STR_PAD_LEFT);
+        $seq = Requirement::where('project_id', $project->id)->count() + 1;
+        $displayId = 'REQ-'.str_pad($seq, 4, '0', STR_PAD_LEFT);
 
         Requirement::create(array_merge($validated, [
             'project_id' => $project->id,
@@ -190,12 +191,6 @@ class RequirementController extends Controller
     // Test case linkage
     // -------------------------------------------------------------------------
 
-    /**
-     * Link one or more test cases to a requirement.
-     * POST /requirements/{requirement}/test-cases
-     *
-     * Body: { test_case_ids: int[] }
-     */
     public function linkTestCases(Request $request, Requirement $requirement): JsonResponse
     {
         $this->authorizeProjectAccess($request, $requirement->project);
@@ -205,7 +200,6 @@ class RequirementController extends Controller
             'test_case_ids.*' => ['integer', 'exists:test_cases,id'],
         ]);
 
-        // Verify every test case belongs to the same project
         $projectId = $requirement->project_id;
         $valid = TestCase::query()
             ->whereIn('id', $validated['test_case_ids'])
@@ -216,9 +210,7 @@ class RequirementController extends Controller
             $id => ['created_by' => Auth::id(), 'created_at' => now()],
         ])->all();
 
-        // syncWithoutDetaching — never removes existing links
         $requirement->testCases()->syncWithoutDetaching($syncData);
-
         $requirement->load('testCases:id,title,priority,status');
 
         return response()->json([
@@ -226,10 +218,6 @@ class RequirementController extends Controller
         ]);
     }
 
-    /**
-     * Unlink a single test case from a requirement.
-     * DELETE /requirements/{requirement}/test-cases/{testCase}
-     */
     public function unlinkTestCase(Request $request, Requirement $requirement, TestCase $testCase): JsonResponse
     {
         $this->authorizeProjectAccess($request, $requirement->project);
