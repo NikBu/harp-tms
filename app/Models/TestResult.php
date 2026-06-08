@@ -15,11 +15,7 @@ class TestResult extends Model
     /** @use HasFactory<TestResultFactory> */
     use HasFactory;
 
-    public $timestamps = false;
-
-    public const CREATED_AT = 'created_at';
-
-    public const UPDATED_AT = null;
+    public const UPDATED_AT = null; // results are immutable — no updated_at
 
     public const STATUSES = ['untested', 'passed', 'failed', 'blocked', 'retest', 'skipped'];
 
@@ -31,7 +27,7 @@ class TestResult extends Model
     protected function casts(): array
     {
         return [
-            'elapsed' => 'integer',
+            'elapsed'    => 'integer',
             'created_at' => 'datetime',
         ];
     }

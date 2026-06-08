@@ -31,7 +31,7 @@ class TestRunController extends Controller
 
         return Inertia::render('runs/index', [
             'project' => $project,
-            'runs' => $runs,
+            'runs'    => $runs,
         ]);
     }
 
@@ -40,8 +40,8 @@ class TestRunController extends Controller
         $this->authorizeProjectAccess($request, $project);
 
         return Inertia::render('runs/create', [
-            'project' => $project,
-            'suites' => $project->suites()->orderBy('name')->get(['id', 'name']),
+            'project'    => $project,
+            'suites'     => $project->suites()->orderBy('name')->get(['id', 'name']),
             'milestones' => $project->milestones()
                 ->where('is_completed', false)
                 ->orderBy('due_on')
@@ -55,30 +55,29 @@ class TestRunController extends Controller
         $this->authorizeProjectAccess($request, $project);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name'        => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'refs' => ['nullable', 'string', 'max:255'],
-            'suite_id' => ['nullable', 'integer', 'exists:suites,id'],
-            'milestone_id' => ['nullable', 'integer', 'exists:milestones,id'],
+            'refs'        => ['nullable', 'string', 'max:255'],
+            'suite_id'    => ['nullable', 'integer', 'exists:suites,id'],
+            'milestone_id'=> ['nullable', 'integer', 'exists:milestones,id'],
             'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
             'include_all' => ['boolean'],
-            'case_ids' => ['nullable', 'array'],
-            'case_ids.*' => ['integer', 'exists:test_cases,id'],
+            'case_ids'    => ['nullable', 'array'],
+            'case_ids.*'  => ['integer', 'exists:test_cases,id'],
         ]);
 
         $run = DB::transaction(function () use ($project, $validated): TestRun {
             $run = $project->testRuns()->create([
-                'suite_id' => $validated['suite_id'] ?? null,
+                'suite_id'     => $validated['suite_id'] ?? null,
                 'milestone_id' => $validated['milestone_id'] ?? null,
-                'name' => $validated['name'],
-                'description' => $validated['description'] ?? null,
-                'refs' => $validated['refs'] ?? null,
-                'include_all' => $validated['include_all'] ?? false,
-                'assigned_to' => $validated['assigned_to'] ?? null,
-                'created_by' => Auth::id(),
+                'name'         => $validated['name'],
+                'description'  => $validated['description'] ?? null,
+                'refs'         => $validated['refs'] ?? null,
+                'include_all'  => $validated['include_all'] ?? false,
+                'assigned_to'  => $validated['assigned_to'] ?? null,
+                'created_by'   => Auth::id(),
             ]);
 
-            // Determine which test cases to include
             if ($run->include_all && $run->suite_id) {
                 $caseIds = TestCase::where('suite_id', $run->suite_id)
                     ->whereNull('deleted_at')
@@ -92,7 +91,7 @@ class TestRunController extends Controller
             foreach ($caseIds as $caseId) {
                 $run->tests()->create([
                     'case_id' => $caseId,
-                    'status' => 'untested',
+                    'status'  => 'untested',
                 ]);
             }
 
@@ -119,14 +118,14 @@ class TestRunController extends Controller
                 $q->with([
                     'case:id,title,template,priority,section_id',
                     'case.section:id,name',
-                    'latestResult:id,test_id,status,comment,created_by,created_at',
+                    'latestResult:id,test_id,status,comment,elapsed,version,defect_url,created_by,created_at',
                     'latestResult.createdBy:id,name',
                 ])->orderBy('id');
             },
         ]);
 
         return Inertia::render('runs/show', [
-            'run' => $testRun,
+            'run'      => $testRun,
             'statuses' => Test::STATUSES,
         ]);
     }
@@ -134,7 +133,7 @@ class TestRunController extends Controller
     public function destroy(Request $request, TestRun $testRun): RedirectResponse
     {
         $project = $testRun->project;
-        $user = $request->user();
+        $user    = $request->user();
 
         $isProjectAdmin = $project->members()
             ->whereKey($user->getKey())
@@ -144,7 +143,6 @@ class TestRunController extends Controller
         abort_unless($isProjectAdmin || $user->hasRole('admin'), 403);
 
         $projectId = $project->id;
-
         $testRun->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('app.runs.deleted')]);
@@ -156,13 +154,9 @@ class TestRunController extends Controller
     // Custom actions
     // -------------------------------------------------------------------------
 
-    /**
-     * Mark the run as completed.
-     */
     public function close(Request $request, TestRun $testRun): RedirectResponse
     {
         $this->authorizeProjectAccess($request, $testRun->project);
-
         abort_if($testRun->is_completed, 422, 'Run is already closed.');
 
         $testRun->update([
@@ -175,13 +169,9 @@ class TestRunController extends Controller
         return back();
     }
 
-    /**
-     * Reopen a completed run.
-     */
     public function reopen(Request $request, TestRun $testRun): RedirectResponse
     {
         $this->authorizeProjectAccess($request, $testRun->project);
-
         abort_unless($testRun->is_completed, 422, 'Run is not closed.');
 
         $testRun->update([
@@ -196,7 +186,6 @@ class TestRunController extends Controller
 
     /**
      * Submit a result for a single test within this run.
-     * This is the core "execute test" action.
      */
     public function addResult(Request $request, TestRun $testRun, Test $test): RedirectResponse
     {
@@ -206,35 +195,88 @@ class TestRunController extends Controller
         abort_unless($test->run_id === $testRun->id, 404);
 
         $validated = $request->validate([
-            'status' => ['required', 'string', 'in:'.implode(',', Test::STATUSES)],
-            'comment' => ['nullable', 'string'],
-            'elapsed' => ['nullable', 'string', 'max:50'],
-            'version' => ['nullable', 'string', 'max:100'],
+            'status'     => ['required', 'string', 'in:' . implode(',', Test::STATUSES)],
+            'comment'    => ['nullable', 'string'],
+            'elapsed'    => ['nullable', 'string', 'max:50'],
+            'version'    => ['nullable', 'string', 'max:100'],
+            'defect_url' => ['nullable', 'url', 'max:2048'],
         ]);
 
         $elapsedSeconds = $this->parseElapsed($validated['elapsed'] ?? null);
 
         DB::transaction(function () use ($test, $testRun, $validated, $elapsedSeconds): void {
-            $previousStatus = $test->status;
-            $newStatus = $validated['status'];
-
-            // Append immutable result entry
             $test->results()->create([
-                'run_id' => $testRun->id,
-                'case_id' => $test->case_id,
-                'status' => $newStatus,
-                'comment' => $validated['comment'] ?? null,
-                'elapsed' => $elapsedSeconds,
-                'version' => $validated['version'] ?? null,
+                'run_id'     => $testRun->id,
+                'case_id'    => $test->case_id,
+                'status'     => $validated['status'],
+                'comment'    => $validated['comment'] ?? null,
+                'elapsed'    => $elapsedSeconds,
+                'version'    => $validated['version'] ?? null,
+                'defect_url' => $validated['defect_url'] ?? null,
                 'created_by' => Auth::id(),
             ]);
 
-            // Update rolled-up status on the test row
-            $test->update(['status' => $newStatus]);
-
-            // Recalculate run counters
+            $test->update(['status' => $validated['status']]);
             $this->recalculateRunCounts($testRun);
         });
+
+        return back();
+    }
+
+    /**
+     * Submit results for multiple tests in one request.
+     * Payload: { results: [ { test_id, status, comment?, elapsed?, version?, defect_url? } ] }
+     */
+    public function addResults(Request $request, TestRun $testRun): RedirectResponse
+    {
+        $this->authorizeProjectAccess($request, $testRun->project);
+
+        abort_if($testRun->is_completed, 422, __('app.runs.closed_error'));
+
+        $validated = $request->validate([
+            'results'              => ['required', 'array', 'min:1', 'max:500'],
+            'results.*.test_id'    => ['required', 'integer', 'exists:tests,id'],
+            'results.*.status'     => ['required', 'string', 'in:' . implode(',', Test::STATUSES)],
+            'results.*.comment'    => ['nullable', 'string'],
+            'results.*.elapsed'    => ['nullable', 'string', 'max:50'],
+            'results.*.version'    => ['nullable', 'string', 'max:100'],
+            'results.*.defect_url' => ['nullable', 'url', 'max:2048'],
+        ]);
+
+        // Pre-load all referenced tests and verify they belong to this run
+        $testIds  = collect($validated['results'])->pluck('test_id')->unique();
+        $testsMap = Test::whereIn('id', $testIds)
+            ->where('run_id', $testRun->id)
+            ->get()
+            ->keyBy('id');
+
+        // Reject if any test_id doesn't belong to this run
+        $foreignIds = $testIds->diff($testsMap->keys());
+        abort_unless($foreignIds->isEmpty(), 422, 'Some test IDs do not belong to this run.');
+
+        DB::transaction(function () use ($validated, $testRun, $testsMap): void {
+            foreach ($validated['results'] as $item) {
+                $test    = $testsMap[$item['test_id']];
+                $elapsed = $this->parseElapsed($item['elapsed'] ?? null);
+
+                $test->results()->create([
+                    'run_id'     => $testRun->id,
+                    'case_id'    => $test->case_id,
+                    'status'     => $item['status'],
+                    'comment'    => $item['comment'] ?? null,
+                    'elapsed'    => $elapsed,
+                    'version'    => $item['version'] ?? null,
+                    'defect_url' => $item['defect_url'] ?? null,
+                    'created_by' => Auth::id(),
+                ]);
+
+                $test->update(['status' => $item['status']]);
+            }
+
+            $this->recalculateRunCounts($testRun);
+        });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.runs.bulk_results_saved')]);
 
         return back();
     }
@@ -243,9 +285,6 @@ class TestRunController extends Controller
     // Private helpers
     // -------------------------------------------------------------------------
 
-    /**
-     * Recalculate the denormalized status counters on the run.
-     */
     private function recalculateRunCounts(TestRun $testRun): void
     {
         $counts = $testRun->tests()
@@ -254,18 +293,63 @@ class TestRunController extends Controller
             ->pluck('cnt', 'status');
 
         $testRun->update([
-            'passed_count' => $counts['passed'] ?? 0,
-            'failed_count' => $counts['failed'] ?? 0,
-            'blocked_count' => $counts['blocked'] ?? 0,
+            'passed_count'   => $counts['passed']   ?? 0,
+            'failed_count'   => $counts['failed']   ?? 0,
+            'blocked_count'  => $counts['blocked']  ?? 0,
             'untested_count' => $counts['untested'] ?? 0,
-            'retest_count' => $counts['retest'] ?? 0,
-            'skipped_count' => $counts['skipped'] ?? 0,
+            'retest_count'   => $counts['retest']   ?? 0,
+            'skipped_count'  => $counts['skipped']  ?? 0,
         ]);
     }
+/**
+ * Submit the same result for multiple tests at once.
+ */
+public function bulkResults(Request $request, TestRun $testRun): RedirectResponse
+{
+    $this->authorizeProjectAccess($request, $testRun->project);
 
-    /**
-     * Parse "1h 30m" style strings into seconds, same logic as TestCaseController.
-     */
+    abort_if($testRun->is_completed, 422, __('app.runs.closed_error'));
+
+    $request->validate([
+        'results' => ['required', 'string'], // JSON-encoded on the frontend
+    ]);
+
+    $items = json_decode($request->input('results'), true);
+
+    abort_if(! is_array($items) || empty($items), 422, 'Invalid results payload.');
+
+    $validStatuses = implode(',', Test::STATUSES);
+
+    DB::transaction(function () use ($testRun, $items, $validStatuses): void {
+        foreach ($items as $item) {
+            // Minimal per-item validation
+            $testId = filter_var($item['test_id'] ?? null, FILTER_VALIDATE_INT);
+            $status = $item['status'] ?? null;
+
+            if (! $testId || ! in_array($status, Test::STATUSES, true)) {
+                continue;
+            }
+
+            $test = $testRun->tests()->find($testId);
+            if (! $test) continue;
+
+            $test->results()->create([
+                'run_id'   => $testRun->id,
+                'case_id'  => $test->case_id,
+                'status'   => $status,
+                'comment'  => $item['comment'] ?? null,
+                'version'  => $item['version'] ?? null,
+                'created_by' => Auth::id(),
+            ]);
+
+            $test->update(['status' => $status]);
+        }
+
+        $this->recalculateRunCounts($testRun);
+    });
+
+    return back();
+}
     private function parseElapsed(?string $value): ?int
     {
         if ($value === null || trim($value) === '') {
@@ -281,20 +365,17 @@ class TestRunController extends Controller
 
         if (preg_match('/(\d+)\s*h/i', $value, $m)) {
             $seconds += (int) $m[1] * 3600;
-            $matched = true;
+            $matched  = true;
         }
 
         if (preg_match('/(\d+)\s*m/i', $value, $m)) {
             $seconds += (int) $m[1] * 60;
-            $matched = true;
+            $matched  = true;
         }
 
         return $matched ? $seconds : null;
     }
 
-    /**
-     * Ensure the current user may access the given project.
-     */
     private function authorizeProjectAccess(Request $request, Project $project): void
     {
         $user = $request->user();

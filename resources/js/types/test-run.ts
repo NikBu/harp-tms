@@ -10,8 +10,16 @@ export interface TestResult {
     comment: string | null;
     elapsed: number | null;
     version: string | null;
+    defect_url: string | null;   // ← added
     created_at: string;
     created_by?: { id: number; name: string } | null;
+}
+
+export interface BulkResultItem {   // ← added
+    test_id: number;
+    status: TestStatus;
+    comment?: string;
+    version?: string;
 }
 
 export interface TestInstance {
