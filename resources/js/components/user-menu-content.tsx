@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Globe, LogOut, Settings } from 'lucide-react';
+import { Check, Globe, LogOut, Settings } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
+import { cn } from '@/lib/utils';
 import { useTrans } from '@/hooks/use-trans';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
@@ -82,12 +83,12 @@ export function UserMenuContent({ user }: Props) {
                                 onClick={() => switchLocale(code)}
                                 className={currentLocale === code ? 'font-medium' : ''}
                             >
-                                {currentLocale === code && (
-                                    <span className="mr-2 text-primary">✓</span>
-                                )}
-                                {currentLocale !== code && (
-                                    <span className="mr-2 opacity-0">✓</span>
-                                )}
+                                <Check
+                                    className={cn(
+                                        'mr-2 h-4 w-4 text-primary',
+                                        currentLocale === code ? 'opacity-100' : 'opacity-0',
+                                    )}
+                                />
                                 {label}
                             </DropdownMenuItem>
                         ))}
