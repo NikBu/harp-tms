@@ -29,6 +29,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useTrans } from '@/hooks/use-trans';
 import { cn } from '@/lib/utils';
 import type { ProjectContext } from '@/types/navigation';
 
@@ -38,21 +39,21 @@ interface Props {
 
 export function ProjectSidebar({ project }: Props) {
     const page       = usePage<any>();
+    const t          = useTrans();
     const currentUrl = (page as any).url as string ?? '';
     const projects   = (page.props.accessibleProjects ?? []) as ProjectContext[];
     const base       = `/projects/${project.id}`;
-
-    const todoCount = (page.props.todoCount as number) ?? 0;
+    const todoCount  = (page.props.todoCount as number) ?? 0;
 
     const navItems = [
-        { key: 'overview',      label: 'Overview',      icon: LayoutDashboard, href: base },
-        { key: 'todo',          label: 'To Do',         icon: ListChecks,      href: `${base}/todo` },
-        { key: 'suites',        label: 'Cases',         icon: ClipboardList,   href: `${base}/suites` },
-        { key: 'requirements',  label: 'Requirements',  icon: ScrollText,      href: `${base}/requirements` },
-        { key: 'runs',          label: 'Runs',          icon: PlayCircle,      href: `${base}/runs` },
-        { key: 'plans',         label: 'Plans',         icon: BookOpen,        href: `${base}/plans` },
-        { key: 'milestones',    label: 'Milestones',    icon: MapPin,          href: `${base}/milestones` },
-        { key: 'reports',       label: 'Reports',       icon: BarChart2,       href: `${base}/reports` },
+        { key: 'overview',     labelKey: 'app.navigation.overview',      icon: LayoutDashboard, href: base },
+        { key: 'todo',         labelKey: 'app.navigation.todo',           icon: ListChecks,      href: `${base}/todo` },
+        { key: 'suites',       labelKey: 'app.navigation.cases',          icon: ClipboardList,   href: `${base}/suites` },
+        { key: 'requirements', labelKey: 'app.navigation.requirements',   icon: ScrollText,      href: `${base}/requirements` },
+        { key: 'runs',         labelKey: 'app.navigation.test_runs',      icon: PlayCircle,      href: `${base}/runs` },
+        { key: 'plans',        labelKey: 'app.navigation.test_plans',     icon: BookOpen,        href: `${base}/plans` },
+        { key: 'milestones',   labelKey: 'app.navigation.milestones',     icon: MapPin,          href: `${base}/milestones` },
+        { key: 'reports',      labelKey: 'app.navigation.reports',        icon: BarChart2,       href: `${base}/reports` },
     ];
 
     return (
@@ -61,10 +62,7 @@ export function ProjectSidebar({ project }: Props) {
             <SidebarHeader className="border-b border-sidebar-border pb-0">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <SidebarMenuButton
-                            size="lg"
-                            className="w-full justify-between font-medium"
-                        >
+                        <SidebarMenuButton size="lg" className="w-full justify-between font-medium">
                             <span className="flex items-center gap-2 truncate">
                                 <FolderOpen className="h-4 w-4 shrink-0" />
                                 <span className="truncate">{project.name}</span>
@@ -92,7 +90,7 @@ export function ProjectSidebar({ project }: Props) {
                         ))}
                         <DropdownMenuItem asChild>
                             <Link href="/projects" className="flex w-full items-center gap-2 text-muted-foreground">
-                                All projects…
+                                {t('app.projects.title')}…
                             </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -102,7 +100,7 @@ export function ProjectSidebar({ project }: Props) {
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarMenu>
-                        {navItems.map(({ key, label, icon: Icon, href }) => (
+                        {navItems.map(({ key, labelKey, icon: Icon, href }) => (
                             <SidebarMenuItem key={key}>
                                 <SidebarMenuButton
                                     asChild
@@ -114,12 +112,9 @@ export function ProjectSidebar({ project }: Props) {
                                 >
                                     <Link href={href}>
                                         <Icon className="h-4 w-4" />
-                                        <span>{label}</span>
+                                        <span>{t(labelKey)}</span>
                                         {key === 'todo' && todoCount > 0 && (
-                                            <Badge
-                                                variant="secondary"
-                                                className="ml-auto text-xs"
-                                            >
+                                            <Badge variant="secondary" className="ml-auto text-xs">
                                                 {todoCount}
                                             </Badge>
                                         )}
