@@ -1,11 +1,26 @@
-import { Head, router } from '@inertiajs/react';
-import { Folder, FolderOpen, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import {
+    ChevronRight,
+    ClipboardList,
+    Folder,
+    FolderOpen,
+    Pencil,
+    Plus,
+    Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
 import {
     destroy as destroySection,
     store as storeSection,
     update as updateSection,
 } from '@/actions/App/Http/Controllers/SectionController';
+import {
+    create as createCase,
+    destroy as destroyCase,
+    edit as editCase,
+    show as showCase,
+} from '@/actions/App/Http/Controllers/TestCaseController';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -18,96 +33,213 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useTrans } from '@/hooks/use-trans';
-import { index as projectsIndex } from '@/routes/projects';
 import type { Project, Section, Suite } from '@/types';
+import type { TestCase } from '@/types/test-case';
 
-type SuiteWithSections = Suite & { sections: Section[] };
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type SectionWithCases = Section & {
+    children?: SectionWithCases[];
+    cases?: TestCase[];
+};
+
+type SuiteWithData = Suite & {
+    sections: SectionWithCases[];
+    unsectioned_cases?: TestCase[];
+};
 
 type SectionDialogState =
     | { mode: 'create'; parentId: number | null; suiteId: number; projectId: number }
     | { mode: 'edit'; section: Section }
     | null;
 
-function SectionRow({
-    section,
-    depth,
-    onAddChild,
-    onEdit,
+// ─── Priority helpers ─────────────────────────────────────────────────────────
+
+const PRIORITY_CLASSES: Record<number, string> = {
+    1: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
+    2: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
+    3: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
+    4: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
+};
+
+const PRIORITY_LABELS: Record<number, string> = { 1: 'Critical', 2: 'High', 3: 'Medium', 4: 'Low' };
+
+const TEMPLATE_LABELS: Record<number, string> = {
+    1: 'Text', 2: 'Steps', 3: 'Exploratory', 4: 'BDD', 5: 'Checklist',
+};
+
+// ─── CaseRow ─────────────────────────────────────────────────────────────────
+
+function CaseRow({
+    testCase,
     onDelete,
 }: {
-    section: Section;
-    depth: number;
-    onAddChild: (parentId: number) => void;
-    onEdit: (section: Section) => void;
-    onDelete: (section: Section) => void;
+    testCase: TestCase;
+    onDelete: (tc: TestCase) => void;
 }) {
-    const [hovered, setHovered] = useState(false);
-    const hasChildren = (section.children ?? []).length > 0;
+    return (
+        <div className="group flex items-center gap-3 border-b border-border/50 px-4 py-2.5 last:border-0 hover:bg-muted/30">
+            <ClipboardList className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+
+            <Link
+                href={showCase.url(testCase.id)}
+                className="min-w-0 flex-1 truncate text-sm font-medium text-foreground hover:text-primary hover:underline"
+            >
+                {testCase.title}
+            </Link>
+
+            <div className="hidden shrink-0 items-center gap-2 sm:flex">
+                {testCase.priority_id ? (
+                    <span className={cn(
+                        'inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium',
+                        PRIORITY_CLASSES[testCase.priority_id] ?? PRIORITY_CLASSES[4],
+                    )}>
+                        {PRIORITY_LABELS[testCase.priority_id]}
+                    </span>
+                ) : null}
+                <Badge variant="secondary" className="text-xs font-normal">
+                    {TEMPLATE_LABELS[testCase.template] ?? 'Steps'}
+                </Badge>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Edit">
+                    <Link href={editCase.url(testCase.id)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                    </Link>
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    onClick={() => onDelete(testCase)}
+                    title="Delete"
+                >
+                    <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+// ─── SectionBlock ─────────────────────────────────────────────────────────────
+// Renders a section header + its cases + its children sections recursively.
+// All sections start expanded.
+
+function SectionBlock({
+    section,
+    depth,
+    suiteId,
+    projectId,
+    onAddChildSection,
+    onEditSection,
+    onDeleteSection,
+    onDeleteCase,
+}: {
+    section: SectionWithCases;
+    depth: number;
+    suiteId: number;
+    projectId: number;
+    onAddChildSection: (parentId: number) => void;
+    onEditSection: (section: Section) => void;
+    onDeleteSection: (section: Section) => void;
+    onDeleteCase: (tc: TestCase) => void;
+}) {
+    const [open, setOpen] = useState(true);
+    const cases = section.cases ?? [];
+    const children = section.children ?? [];
+    const hasContent = cases.length > 0 || children.length > 0;
 
     return (
-        <div>
-            <div
-                className={cn(
-                    'group flex items-center justify-between gap-2 rounded-md px-3 py-2 transition-colors',
-                    'hover:bg-accent/50',
-                )}
-                style={{ paddingLeft: `${0.75 + depth * 1.25}rem` }}
-                onMouseEnter={() => setHovered(true)}
-                onMouseLeave={() => setHovered(false)}
-            >
-                <div className="flex min-w-0 items-center gap-2">
-                    {hasChildren ? (
-                        <FolderOpen className="h-3.5 w-3.5 shrink-0 text-primary/70" />
-                    ) : (
-                        <Folder className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <div style={{ marginLeft: depth > 0 ? '1.25rem' : 0 }}>
+            {/* Section header */}
+            <div className="group flex items-center gap-1 border-b border-border/40 bg-muted/20 px-3 py-2">
+                <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    onClick={() => setOpen((o) => !o)}
+                >
+                    <ChevronRight
+                        className={cn(
+                            'h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform',
+                            open && 'rotate-90',
+                        )}
+                    />
+                    {open
+                        ? <FolderOpen className="h-3.5 w-3.5 shrink-0 text-primary/70" />
+                        : <Folder className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    }
+                    <span className="truncate text-sm font-medium">{section.name}</span>
+                    {cases.length > 0 && (
+                        <span className="ml-1 text-xs text-muted-foreground">
+                            ({cases.length})
+                        </span>
                     )}
-                    <span className="truncate text-sm">{section.name}</span>
-                </div>
+                </button>
 
-                <div className={cn(
-                    'flex shrink-0 items-center gap-0.5 transition-opacity',
-                    hovered ? 'opacity-100' : 'opacity-0',
-                )}>
+                {/* Section actions — visible on hover */}
+                <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                     <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => onAddChild(section.id)}
+                        variant="ghost" size="icon" className="h-6 w-6"
+                        title="Add test case"
+                        asChild
+                    >
+                        <Link href={createCase.url(suiteId) + `?section_id=${section.id}`}>
+                            <Plus className="h-3 w-3" />
+                        </Link>
+                    </Button>
+                    <Button
+                        variant="ghost" size="icon" className="h-6 w-6"
                         title="Add subsection"
+                        onClick={() => onAddChildSection(section.id)}
                     >
-                        <Plus className="h-3.5 w-3.5" />
+                        <Folder className="h-3 w-3" />
                     </Button>
                     <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => onEdit(section)}
-                        title="Edit"
+                        variant="ghost" size="icon" className="h-6 w-6"
+                        title="Edit section"
+                        onClick={() => onEditSection(section)}
                     >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="h-3 w-3" />
                     </Button>
                     <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => onDelete(section)}
-                        title="Delete"
+                        variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"
+                        title="Delete section"
+                        onClick={() => onDeleteSection(section)}
                     >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-3 w-3" />
                     </Button>
                 </div>
             </div>
 
-            {(section.children ?? []).length > 0 && (
-                <div className="relative ml-5 border-l border-border/60 pl-0">
-                    {(section.children ?? []).map((child) => (
-                        <SectionRow
+            {/* Cases + children when open */}
+            {open && (
+                <div>
+                    {cases.map((tc) => (
+                        <CaseRow key={tc.id} testCase={tc} onDelete={onDeleteCase} />
+                    ))}
+                    {cases.length === 0 && children.length === 0 && (
+                        <div className="flex items-center gap-2 px-6 py-2 text-xs text-muted-foreground/60 italic">
+                            No test cases yet —{' '}
+                            <Link
+                                href={createCase.url(suiteId) + `?section_id=${section.id}`}
+                                className="text-primary hover:underline not-italic"
+                            >
+                                add one
+                            </Link>
+                        </div>
+                    )}
+                    {children.map((child) => (
+                        <SectionBlock
                             key={child.id}
                             section={child}
                             depth={depth + 1}
-                            onAddChild={onAddChild}
-                            onEdit={onEdit}
-                            onDelete={onDelete}
+                            suiteId={suiteId}
+                            projectId={projectId}
+                            onAddChildSection={onAddChildSection}
+                            onEditSection={onEditSection}
+                            onDeleteSection={onDeleteSection}
+                            onDeleteCase={onDeleteCase}
                         />
                     ))}
                 </div>
@@ -116,12 +248,14 @@ function SectionRow({
     );
 }
 
+// ─── Main page ────────────────────────────────────────────────────────────────
+
 export default function SuitesShow({
     project,
     suite,
 }: {
     project: Project;
-    suite: SuiteWithSections;
+    suite: SuiteWithData;
 }) {
     const t = useTrans();
     const [dialog, setDialog] = useState<SectionDialogState>(null);
@@ -141,7 +275,7 @@ export default function SuitesShow({
 
     function submitDialog(event: React.FormEvent) {
         event.preventDefault();
-        if (dialog === null) return;
+        if (!dialog) return;
 
         if (dialog.mode === 'create') {
             router.post(
@@ -163,6 +297,16 @@ export default function SuitesShow({
         router.delete(destroySection.url(section.id), { preserveScroll: true });
     }
 
+    function deleteCase(tc: TestCase) {
+        if (!window.confirm(t('app.common.confirm_delete'))) return;
+        router.delete(destroyCase.url(tc.id), { preserveScroll: true });
+    }
+
+    const unsectioned = suite.unsectioned_cases ?? [];
+    const totalCases =
+        unsectioned.length +
+        (suite.sections ?? []).reduce((sum, s) => sum + (s.cases?.length ?? 0), 0);
+
     return (
         <>
             <Head title={suite.name} />
@@ -173,52 +317,77 @@ export default function SuitesShow({
                 <div className="flex items-start justify-between gap-2">
                     <div>
                         <h1 className="text-xl font-semibold">{suite.name}</h1>
-                        {suite.description ? (
+                        {suite.description && (
                             <p className="mt-1 text-sm text-muted-foreground">{suite.description}</p>
-                        ) : null}
+                        )}
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                        <Button variant="outline" size="sm" onClick={() => openCreate(null)}>
+                            <Folder className="h-3.5 w-3.5" />
+                            {t('app.sections.add')}
+                        </Button>
+                        <Button asChild size="sm">
+                            <Link href={createCase.url(suite.id)}>
+                                <Plus className="h-3.5 w-3.5" />
+                                {t('app.test_cases.create')}
+                            </Link>
+                        </Button>
                     </div>
                 </div>
 
-                {/* Sections tree */}
-                <div className="rounded-lg border border-border bg-card">
-                    <div className="flex items-center justify-between border-b border-border px-4 py-3">
-                        <h2 className="text-sm font-medium">{t('app.sections.title')}</h2>
-                        <Button variant="outline" size="sm" onClick={() => openCreate(null)}>
-                            <Plus className="h-3.5 w-3.5" />
-                            {t('app.sections.add')}
-                        </Button>
+                {/* Cases + sections tree */}
+                <div className="rounded-lg border border-border bg-card overflow-hidden">
+
+                    {/* Toolbar */}
+                    <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+                        <span className="text-sm text-muted-foreground">
+                            {totalCases} {totalCases === 1 ? 'test case' : 'test cases'}
+                        </span>
                     </div>
 
-                    <div className="p-2">
-                        {suite.sections.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
-                                <Folder className="h-8 w-8 text-muted-foreground/50" />
-                                <p className="text-sm text-muted-foreground">
-                                    {t('app.sections.empty')}
-                                </p>
-                                <Button variant="outline" size="sm" className="mt-1" onClick={() => openCreate(null)}>
+                    {/* Empty state */}
+                    {suite.sections.length === 0 && unsectioned.length === 0 && (
+                        <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
+                            <ClipboardList className="h-9 w-9 text-muted-foreground/40" />
+                            <p className="text-sm text-muted-foreground">
+                                {t('app.test_cases.empty')}
+                            </p>
+                            <Button asChild size="sm" className="mt-1">
+                                <Link href={createCase.url(suite.id)}>
                                     <Plus className="h-3.5 w-3.5" />
-                                    {t('app.sections.add')}
-                                </Button>
-                            </div>
-                        ) : (
-                            <div>
-                                {suite.sections.map((section) => (
-                                    <SectionRow
-                                        key={section.id}
-                                        section={section}
-                                        depth={0}
-                                        onAddChild={openCreate}
-                                        onEdit={openEdit}
-                                        onDelete={deleteSection}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                    {t('app.test_cases.create')}
+                                </Link>
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* Unsectioned cases (no section) */}
+                    {unsectioned.length > 0 && (
+                        <div>
+                            {unsectioned.map((tc) => (
+                                <CaseRow key={tc.id} testCase={tc} onDelete={deleteCase} />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Sectioned cases */}
+                    {suite.sections.map((section) => (
+                        <SectionBlock
+                            key={section.id}
+                            section={section}
+                            depth={0}
+                            suiteId={suite.id}
+                            projectId={suite.project_id}
+                            onAddChildSection={openCreate}
+                            onEditSection={openEdit}
+                            onDeleteSection={deleteSection}
+                            onDeleteCase={deleteCase}
+                        />
+                    ))}
                 </div>
             </div>
 
+            {/* Section create/edit dialog */}
             <Dialog open={dialog !== null} onOpenChange={(open) => { if (!open) closeDialog(); }}>
                 <DialogContent>
                     <form onSubmit={submitDialog} className="grid gap-4">
@@ -251,6 +420,6 @@ export default function SuitesShow({
 
 SuitesShow.layout = {
     breadcrumbs: [
-        { title: 'Projects', href: projectsIndex() },
+        { title: 'Projects', href: '/projects' },
     ],
 };
