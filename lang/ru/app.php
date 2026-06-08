@@ -31,6 +31,9 @@ return [
         'manage' => 'Управление',
         'select_all' => 'Выбрать все',
         'deselect_all' => 'Снять выбор',
+        'settings' => 'Настройки',
+        'language' => 'Язык',
+        'logout' => 'Выйти',
     ],
     'status' => [
         'active' => 'Активен',
