@@ -138,8 +138,9 @@ class TestCase extends Model
     {
         return $this->belongsToMany(Requirement::class, 'requirement_test_case')
             ->using(RequirementTestCase::class)
-            ->withPivot('created_by', 'created_at')
-            ->withTimestamps(false);
+            ->withPivot('created_by', 'created_at');
+        // No ->withTimestamps() — the pivot has created_at but no updated_at.
+        // withPivot() alone selects exactly those two columns, nothing else.
     }
 
     /**
