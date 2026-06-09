@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\TestCase;
 use App\Models\TestPlan;
 use App\Models\TestPlanEntry;
 use App\Models\TestRun;
@@ -46,6 +47,8 @@ class TestPlanController extends Controller
                 ->where('is_completed', false)
                 ->orderBy('due_on')
                 ->get(['id', 'name']),
+            'suites' => $project->suites()->orderBy('name')->get(['id', 'name']),
+            'members' => $project->members()->get(['users.id', 'users.name']),
         ]);
     }
 
@@ -55,10 +58,66 @@ class TestPlanController extends Controller
 
         $validated = $this->validatePlan($request);
 
-        $plan = $project->testPlans()->create([
-            ...$validated,
-            'created_by' => Auth::id(),
-        ]);
+        $entries = $request->validate([
+            'entries' => ['nullable', 'array'],
+            'entries.*.suite_id' => ['required', 'integer', 'exists:suites,id'],
+            'entries.*.include_all' => ['boolean'],
+            'entries.*.assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'entries.*.refs' => ['nullable', 'string', 'max:255'],
+            'entries.*.description' => ['nullable', 'string'],
+            'entries.*.start_on' => ['nullable', 'date'],
+            'entries.*.end_on' => ['nullable', 'date'],
+            'entries.*.case_ids' => ['nullable', 'array'],
+            'entries.*.case_ids.*' => ['integer', 'exists:test_cases,id'],
+        ])['entries'] ?? [];
+
+        $plan = DB::transaction(function () use ($project, $validated, $entries): TestPlan {
+            $plan = $project->testPlans()->create([
+                ...$validated,
+                'created_by' => Auth::id(),
+            ]);
+
+            foreach ($entries as $entry) {
+                $includeAll = $entry['include_all'] ?? true;
+
+                $run = $project->testRuns()->create([
+                    'suite_id' => $entry['suite_id'],
+                    'plan_id' => $plan->id,
+                    'name' => $plan->name,
+                    'description' => $entry['description'] ?? null,
+                    'refs' => $entry['refs'] ?? null,
+                    'start_on' => $entry['start_on'] ?? null,
+                    'end_on' => $entry['end_on'] ?? null,
+                    'include_all' => $includeAll,
+                    'assigned_to' => $entry['assigned_to'] ?? null,
+                    'created_by' => Auth::id(),
+                ]);
+
+                $plan->entries()->create([
+                    'run_id' => $run->id,
+                    'assigned_to' => $entry['assigned_to'] ?? null,
+                ]);
+
+                if ($includeAll) {
+                    $caseIds = TestCase::where('suite_id', $entry['suite_id'])
+                        ->whereNull('deleted_at')
+                        ->pluck('id');
+                } else {
+                    $caseIds = collect($entry['case_ids'] ?? []);
+                }
+
+                foreach ($caseIds as $caseId) {
+                    $run->tests()->create([
+                        'case_id' => $caseId,
+                        'status' => 'untested',
+                    ]);
+                }
+
+                $run->update(['untested_count' => $caseIds->count()]);
+            }
+
+            return $plan;
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('app.plans.created')]);
 
@@ -122,6 +181,8 @@ class TestPlanController extends Controller
                 ->where('is_completed', false)
                 ->orderBy('due_on')
                 ->get(['id', 'name']),
+            'suites' => $testPlan->project->suites()->orderBy('name')->get(['id', 'name']),
+            'members' => $testPlan->project->members()->get(['users.id', 'users.name']),
         ]);
     }
 

@@ -400,6 +400,15 @@ return [
             'start_on' => 'Start Date',
             'end_on' => 'End Date',
         ],
+        'entries' => [
+            'title' => 'Test Suites',
+            'empty' => 'No suites added yet. Add a suite to include its runs in this plan.',
+            'add_suite' => 'Add Suite',
+            'pick_suite' => 'Select a suite…',
+            'all_cases' => 'All cases included',
+            'select_cases' => 'Select cases',
+            'nobody' => 'Nobody',
+        ],
     ],
     'requirements' => [
         'title' => 'Requirements',
