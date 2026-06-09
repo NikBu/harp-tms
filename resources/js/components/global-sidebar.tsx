@@ -1,8 +1,10 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    BarChart2,
     ChevronsUpDown,
     FolderOpen,
     LayoutDashboard,
+    ScrollText,
     Settings,
     ShieldCheck,
 } from 'lucide-react';
@@ -39,9 +41,15 @@ export function GlobalSidebar() {
     const currentProjectId = projectMatch ? Number(projectMatch[1]) : null;
     const currentProject = projects.find((p) => p.id === currentProjectId) ?? null;
 
+    const reportsHref = currentProjectId
+        ? `/projects/${currentProjectId}/reports`
+        : '/reports';
+
     const mainItems = [
-        { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { key: 'projects',  href: '/projects',  icon: FolderOpen      },
+        { key: 'dashboard',    href: '/dashboard',  icon: LayoutDashboard },
+        { key: 'projects',     href: '/projects',   icon: FolderOpen      },
+        { key: 'reports',      href: reportsHref,   icon: BarChart2       },
+        { key: 'requirements', href: '/requirements', icon: ScrollText    },
     ];
 
     const systemItems = [

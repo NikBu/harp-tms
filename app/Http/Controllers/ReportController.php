@@ -31,7 +31,63 @@ class ReportController extends Controller
 
         return Inertia::render('reports/index', [
             'project' => $project->only(['id', 'name']),
+            'projects' => null,
             'reportTypes' => self::REPORT_TYPES,
+            'isGlobal' => false,
+        ]);
+    }
+
+    /**
+     * Global (no project context) report landing page.
+     */
+    public function globalIndex(Request $request): Response
+    {
+        $user = $request->user();
+
+        $projects = $user->hasRole('admin')
+            ? Project::orderBy('name')->get(['id', 'name'])
+            : $user->projects()->orderBy('name')->get(['projects.id', 'projects.name']);
+
+        return Inertia::render('reports/index', [
+            'project' => null,
+            'projects' => $projects,
+            'reportTypes' => self::REPORT_TYPES,
+            'isGlobal' => true,
+        ]);
+    }
+
+    /**
+     * Aggregate one report type across several projects.
+     */
+    public function crossProject(Request $request): Response
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'project_ids' => ['required', 'array', 'min:1'],
+            'project_ids.*' => ['integer', 'exists:projects,id'],
+            'type' => ['required', 'string'],
+        ]);
+
+        $report = collect(self::REPORT_TYPES)->firstWhere('key', $validated['type']);
+        abort_if($report === null, 404);
+
+        $projects = Project::whereIn('id', $validated['project_ids'])->get();
+
+        $accessible = $projects->filter(function (Project $project) use ($user): bool {
+            return $user->hasRole('admin')
+                || $project->members()->whereKey($user->getKey())->exists();
+        });
+
+        $results = $accessible->mapWithKeys(fn (Project $project): array => [
+            $project->name => $this->reportData($project, $validated['type']),
+        ]);
+
+        return Inertia::render('reports/cross-project', [
+            'results' => $results,
+            'report' => $report,
+            'type' => $validated['type'],
+            'projects' => $accessible->map->only(['id', 'name'])->values(),
         ]);
     }
 

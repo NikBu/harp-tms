@@ -539,6 +539,17 @@ return [
         'runs_analyzed' => 'runs analyzed',
         'coming_soon' => 'Report data will be available in a future version.',
         'back' => 'Back to Reports',
+        'tabs' => [
+            'current' => 'This Project',
+            'cross' => 'Cross-Project',
+        ],
+        'cross' => [
+            'title' => 'Cross-Project Report',
+            'intro' => 'Compare one report type across several projects.',
+            'projects' => 'Projects',
+            'report_type' => 'Report Type',
+            'run' => 'Run Report',
+        ],
         'types' => [
             'activity_summary' => [
                 'name' => 'Activity Summary',

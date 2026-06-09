@@ -32,6 +32,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('projects', ProjectController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);
 
+    Route::get('reports', [ReportController::class, 'globalIndex'])->name('reports.global');
+    Route::post('reports/cross-project', [ReportController::class, 'crossProject'])
+        ->name('reports.cross');
     Route::get('projects/{project}/reports', [ReportController::class, 'index'])
         ->name('projects.reports.index');
     Route::get('projects/{project}/reports/{type}', [ReportController::class, 'show'])
@@ -118,6 +121,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('plans.entries.destroy');
 
     // Requirements
+    Route::get('requirements', [RequirementController::class, 'globalIndex'])
+        ->name('requirements.global');
     Route::get('projects/{project}/requirements/create', [RequirementController::class, 'create'])
         ->name('requirements.create');
     Route::resource('projects.requirements', RequirementController::class)

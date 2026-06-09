@@ -44,6 +44,37 @@ class RequirementController extends Controller
             'types' => Requirement::TYPES,
             'priorities' => Requirement::PRIORITIES,
             'statuses' => Requirement::STATUSES,
+            'isGlobal' => false,
+        ]);
+    }
+
+    public function globalIndex(Request $request): Response
+    {
+        $user = $request->user();
+
+        $projectIds = $user->hasRole('admin')
+            ? null
+            : $user->projects()->pluck('projects.id');
+
+        $query = Requirement::query()
+            ->withCount('testCases')
+            ->with(['project:id,name', 'assignedTo:id,name', 'createdBy:id,name'])
+            ->orderByDesc('created_at');
+
+        if ($projectIds !== null) {
+            $query->whereIn('project_id', $projectIds);
+        }
+
+        $requirements = $query->get();
+
+        return Inertia::render('requirements/index', [
+            'project' => null,
+            'folders' => [],
+            'requirements' => $requirements,
+            'types' => Requirement::TYPES,
+            'priorities' => Requirement::PRIORITIES,
+            'statuses' => Requirement::STATUSES,
+            'isGlobal' => true,
         ]);
     }
 

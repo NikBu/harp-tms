@@ -93,7 +93,15 @@ function FolderTree({
     );
 }
 
-function RequirementRow({ req, t }: { req: Requirement; t: (k: string) => string }) {
+function RequirementRow({
+    req,
+    t,
+    showProject,
+}: {
+    req: Requirement;
+    t: (k: string) => string;
+    showProject?: boolean;
+}) {
     return (
         <Link
             href={`/requirements/${req.id}`}
@@ -106,9 +114,14 @@ function RequirementRow({ req, t }: { req: Requirement; t: (k: string) => string
                     </span>
                     <span className="truncate text-sm font-medium">{req.title}</span>
                 </div>
-                {req.assignedTo && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">{req.assignedTo.name}</p>
-                )}
+                <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                    {showProject && req.project && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 font-medium">
+                            {req.project.name}
+                        </span>
+                    )}
+                    {req.assignedTo && <span>{req.assignedTo.name}</span>}
+                </div>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                 {req.type && (
@@ -138,13 +151,15 @@ export default function RequirementsIndex({
     types,
     priorities,
     statuses,
+    isGlobal = false,
 }: {
-    project: Project;
+    project: Project | null;
     folders: RequirementFolder[];
     requirements: Requirement[];
     types: string[];
     priorities: string[];
     statuses: string[];
+    isGlobal?: boolean;
 }) {
     const t = useTrans();
 
@@ -179,17 +194,19 @@ export default function RequirementsIndex({
 
             <div className="flex h-full flex-1 gap-0 overflow-hidden">
 
-                <aside className="hidden w-56 shrink-0 overflow-y-auto border-r p-3 lg:block">
-                    <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {t('app.requirements.folders')}
-                    </p>
-                    <FolderTree
-                        folders={folders}
-                        selectedFolderId={selectedFolder}
-                        onSelect={setSelectedFolder}
-                        allLabel={t('app.requirements.all')}
-                    />
-                </aside>
+                {!isGlobal && (
+                    <aside className="hidden w-56 shrink-0 overflow-y-auto border-r p-3 lg:block">
+                        <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            {t('app.requirements.folders')}
+                        </p>
+                        <FolderTree
+                            folders={folders}
+                            selectedFolderId={selectedFolder}
+                            onSelect={setSelectedFolder}
+                            allLabel={t('app.requirements.all')}
+                        />
+                    </aside>
+                )}
 
                 <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
 
@@ -199,12 +216,14 @@ export default function RequirementsIndex({
                             <h1 className="text-2xl font-semibold">{t('app.requirements.title')}</h1>
                             <Badge variant="secondary">{filtered.length}</Badge>
                         </div>
-                        <Button asChild>
-                            <Link href={`/projects/${project.id}/requirements/create`}>
-                                <Plus className="size-4" />
-                                {t('app.requirements.create')}
-                            </Link>
-                        </Button>
+                        {!isGlobal && project && (
+                            <Button asChild>
+                                <Link href={`/projects/${project.id}/requirements/create`}>
+                                    <Plus className="size-4" />
+                                    {t('app.requirements.create')}
+                                </Link>
+                            </Button>
+                        )}
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -255,17 +274,24 @@ export default function RequirementsIndex({
                         <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-12 text-center">
                             <BookOpen className="size-10 text-muted-foreground" />
                             <p className="text-sm text-muted-foreground">{t('app.requirements.empty')}</p>
-                            <Button asChild className="mt-2">
-                                <Link href={`/projects/${project.id}/requirements/create`}>
-                                    <Plus className="size-4" />
-                                    {t('app.requirements.create')}
-                                </Link>
-                            </Button>
+                            {!isGlobal && project && (
+                                <Button asChild className="mt-2">
+                                    <Link href={`/projects/${project.id}/requirements/create`}>
+                                        <Plus className="size-4" />
+                                        {t('app.requirements.create')}
+                                    </Link>
+                                </Button>
+                            )}
                         </div>
                     ) : (
                         <div className="grid gap-2">
                             {filtered.map((req) => (
-                                <RequirementRow key={req.id} req={req} t={t} />
+                                <RequirementRow
+                                    key={req.id}
+                                    req={req}
+                                    t={t}
+                                    showProject={isGlobal}
+                                />
                             ))}
                         </div>
                     )}
