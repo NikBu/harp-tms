@@ -30,6 +30,8 @@ export interface SuiteCase {
     template: number;
     type_id: string | null;
     priority_id: number | null;
+    estimate: number | null;
+    references: string | null;
     has_requirements: boolean;
 }
 

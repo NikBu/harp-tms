@@ -91,59 +91,52 @@ class SuiteController extends Controller
 
         $this->authorizeProjectAccess($request, $project);
 
-        $withTestCases = fn ($q) => $q->withCount('requirements');
-
         $sections = $suite->sections()
             ->whereNull('parent_id')
             ->orderBy('display_order')
             ->with([
-                'children' => fn ($q) => $q->orderBy('display_order'),
-                'testCases' => $withTestCases,
-                'children.testCases' => $withTestCases,
+                'children'             => fn ($q) => $q->orderBy('display_order')
+                                                       ->with(['testCases' => fn ($q2) => $q2->withCount('requirements')]),
+                'testCases'            => fn ($q) => $q->withCount('requirements'),
             ])
             ->get();
-
-        $sections->each(fn (Section $section) => $this->transformSectionCases($section));
 
         return Inertia::render('suites/show', [
             'project'  => $project,
             'suite'    => $suite,
-            'sections' => $sections,
+            'sections' => $sections->map(fn (Section $section) => $this->serializeSection($section)),
         ]);
     }
 
     /**
-     * Recursively transform every section's testCases so the frontend receives
-     * integer template/priority keys (matching the SuiteCase contract) instead
-     * of the string values stored in the database.
+     * Serialize a section (and its children) to a plain array with integer
+     * template/priority_id values that match the SuiteCase frontend contract.
+     *
+     * @return array<string, mixed>
      */
-    private function transformSectionCases(Section $section): void
+    private function serializeSection(Section $section): array
     {
-        if ($section->relationLoaded('testCases')) {
-            $section->setRelation(
-                'testCases',
-                $section->testCases->map(fn (TestCase $testCase) => $this->transformSuiteCase($testCase)),
-            );
-        }
-
-        if ($section->relationLoaded('children')) {
-            $section->children->each(fn (Section $child) => $this->transformSectionCases($child));
-        }
+        return [
+            'id'          => $section->id,
+            'suite_id'    => $section->suite_id,
+            'parent_id'   => $section->parent_id,
+            'name'        => $section->name,
+            'description' => $section->description,
+            'testCases'   => $section->testCases
+                ->map(fn (TestCase $tc) => $this->transformSuiteCase($tc))
+                ->values()
+                ->all(),
+            'children'    => $section->children
+                ->map(fn (Section $child) => $this->serializeSection($child))
+                ->values()
+                ->all(),
+        ];
     }
 
     /**
      * Map a TestCase to the SuiteCase shape expected by suites/show.tsx.
      *
-     * @return array{
-     *     id: int,
-     *     suite_id: int,
-     *     section_id: int|null,
-     *     title: string,
-     *     template: int,
-     *     type_id: string|null,
-     *     priority_id: int|null,
-     *     has_requirements: bool
-     * }
+     * @return array<string, mixed>
      */
     private function transformSuiteCase(TestCase $testCase): array
     {
@@ -155,9 +148,11 @@ class SuiteController extends Controller
             'suite_id'         => $testCase->suite_id,
             'section_id'       => $testCase->section_id,
             'title'            => $testCase->title,
-            'template'         => $templateInt === false ? 2 : $templateInt,
+            'template'         => $templateInt === false ? 2 : (int) $templateInt,
             'type_id'          => $testCase->case_type,
-            'priority_id'      => $priorityInt === false ? null : $priorityInt,
+            'priority_id'      => $priorityInt === false ? null : (int) $priorityInt,
+            'estimate'         => $testCase->estimate,
+            'references'       => $testCase->refs,
             'has_requirements' => ($testCase->requirements_count ?? 0) > 0,
         ];
     }

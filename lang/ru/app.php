@@ -256,6 +256,7 @@ return [
             'edit_selected' => 'Редактировать',
             'delete_selected' => 'Удалить',
             'columns' => 'Столбцы',
+            'visible_columns' => 'Видимые столбцы',
             'select_cases_first' => 'Сначала выберите один или несколько кейсов.',
             'bulk_edit_not_implemented' => 'Массовое редактирование ещё не реализовано.',
             'assign_not_implemented' => 'Назначение ещё не реализовано.',

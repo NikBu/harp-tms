@@ -49,11 +49,11 @@ function useAddItems(url: string, t: TransFn, projectId?: number): { label: stri
         return [
             {
                 label: t('app.test_cases.create'),
-                href: suiteId ? `${base}/suites/${suiteId}/cases/create` : `${base}/suites`,
+                href: suiteId ? `/suites/${suiteId}/cases/create` : `${base}/suites`,
             },
             {
                 label: t('app.sections.add'),
-                href: suiteId ? `${base}/suites/${suiteId}` : `${base}/suites`,
+                href: suiteId ? `/suites/${suiteId}` : `${base}/suites`,
             },
             { label: t('app.runs.create'), href: `${base}/runs/create` },
             { label: t('app.runs.milestones.create'), href: `${base}/milestones/create` },

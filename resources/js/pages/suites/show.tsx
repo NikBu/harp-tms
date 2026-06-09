@@ -1,14 +1,16 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
+    ArrowDownUp,
     ChevronDown,
     ChevronRight,
+    Columns3,
     Download,
     Filter,
     Pencil,
     Plus,
     Trash2,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,8 +24,11 @@ import {
 } from '@/components/ui/dialog';
 import {
     DropdownMenu,
+    DropdownMenuCheckboxItem,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -49,13 +54,14 @@ import {
     store as storeSection,
     update as updateSection,
 } from '@/actions/App/Http/Controllers/SectionController';
-import { edit as editSuite } from '@/actions/App/Http/Controllers/SuiteController';
 import {
     bulkDestroy,
     bulkUpdate,
     show as showCase,
 } from '@/actions/App/Http/Controllers/TestCaseController';
 import { index as projectsIndex } from '@/routes/projects';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const PRIORITY_KEYS: Record<number, string> = {
     1: 'critical',
@@ -82,15 +88,63 @@ const TEMPLATE_KEYS: Record<number, string> = {
 const PRIORITY_OPTIONS = [1, 2, 3, 4];
 const TEMPLATE_OPTIONS = [1, 2, 3, 4, 5];
 
-type SectionDialogState =
-    | {
-          mode: 'create';
-          parentId: number | null;
-          suiteId: number;
-          projectId: number;
-      }
-    | { mode: 'edit'; section: Section }
-    | null;
+// ── Column visibility ─────────────────────────────────────────────────────────
+
+type ColumnKey = 'priority' | 'template' | 'type' | 'estimate' | 'references';
+
+const COLUMN_KEYS: ColumnKey[] = ['priority', 'template', 'type', 'estimate', 'references'];
+
+const DEFAULT_COLUMNS: Record<ColumnKey, boolean> = {
+    priority: true,
+    template: true,
+    type: true,
+    estimate: false,
+    references: false,
+};
+
+function columnsStorageKey(suiteId: number): string {
+    return `harp_suite_columns_${suiteId}`;
+}
+
+function loadColumns(suiteId: number): Record<ColumnKey, boolean> {
+    if (typeof window === 'undefined') return { ...DEFAULT_COLUMNS };
+    try {
+        const raw = window.localStorage.getItem(columnsStorageKey(suiteId));
+        if (!raw) return { ...DEFAULT_COLUMNS };
+        const parsed = JSON.parse(raw) as Partial<Record<ColumnKey, boolean>>;
+        return COLUMN_KEYS.reduce(
+            (acc, key) => {
+                acc[key] = typeof parsed[key] === 'boolean' ? parsed[key]! : DEFAULT_COLUMNS[key];
+                return acc;
+            },
+            {} as Record<ColumnKey, boolean>,
+        );
+    } catch {
+        return { ...DEFAULT_COLUMNS };
+    }
+}
+
+// ── Sort ──────────────────────────────────────────────────────────────────────
+
+type SortField = 'id' | 'title' | 'priority' | 'type' | 'estimate';
+type SortDir = 'asc' | 'desc';
+
+function sortCases(cases: SuiteCase[], field: SortField, dir: SortDir): SuiteCase[] {
+    const sorted = [...cases].sort((a, b) => {
+        let cmp = 0;
+        switch (field) {
+            case 'id':       cmp = a.id - b.id; break;
+            case 'title':    cmp = a.title.localeCompare(b.title); break;
+            case 'priority': cmp = (a.priority_id ?? 999) - (b.priority_id ?? 999); break;
+            case 'type':     cmp = (a.type_id ?? '').localeCompare(b.type_id ?? ''); break;
+            case 'estimate': cmp = (a.estimate ?? 999999) - (b.estimate ?? 999999); break;
+        }
+        return dir === 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+}
+
+// ── Filter ────────────────────────────────────────────────────────────────────
 
 type Filters = {
     priorities: number[];
@@ -99,65 +153,232 @@ type Filters = {
     hasRequirements: boolean | null;
 };
 
-const EMPTY_FILTERS: Filters = {
-    priorities: [],
-    templates: [],
-    sectionId: null,
-    hasRequirements: null,
-};
+const EMPTY_FILTERS: Filters = { priorities: [], templates: [], sectionId: null, hasRequirements: null };
 
 function caseMatches(c: SuiteCase, f: Filters): boolean {
-    if (
-        f.priorities.length > 0 &&
-        (c.priority_id === null || !f.priorities.includes(c.priority_id))
-    ) {
-        return false;
-    }
-
-    if (f.templates.length > 0 && !f.templates.includes(c.template)) {
-        return false;
-    }
-
-    if (f.sectionId !== null && c.section_id !== f.sectionId) {
-        return false;
-    }
-
-    if (
-        f.hasRequirements !== null &&
-        c.has_requirements !== f.hasRequirements
-    ) {
-        return false;
-    }
-
+    if (f.priorities.length > 0 && (c.priority_id === null || !f.priorities.includes(c.priority_id))) return false;
+    if (f.templates.length > 0 && !f.templates.includes(c.template)) return false;
+    if (f.sectionId !== null && c.section_id !== f.sectionId) return false;
+    if (f.hasRequirements !== null && c.has_requirements !== f.hasRequirements) return false;
     return true;
 }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function flattenSections(sections: Section[]): Section[] {
     return sections.flatMap((s) => [s, ...flattenSections(s.children ?? [])]);
 }
 
-export default function SuitesShow({
-    suite,
-    sections,
+function collectCases(sections: Section[]): SuiteCase[] {
+    return sections.flatMap((s) => [
+        ...((s.testCases as SuiteCase[]) ?? []),
+        ...collectCases(s.children ?? []),
+    ]);
+}
+
+function formatEstimate(seconds: number | null): string {
+    if (seconds === null) return '—';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+}
+
+// ── Dialog types ──────────────────────────────────────────────────────────────
+
+type SectionDialogState =
+    | { mode: 'create'; parentId: number | null; suiteId: number; projectId: number }
+    | { mode: 'edit'; section: Section }
+    | null;
+
+// ── SectionRow ────────────────────────────────────────────────────────────────
+
+function SectionRow({
+    section,
+    depth,
+    collapsed,
+    sortField,
+    sortDir,
+    visibleCols,
+    filters,
+    selectedIds,
+    onToggleCollapse,
+    onToggleCase,
+    onAddChild,
+    onEdit,
+    onDelete,
 }: {
-    suite: Suite;
-    sections: Section[];
+    section: Section;
+    depth: number;
+    collapsed: Set<number>;
+    sortField: SortField;
+    sortDir: SortDir;
+    visibleCols: Record<ColumnKey, boolean>;
+    filters: Filters;
+    selectedIds: Set<number>;
+    onToggleCollapse: (id: number) => void;
+    onToggleCase: (id: number) => void;
+    onAddChild: (parentId: number) => void;
+    onEdit: (section: Section) => void;
+    onDelete: (section: Section) => void;
 }) {
     const t = useTrans();
+    const isCollapsed = collapsed.has(section.id);
+    const rawCases = (section.testCases as SuiteCase[] | undefined) ?? [];
+    const cases = sortCases(rawCases.filter((c) => caseMatches(c, filters)), sortField, sortDir);
+
+    return (
+        <>
+            {/* Section header row */}
+            <div
+                className="flex items-center justify-between gap-2 rounded-md border p-3"
+                style={{ marginLeft: `${depth * 1.5}rem` }}
+            >
+                <button
+                    type="button"
+                    className="flex min-w-0 items-center gap-2 text-left"
+                    onClick={() => onToggleCollapse(section.id)}
+                >
+                    <ChevronRight
+                        className={`size-4 shrink-0 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+                    />
+                    <span className="truncate text-sm font-medium">{section.name}</span>
+                    <span className="text-xs text-muted-foreground">({rawCases.length})</span>
+                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => onAddChild(section.id)} title={t('app.sections.add_subsection')}>
+                        <Plus className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => onEdit(section)} title={t('app.sections.edit')}>
+                        <Pencil className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => onDelete(section)} title={t('app.common.delete')}>
+                        <Trash2 className="size-4" />
+                    </Button>
+                </div>
+            </div>
+
+            {/* Cases table */}
+            {!isCollapsed && cases.length > 0 ? (
+                <div className="overflow-x-auto rounded-md border" style={{ marginLeft: `${(depth + 1) * 1.5}rem` }}>
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b text-left text-xs text-muted-foreground">
+                                <th className="w-10 px-3 py-2" />
+                                <th className="px-3 py-2 font-medium">{t('app.test_cases.fields.title')}</th>
+                                {visibleCols.priority   && <th className="w-28 px-3 py-2 font-medium">{t('app.test_cases.fields.priority')}</th>}
+                                {visibleCols.template   && <th className="w-28 px-3 py-2 font-medium">{t('app.test_cases.fields.template')}</th>}
+                                {visibleCols.type       && <th className="w-32 px-3 py-2 font-medium">{t('app.test_cases.fields.type')}</th>}
+                                {visibleCols.estimate   && <th className="w-24 px-3 py-2 font-medium">{t('app.test_cases.fields.estimate')}</th>}
+                                {visibleCols.references && <th className="w-32 px-3 py-2 font-medium">{t('app.test_cases.fields.references')}</th>}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {cases.map((c) => (
+                                <tr key={c.id} className="border-b last:border-0 hover:bg-muted/40">
+                                    <td className="w-10 px-3 py-2">
+                                        <Checkbox
+                                            checked={selectedIds.has(c.id)}
+                                            onCheckedChange={() => onToggleCase(c.id)}
+                                        />
+                                    </td>
+                                    <td className="px-3 py-2 font-medium">
+                                        <Link href={showCase.url(c.id)} className="hover:text-primary hover:underline">
+                                            {c.title}
+                                        </Link>
+                                    </td>
+                                    {visibleCols.priority && (
+                                        <td className="w-28 px-3 py-2">
+                                            {c.priority_id ? (
+                                                <span className={`text-xs capitalize ${PRIORITY_COLORS[c.priority_id] ?? ''}`}>
+                                                    {t(`app.requirements.priorities.${PRIORITY_KEYS[c.priority_id]}`)}
+                                                </span>
+                                            ) : <span className="text-muted-foreground">—</span>}
+                                        </td>
+                                    )}
+                                    {visibleCols.template && (
+                                        <td className="w-28 px-3 py-2 text-xs text-muted-foreground capitalize">
+                                            {t(`app.test_cases.templates.${TEMPLATE_KEYS[c.template] ?? 'steps'}`)}
+                                        </td>
+                                    )}
+                                    {visibleCols.type && (
+                                        <td className="w-32 px-3 py-2 text-xs text-muted-foreground capitalize">
+                                            {c.type_id ?? '—'}
+                                        </td>
+                                    )}
+                                    {visibleCols.estimate && (
+                                        <td className="w-24 px-3 py-2 text-xs text-muted-foreground">
+                                            {formatEstimate(c.estimate)}
+                                        </td>
+                                    )}
+                                    {visibleCols.references && (
+                                        <td className="w-32 px-3 py-2 text-xs text-muted-foreground truncate max-w-[8rem]">
+                                            {c.references ?? '—'}
+                                        </td>
+                                    )}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            ) : null}
+
+            {/* Child sections */}
+            {!isCollapsed
+                ? (section.children ?? []).map((child) => (
+                      <SectionRow
+                          key={child.id}
+                          section={child}
+                          depth={depth + 1}
+                          collapsed={collapsed}
+                          sortField={sortField}
+                          sortDir={sortDir}
+                          visibleCols={visibleCols}
+                          filters={filters}
+                          selectedIds={selectedIds}
+                          onToggleCollapse={onToggleCollapse}
+                          onToggleCase={onToggleCase}
+                          onAddChild={onAddChild}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
+                      />
+                  ))
+                : null}
+        </>
+    );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+export default function SuitesShow({ suite, sections }: { suite: Suite; sections: Section[] }) {
+    const t = useTrans();
+
+    // Section dialog
     const [dialog, setDialog] = useState<SectionDialogState>(null);
     const [name, setName] = useState('');
-    const [subsectionOpen, setSubsectionOpen] = useState(false);
 
-    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    // Toolbar state
+    const [sortField, setSortField] = useState<SortField>('id');
+    const [sortDir, setSortDir] = useState<SortDir>('asc');
+    const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+    const [visibleCols, setVisibleCols] = useState<Record<ColumnKey, boolean>>(() => loadColumns(suite.id));
+
+    // Filter state
     const [filterOpen, setFilterOpen] = useState(false);
     const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
     const [draftFilters, setDraftFilters] = useState<Filters>(EMPTY_FILTERS);
+
+    // Selection + bulk edit
+    const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [bulkOpen, setBulkOpen] = useState(false);
     const [bulkPriority, setBulkPriority] = useState('');
     const [bulkSection, setBulkSection] = useState('');
     const [bulkType, setBulkType] = useState('');
 
     const flatSections = useMemo(() => flattenSections(sections), [sections]);
+    const allCases = useMemo(() => collectCases(sections), [sections]);
 
     const activeFilterCount =
         filters.priorities.length +
@@ -165,16 +386,50 @@ export default function SuitesShow({
         (filters.sectionId !== null ? 1 : 0) +
         (filters.hasRequirements !== null ? 1 : 0);
 
-    // ── Section dialog helpers ────────────────────────────────────────────────
+    // Persist column visibility
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.localStorage.setItem(columnsStorageKey(suite.id), JSON.stringify(visibleCols));
+        }
+    }, [suite.id, visibleCols]);
 
+    // Collapse helpers
+    function allSectionIds(secs: Section[]): number[] {
+        return secs.flatMap((s) => [s.id, ...allSectionIds(s.children ?? [])]);
+    }
+    const allCollapsed = sections.length > 0 && allSectionIds(sections).every((id) => collapsed.has(id));
+
+    function toggleCollapseAll() {
+        setCollapsed(allCollapsed ? new Set() : new Set(allSectionIds(sections)));
+    }
+
+    function toggleCollapse(id: number) {
+        setCollapsed((prev) => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    }
+
+    // Selection helpers
+    const allSelected = allCases.length > 0 && allCases.every((c) => selectedIds.has(c.id));
+
+    function toggleSelectAll(checked: boolean) {
+        setSelectedIds(checked ? new Set(allCases.map((c) => c.id)) : new Set());
+    }
+
+    function toggleCase(id: number) {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    }
+
+    // Section dialog helpers
     function openCreate(parentId: number | null) {
         setName('');
-        setDialog({
-            mode: 'create',
-            parentId,
-            suiteId: suite.id,
-            projectId: suite.project_id,
-        });
+        setDialog({ mode: 'create', parentId, suiteId: suite.id, projectId: suite.project_id });
     }
 
     function openEdit(section: Section) {
@@ -188,17 +443,11 @@ export default function SuitesShow({
 
     function submitDialog(event: React.FormEvent) {
         event.preventDefault();
-
-        if (dialog === null) {
-            return;
-        }
+        if (dialog === null) return;
 
         if (dialog.mode === 'create') {
             router.post(
-                storeSection.url({
-                    project: dialog.projectId,
-                    suite: dialog.suiteId,
-                }),
+                storeSection.url({ project: dialog.projectId, suite: dialog.suiteId }),
                 { name, parent_id: dialog.parentId },
                 { onSuccess: closeDialog, preserveScroll: true },
             );
@@ -212,48 +461,11 @@ export default function SuitesShow({
     }
 
     function deleteSection(section: Section) {
-        if (!window.confirm(t('app.common.confirm_delete'))) {
-            return;
-        }
-
-        router.delete(destroySection.url(section.id), {
-            preserveScroll: true,
-        });
+        if (!window.confirm(t('app.common.confirm_delete'))) return;
+        router.delete(destroySection.url(section.id), { preserveScroll: true });
     }
 
-    // ── Selection helpers ──────────────────────────────────────────────────────
-
-    function toggleCase(id: number) {
-        setSelectedIds((prev) => {
-            const next = new Set(prev);
-
-            if (next.has(id)) {
-                next.delete(id);
-            } else {
-                next.add(id);
-            }
-
-            return next;
-        });
-    }
-
-    function deleteSelected() {
-        if (
-            selectedIds.size === 0 ||
-            !window.confirm(t('app.common.confirm_delete'))
-        ) {
-            return;
-        }
-
-        router.delete(bulkDestroy.url(), {
-            data: { ids: Array.from(selectedIds) },
-            preserveScroll: true,
-            onSuccess: () => setSelectedIds(new Set()),
-        });
-    }
-
-    // ── Filter helpers ──────────────────────────────────────────────────────────
-
+    // Filter helpers
     function openFilters() {
         setDraftFilters(filters);
         setFilterOpen(true);
@@ -262,18 +474,14 @@ export default function SuitesShow({
     function toggleDraftPriority(value: number) {
         setDraftFilters((f) => ({
             ...f,
-            priorities: f.priorities.includes(value)
-                ? f.priorities.filter((p) => p !== value)
-                : [...f.priorities, value],
+            priorities: f.priorities.includes(value) ? f.priorities.filter((p) => p !== value) : [...f.priorities, value],
         }));
     }
 
     function toggleDraftTemplate(value: number) {
         setDraftFilters((f) => ({
             ...f,
-            templates: f.templates.includes(value)
-                ? f.templates.filter((tpl) => tpl !== value)
-                : [...f.templates, value],
+            templates: f.templates.includes(value) ? f.templates.filter((tpl) => tpl !== value) : [...f.templates, value],
         }));
     }
 
@@ -288,7 +496,15 @@ export default function SuitesShow({
         setFilterOpen(false);
     }
 
-    // ── Bulk edit helpers ────────────────────────────────────────────────────────
+    // Bulk delete/edit
+    function deleteSelected() {
+        if (selectedIds.size === 0 || !window.confirm(t('app.common.confirm_delete'))) return;
+        router.delete(bulkDestroy.url(), {
+            data: { ids: Array.from(selectedIds) },
+            preserveScroll: true,
+            onSuccess: () => setSelectedIds(new Set()),
+        });
+    }
 
     function submitBulkEdit() {
         router.patch(
@@ -312,38 +528,114 @@ export default function SuitesShow({
         );
     }
 
-    const exportUrl = (format: string) =>
-        `/suites/${suite.id}/export?format=${format}`;
+    const exportUrl = (format: string) => `/suites/${suite.id}/export?format=${format}`;
 
     return (
         <>
             <Head title={suite.name} />
 
-            <div className="flex h-full flex-1 flex-col gap-6 p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+
+                {/* Page header */}
                 <div className="flex items-start justify-between gap-2">
                     <div className="grid gap-1">
                         <h1 className="text-2xl font-semibold">{suite.name}</h1>
-                        {suite.description ? (
-                            <p className="text-sm text-muted-foreground">
-                                {suite.description}
-                            </p>
-                        ) : null}
+                        {suite.description && (
+                            <p className="text-sm text-muted-foreground">{suite.description}</p>
+                        )}
                     </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={openFilters}
-                        >
-                            <Filter className="mr-1 size-4" />
-                            {t('app.test_cases.toolbar.filter')}
-                            {activeFilterCount > 0 ? (
-                                <Badge className="ml-1">
-                                    {activeFilterCount}
-                                </Badge>
-                            ) : null}
-                        </Button>
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href={`/suites/${suite.id}/edit`}>
+                            <Pencil className="mr-1 size-4" />
+                            {t('app.common.edit')}
+                        </Link>
+                    </Button>
+                </div>
 
+                {/* ── Toolbar ───────────────────────────────────────────────── */}
+                <div className="flex flex-wrap items-center gap-1 border-b pb-2">
+
+                    {/* Sort */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <ArrowDownUp className="mr-1 size-4" />
+                                {t('app.test_cases.toolbar.sort_by')}
+                                <ChevronDown className="ml-1 size-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                            {(['id', 'title', 'priority', 'type', 'estimate'] as SortField[]).map((field) => (
+                                <DropdownMenuCheckboxItem
+                                    key={field}
+                                    checked={sortField === field}
+                                    onCheckedChange={() => setSortField(field)}
+                                >
+                                    {t(`app.test_cases.toolbar.sort_${field}`)}
+                                </DropdownMenuCheckboxItem>
+                            ))}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuCheckboxItem checked={sortDir === 'asc'} onCheckedChange={() => setSortDir('asc')}>
+                                A → Z
+                            </DropdownMenuCheckboxItem>
+                            <DropdownMenuCheckboxItem checked={sortDir === 'desc'} onCheckedChange={() => setSortDir('desc')}>
+                                Z → A
+                            </DropdownMenuCheckboxItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* Filter */}
+                    <Button variant="outline" size="sm" onClick={openFilters}>
+                        <Filter className="mr-1 size-4" />
+                        {t('app.test_cases.toolbar.filter')}
+                        {activeFilterCount > 0 && <Badge className="ml-1">{activeFilterCount}</Badge>}
+                    </Button>
+
+                    {/* Collapse/expand */}
+                    <Button variant="outline" size="sm" onClick={toggleCollapseAll}>
+                        {allCollapsed ? t('app.test_cases.toolbar.expand_all') : t('app.test_cases.toolbar.collapse_all')}
+                    </Button>
+
+                    <div className="ml-auto flex flex-wrap items-center gap-1">
+
+                        {/* Add Case + Add Section */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="default" size="sm">
+                                    <Plus className="mr-1 size-4" />
+                                    {t('app.test_cases.toolbar.add_case')}
+                                    <ChevronDown className="ml-1 size-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild>
+                                    <Link href={`/suites/${suite.id}/cases/create`}>
+                                        {t('app.test_cases.toolbar.add_case')}
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => openCreate(null)}>
+                                    {t('app.test_cases.toolbar.add_section')}
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        {/* Bulk edit — only when items selected */}
+                        {selectedIds.size > 0 && (
+                            <>
+                                <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)}>
+                                    <Pencil className="mr-1 size-4" />
+                                    {t('app.test_cases.toolbar.edit_selected')}
+                                    <Badge variant="secondary" className="ml-1">{selectedIds.size}</Badge>
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={deleteSelected}>
+                                    <Trash2 className="mr-1 size-4" />
+                                    {t('app.test_cases.toolbar.delete_selected')}
+                                </Button>
+                            </>
+                        )}
+
+                        {/* Export */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
@@ -353,58 +645,55 @@ export default function SuitesShow({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                    <a href={exportUrl('csv')}>CSV</a>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                    <a href={exportUrl('xml')}>XML</a>
-                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild><a href={exportUrl('csv')}>CSV</a></DropdownMenuItem>
+                                <DropdownMenuItem asChild><a href={exportUrl('xml')}>XML</a></DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href={editSuite.url(suite.id)}>
-                                <Pencil className="mr-1 size-4" />
-                                {t('app.common.edit')}
-                            </Link>
-                        </Button>
+                        {/* Column visibility */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <Columns3 className="mr-1 size-4" />
+                                    {t('app.test_cases.toolbar.columns')}
+                                    <ChevronDown className="ml-1 size-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>{t('app.test_cases.toolbar.visible_columns')}</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {COLUMN_KEYS.map((key) => (
+                                    <DropdownMenuCheckboxItem
+                                        key={key}
+                                        checked={visibleCols[key]}
+                                        onCheckedChange={(checked) =>
+                                            setVisibleCols((prev) => ({ ...prev, [key]: checked === true }))
+                                        }
+                                    >
+                                        {t(`app.test_cases.fields.${key}`)}
+                                    </DropdownMenuCheckboxItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
 
-                {selectedIds.size > 0 ? (
-                    <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
-                        <span className="text-sm">
-                            {selectedIds.size} {t('app.runs.bulk.selected')}
-                        </span>
-                        <div className="ml-auto flex gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setBulkOpen(true)}
-                            >
-                                {t('app.test_cases.toolbar.edit_selected')}
-                            </Button>
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={deleteSelected}
-                            >
-                                {t('app.test_cases.toolbar.delete_selected')}
-                            </Button>
-                        </div>
-                    </div>
-                ) : null}
-
+                {/* ── Sections + Cases ──────────────────────────────────────── */}
                 <Card>
                     <CardContent className="grid gap-2">
-                        <h2 className="text-lg font-medium">
-                            {t('app.sections.title')}
-                        </h2>
+                        <div className="flex items-center gap-2">
+                            <Checkbox
+                                checked={allSelected}
+                                onCheckedChange={(checked) => toggleSelectAll(checked === true)}
+                                disabled={allCases.length === 0}
+                                aria-label={t('app.common.select_all')}
+                            />
+                            <h2 className="text-lg font-medium">{t('app.sections.title')}</h2>
+                            <span className="text-sm text-muted-foreground">({allCases.length})</span>
+                        </div>
 
                         {sections.length === 0 ? (
-                            <p className="py-4 text-sm text-muted-foreground">
-                                {t('app.sections.empty')}
-                            </p>
+                            <p className="py-4 text-sm text-muted-foreground">{t('app.sections.empty')}</p>
                         ) : (
                             <div className="grid gap-2">
                                 {sections.map((section) => (
@@ -412,8 +701,13 @@ export default function SuitesShow({
                                         key={section.id}
                                         section={section}
                                         depth={0}
+                                        collapsed={collapsed}
+                                        sortField={sortField}
+                                        sortDir={sortDir}
+                                        visibleCols={visibleCols}
                                         filters={filters}
                                         selectedIds={selectedIds}
+                                        onToggleCollapse={toggleCollapse}
                                         onToggleCase={toggleCase}
                                         onAddChild={openCreate}
                                         onEdit={openEdit}
@@ -424,481 +718,151 @@ export default function SuitesShow({
                         )}
 
                         <div className="flex gap-2 pt-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => openCreate(null)}
-                            >
+                            <Button variant="outline" onClick={() => openCreate(null)}>
                                 <Plus className="size-4" />
                                 {t('app.sections.add')}
                             </Button>
-                            {flatSections.length > 0 ? (
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setSubsectionOpen(true)}
-                                >
-                                    <Plus className="size-4" />
-                                    {t('app.sections.add_subsection')}
-                                </Button>
-                            ) : null}
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Section create/edit dialog */}
-            <Dialog
-                open={dialog !== null}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        closeDialog();
-                    }
-                }}
-            >
+            {/* ── Section create/edit dialog ─────────────────────────────────── */}
+            <Dialog open={dialog !== null} onOpenChange={(open) => { if (!open) closeDialog(); }}>
                 <DialogContent>
                     <form onSubmit={submitDialog} className="grid gap-4">
                         <DialogHeader>
                             <DialogTitle>
-                                {dialog?.mode === 'edit'
-                                    ? t('app.sections.edit')
-                                    : t('app.sections.add')}
+                                {dialog?.mode === 'edit' ? t('app.sections.edit') : t('app.sections.add')}
                             </DialogTitle>
                         </DialogHeader>
-
                         <div className="grid gap-2">
-                            <Label htmlFor="section-name">
-                                {t('app.sections.name')}
-                            </Label>
-                            <Input
-                                id="section-name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                autoFocus
-                            />
+                            <Label htmlFor="section-name">{t('app.sections.name')}</Label>
+                            <Input id="section-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
                         </div>
-
                         <DialogFooter>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={closeDialog}
-                            >
-                                {t('app.common.cancel')}
-                            </Button>
-                            <Button type="submit">
-                                {t('app.common.save')}
-                            </Button>
+                            <Button type="button" variant="outline" onClick={closeDialog}>{t('app.common.cancel')}</Button>
+                            <Button type="submit">{t('app.common.save')}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
 
-            {/* Add subsection — parent picker */}
-            <Dialog open={subsectionOpen} onOpenChange={setSubsectionOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>
-                            {t('app.sections.add_subsection')}
-                        </DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-2">
-                        <Label>{t('app.sections.parent_section')}</Label>
-                        <Select
-                            onValueChange={(val) => {
-                                setSubsectionOpen(false);
-                                openCreate(Number(val));
-                            }}
-                        >
-                            <SelectTrigger>
-                                <SelectValue
-                                    placeholder={t(
-                                        'app.sections.select_parent',
-                                    )}
-                                />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {flatSections.map((s) => (
-                                    <SelectItem key={s.id} value={String(s.id)}>
-                                        {s.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* Filter panel */}
+            {/* ── Filter sheet ───────────────────────────────────────────────── */}
             <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
                 <SheetContent className="flex flex-col">
                     <SheetHeader>
-                        <SheetTitle>
-                            {t('app.test_cases.filters.title')}
-                        </SheetTitle>
+                        <SheetTitle>{t('app.test_cases.filters.title')}</SheetTitle>
                     </SheetHeader>
-
                     <div className="flex-1 space-y-6 overflow-y-auto px-4">
                         <div className="grid gap-2">
-                            <Label>
-                                {t('app.test_cases.filters.priority')}
-                            </Label>
+                            <Label>{t('app.test_cases.filters.priority')}</Label>
                             {PRIORITY_OPTIONS.map((p) => (
-                                <label
-                                    key={p}
-                                    className="flex items-center gap-2 text-sm"
-                                >
+                                <label key={p} className="flex items-center gap-2 text-sm">
                                     <Checkbox
-                                        checked={draftFilters.priorities.includes(
-                                            p,
-                                        )}
-                                        onCheckedChange={() =>
-                                            toggleDraftPriority(p)
-                                        }
+                                        checked={draftFilters.priorities.includes(p)}
+                                        onCheckedChange={() => toggleDraftPriority(p)}
                                     />
-                                    {t(
-                                        `app.requirements.priorities.${PRIORITY_KEYS[p]}`,
-                                    )}
+                                    {t(`app.requirements.priorities.${PRIORITY_KEYS[p]}`)}
                                 </label>
                             ))}
                         </div>
-
                         <div className="grid gap-2">
-                            <Label>
-                                {t('app.test_cases.filters.template')}
-                            </Label>
+                            <Label>{t('app.test_cases.filters.template')}</Label>
                             {TEMPLATE_OPTIONS.map((tpl) => (
-                                <label
-                                    key={tpl}
-                                    className="flex items-center gap-2 text-sm"
-                                >
+                                <label key={tpl} className="flex items-center gap-2 text-sm">
                                     <Checkbox
-                                        checked={draftFilters.templates.includes(
-                                            tpl,
-                                        )}
-                                        onCheckedChange={() =>
-                                            toggleDraftTemplate(tpl)
-                                        }
+                                        checked={draftFilters.templates.includes(tpl)}
+                                        onCheckedChange={() => toggleDraftTemplate(tpl)}
                                     />
-                                    {t(
-                                        `app.test_cases.templates.${TEMPLATE_KEYS[tpl]}`,
-                                    )}
+                                    {t(`app.test_cases.templates.${TEMPLATE_KEYS[tpl]}`)}
                                 </label>
                             ))}
                         </div>
-
                         <div className="grid gap-2">
                             <Label>{t('app.test_cases.filters.section')}</Label>
                             <Select
-                                value={
-                                    draftFilters.sectionId === null
-                                        ? 'all'
-                                        : String(draftFilters.sectionId)
-                                }
-                                onValueChange={(v) =>
-                                    setDraftFilters((f) => ({
-                                        ...f,
-                                        sectionId:
-                                            v === 'all' ? null : Number(v),
-                                    }))
-                                }
+                                value={draftFilters.sectionId === null ? 'all' : String(draftFilters.sectionId)}
+                                onValueChange={(v) => setDraftFilters((f) => ({ ...f, sectionId: v === 'all' ? null : Number(v) }))}
                             >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">
-                                        {t('app.test_cases.filters.all')}
-                                    </SelectItem>
+                                    <SelectItem value="all">{t('app.test_cases.filters.all')}</SelectItem>
                                     {flatSections.map((s) => (
-                                        <SelectItem
-                                            key={s.id}
-                                            value={String(s.id)}
-                                        >
-                                            {s.name}
-                                        </SelectItem>
+                                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
-
                         <div className="grid gap-2">
-                            <Label>
-                                {t('app.test_cases.filters.has_requirements')}
-                            </Label>
+                            <Label>{t('app.test_cases.filters.has_requirements')}</Label>
                             <Select
-                                value={
-                                    draftFilters.hasRequirements === null
-                                        ? 'all'
-                                        : draftFilters.hasRequirements
-                                          ? 'yes'
-                                          : 'no'
-                                }
-                                onValueChange={(v) =>
-                                    setDraftFilters((f) => ({
-                                        ...f,
-                                        hasRequirements:
-                                            v === 'all' ? null : v === 'yes',
-                                    }))
-                                }
+                                value={draftFilters.hasRequirements === null ? 'all' : draftFilters.hasRequirements ? 'yes' : 'no'}
+                                onValueChange={(v) => setDraftFilters((f) => ({ ...f, hasRequirements: v === 'all' ? null : v === 'yes' }))}
                             >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">
-                                        {t('app.test_cases.filters.all')}
-                                    </SelectItem>
-                                    <SelectItem value="yes">
-                                        {t('app.test_cases.filters.yes')}
-                                    </SelectItem>
-                                    <SelectItem value="no">
-                                        {t('app.test_cases.filters.no')}
-                                    </SelectItem>
+                                    <SelectItem value="all">{t('app.test_cases.filters.all')}</SelectItem>
+                                    <SelectItem value="yes">{t('app.test_cases.filters.yes')}</SelectItem>
+                                    <SelectItem value="no">{t('app.test_cases.filters.no')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
-
                     <SheetFooter className="flex-row gap-2">
-                        <Button
-                            variant="outline"
-                            className="flex-1"
-                            onClick={clearFilters}
-                        >
-                            {t('app.test_cases.filters.clear')}
-                        </Button>
-                        <Button className="flex-1" onClick={applyFilters}>
-                            {t('app.test_cases.filters.apply')}
-                        </Button>
+                        <Button variant="outline" className="flex-1" onClick={clearFilters}>{t('app.test_cases.filters.clear')}</Button>
+                        <Button className="flex-1" onClick={applyFilters}>{t('app.test_cases.filters.apply')}</Button>
                     </SheetFooter>
                 </SheetContent>
             </Sheet>
 
-            {/* Bulk edit sheet */}
+            {/* ── Bulk edit sheet ────────────────────────────────────────────── */}
             <Sheet open={bulkOpen} onOpenChange={setBulkOpen}>
                 <SheetContent className="flex flex-col">
                     <SheetHeader>
-                        <SheetTitle>
-                            {t('app.test_cases.bulk.title', {
-                                count: String(selectedIds.size),
-                            })}
-                        </SheetTitle>
+                        <SheetTitle>{t('app.test_cases.bulk.title', { count: String(selectedIds.size) })}</SheetTitle>
                     </SheetHeader>
-
                     <div className="flex-1 space-y-4 overflow-y-auto px-4">
                         <div className="grid gap-2">
                             <Label>{t('app.test_cases.fields.priority')}</Label>
-                            <Select
-                                value={bulkPriority || 'keep'}
-                                onValueChange={(v) =>
-                                    setBulkPriority(v === 'keep' ? '' : v)
-                                }
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
+                            <Select value={bulkPriority || 'keep'} onValueChange={(v) => setBulkPriority(v === 'keep' ? '' : v)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="keep">—</SelectItem>
                                     {PRIORITY_OPTIONS.map((p) => (
-                                        <SelectItem
-                                            key={p}
-                                            value={PRIORITY_KEYS[p]}
-                                        >
-                                            {t(
-                                                `app.requirements.priorities.${PRIORITY_KEYS[p]}`,
-                                            )}
+                                        <SelectItem key={p} value={PRIORITY_KEYS[p]}>
+                                            {t(`app.requirements.priorities.${PRIORITY_KEYS[p]}`)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
-
                         <div className="grid gap-2">
                             <Label>{t('app.test_cases.fields.section')}</Label>
-                            <Select
-                                value={bulkSection || 'keep'}
-                                onValueChange={(v) =>
-                                    setBulkSection(v === 'keep' ? '' : v)
-                                }
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
+                            <Select value={bulkSection || 'keep'} onValueChange={(v) => setBulkSection(v === 'keep' ? '' : v)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="keep">—</SelectItem>
                                     {flatSections.map((s) => (
-                                        <SelectItem
-                                            key={s.id}
-                                            value={String(s.id)}
-                                        >
-                                            {s.name}
-                                        </SelectItem>
+                                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
-
                         <div className="grid gap-2">
                             <Label>{t('app.test_cases.fields.type')}</Label>
-                            <Input
-                                value={bulkType}
-                                onChange={(e) => setBulkType(e.target.value)}
-                            />
+                            <Input value={bulkType} onChange={(e) => setBulkType(e.target.value)} />
                         </div>
-
-                        <p className="text-xs text-muted-foreground">
-                            {t('app.test_cases.bulk.note')}
-                        </p>
+                        <p className="text-xs text-muted-foreground">{t('app.test_cases.bulk.note')}</p>
                     </div>
-
                     <SheetFooter className="flex-row gap-2">
-                        <Button
-                            variant="outline"
-                            className="flex-1"
-                            onClick={() => setBulkOpen(false)}
-                        >
-                            {t('app.common.cancel')}
-                        </Button>
+                        <Button variant="outline" className="flex-1" onClick={() => setBulkOpen(false)}>{t('app.common.cancel')}</Button>
                         <Button className="flex-1" onClick={submitBulkEdit}>
-                            {t('app.test_cases.bulk.apply', {
-                                count: String(selectedIds.size),
-                            })}
+                            {t('app.test_cases.bulk.apply', { count: String(selectedIds.size) })}
                         </Button>
                     </SheetFooter>
                 </SheetContent>
             </Sheet>
-        </>
-    );
-}
-
-function SectionRow({
-    section,
-    depth,
-    filters,
-    selectedIds,
-    onToggleCase,
-    onAddChild,
-    onEdit,
-    onDelete,
-}: {
-    section: Section;
-    depth: number;
-    filters: Filters;
-    selectedIds: Set<number>;
-    onToggleCase: (id: number) => void;
-    onAddChild: (parentId: number) => void;
-    onEdit: (section: Section) => void;
-    onDelete: (section: Section) => void;
-}) {
-    const t = useTrans();
-
-    const cases = (section.testCases ?? []).filter((c) =>
-        caseMatches(c, filters),
-    );
-
-    return (
-        <>
-            <div
-                className="flex items-center justify-between gap-2 rounded-md border p-3"
-                style={{ marginLeft: `${depth * 1.5}rem` }}
-            >
-                <div className="flex min-w-0 items-center gap-2">
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate text-sm font-medium">
-                        {section.name}
-                    </span>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onAddChild(section.id)}
-                        title={t('app.sections.add_subsection')}
-                    >
-                        <Plus className="size-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onEdit(section)}
-                        title={t('app.sections.edit')}
-                    >
-                        <Pencil className="size-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onDelete(section)}
-                        title={t('app.common.delete')}
-                    >
-                        <Trash2 className="size-4" />
-                    </Button>
-                </div>
-            </div>
-
-            {cases.length > 0 ? (
-                <div
-                    className="overflow-hidden rounded-md border"
-                    style={{ marginLeft: `${(depth + 1) * 1.5}rem` }}
-                >
-                    <table className="w-full text-sm">
-                        <tbody>
-                            {cases.map((c) => (
-                                <tr
-                                    key={c.id}
-                                    className="border-b last:border-0 hover:bg-muted/40"
-                                >
-                                    <td className="w-10 px-3 py-2">
-                                        <Checkbox
-                                            checked={selectedIds.has(c.id)}
-                                            onCheckedChange={() =>
-                                                onToggleCase(c.id)
-                                            }
-                                        />
-                                    </td>
-                                    <td className="px-3 py-2 font-medium">
-                                        <Link
-                                            href={showCase.url(c.id)}
-                                            className="hover:text-primary hover:underline"
-                                        >
-                                            {c.title}
-                                        </Link>
-                                    </td>
-                                    <td className="w-28 px-3 py-2">
-                                        {c.priority_id ? (
-                                            <span
-                                                className={`text-xs capitalize ${PRIORITY_COLORS[c.priority_id] ?? ''}`}
-                                            >
-                                                {t(
-                                                    `app.requirements.priorities.${PRIORITY_KEYS[c.priority_id]}`,
-                                                )}
-                                            </span>
-                                        ) : null}
-                                    </td>
-                                    <td className="w-28 px-3 py-2 text-xs text-muted-foreground">
-                                        {t(
-                                            `app.test_cases.templates.${TEMPLATE_KEYS[c.template] ?? 'steps'}`,
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            ) : null}
-
-            {(section.children ?? []).map((child) => (
-                <SectionRow
-                    key={child.id}
-                    section={child}
-                    depth={depth + 1}
-                    filters={filters}
-                    selectedIds={selectedIds}
-                    onToggleCase={onToggleCase}
-                    onAddChild={onAddChild}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                />
-            ))}
         </>
     );
 }

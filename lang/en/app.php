@@ -250,6 +250,7 @@ return [
             // 'edit_selected' => 'Edit',
             // 'delete_selected' => 'Delete',
             'columns' => 'Columns',
+            'visible_columns' => 'Visible Columns',
             'select_cases_first' => 'Select one or more cases first.',
             'bulk_edit_not_implemented' => 'Bulk edit is not yet implemented.',
             'assign_not_implemented' => 'Assign is not yet implemented.',
