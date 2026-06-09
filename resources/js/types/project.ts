@@ -37,33 +37,7 @@ export type Project = {
     test_runs_count?: number;
     requirements_count?: number;
     suites_count?: number;
-    cases_href?: string;
-};
-
-export type CasesByPriority = {
-    critical: number;
-    high: number;
-    medium: number;
-    low: number;
-};
-
-export type LatestRunStats = {
-    name: string;
-    passed: number;
-    failed: number;
-    blocked: number;
-    retest: number;
-    skipped: number;
-    untested: number;
-} | null;
-
-export type MilestoneStat = {
-    id: number;
-    name: string;
-    is_completed: boolean;
-    due_on: string | null;
-    run_count: number;
-    progress: number;
+    milestones_count?: number;
 };
 
 export type PaginationLink = {
