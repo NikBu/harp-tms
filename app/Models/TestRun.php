@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-#[Fillable(['project_id', 'suite_id', 'plan_id', 'milestone_id', 'name', 'description', 'refs', 'include_all', 'is_completed', 'completed_at', 'created_by', 'assigned_to', 'url', 'passed_count', 'failed_count', 'blocked_count', 'untested_count', 'retest_count', 'skipped_count'])]
+#[Fillable(['project_id', 'suite_id', 'plan_id', 'milestone_id', 'name', 'description', 'refs', 'start_on', 'end_on', 'include_all', 'is_completed', 'completed_at', 'created_by', 'assigned_to', 'url', 'passed_count', 'failed_count', 'blocked_count', 'untested_count', 'retest_count', 'skipped_count'])]
 class TestRun extends Model
 {
     /** @use HasFactory<TestRunFactory> */
@@ -30,6 +30,8 @@ class TestRun extends Model
             'include_all' => 'boolean',
             'is_completed' => 'boolean',
             'completed_at' => 'datetime',
+            'start_on' => 'date',
+            'end_on' => 'date',
             'passed_count' => 'integer',
             'failed_count' => 'integer',
             'blocked_count' => 'integer',
