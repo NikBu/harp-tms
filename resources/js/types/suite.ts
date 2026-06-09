@@ -33,6 +33,8 @@ export interface SuiteCase {
     estimate: number | null;
     references: string | null;
     has_requirements: boolean;
+    assigned_to_id: number | null;
+    assignee_name: string | null;
 }
 
 export type PaginatedData<T> = {

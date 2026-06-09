@@ -163,6 +163,7 @@ return [
         'create' => 'Создать',
         'empty' => 'Разделов пока нет.',
         'reordered' => 'Разделы переупорядочены.',
+        'default_name' => 'Тест-кейсы',
     ],
     'test_cases' => [
         'title' => 'Тест-кейсы',
@@ -182,12 +183,7 @@ return [
         'count' => 'кейсов: :count',
         'back_to_suite' => 'Назад к набору',
         'view' => 'Просмотр',
-        'toolbar' => [
-            'filter' => 'Фильтр',
-            'export' => 'Экспорт',
-            'edit_selected' => 'Изменить выбранные',
-            'delete_selected' => 'Удалить выбранные',
-        ],
+        'empty_section' => 'Нет тест-кейсов. Перетащите кейсы сюда.',
         'filters' => [
             'title' => 'Фильтры',
             'priority' => 'Приоритет',
@@ -230,6 +226,7 @@ return [
             'type_placeholder' => 'Выберите тип...',
             'estimate' => 'Оценка',
             'references' => 'Ссылки',
+            'assigned_to' => 'Назначен',
             'preconditions' => 'Предусловия',
             'body' => 'Описание',
             'steps' => 'Шаги',
@@ -263,6 +260,10 @@ return [
             'bulk_edit_not_implemented' => 'Массовое редактирование ещё не реализовано.',
             'assign_not_implemented' => 'Назначение ещё не реализовано.',
             'delete_confirm' => 'Удалить :count выбранных кейс(а)?',
+            'export' => 'Экспорт',
+            'hide_unassigned' => 'Скрыть неназначенные',
+            'show_all' => 'Показать все',
+            'drag_hint' => 'Перетащите для перемещения между разделами',
         ],
     ],
     'runs' => [

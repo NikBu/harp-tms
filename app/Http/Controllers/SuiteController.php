@@ -96,15 +96,41 @@ class SuiteController extends Controller
             ->orderBy('display_order')
             ->with([
                 'children'             => fn ($q) => $q->orderBy('display_order')
-                                                       ->with(['testCases' => fn ($q2) => $q2->withCount('requirements')]),
-                'testCases'            => fn ($q) => $q->withCount('requirements'),
+                                                       ->with([
+                                                           'testCases' => fn ($q2) => $q2->withCount('requirements')->with('assignedTo:id,name'),
+                                                       ]),
+                'testCases'            => fn ($q) => $q->withCount('requirements')->with('assignedTo:id,name'),
             ])
             ->get();
+
+        $serialized = $sections->map(fn (Section $section) => $this->serializeSection($section));
+
+        $unsectionedCases = $suite->testCases()
+            ->whereNull('section_id')
+            ->withCount('requirements')
+            ->with('assignedTo:id,name')
+            ->orderBy('display_order')
+            ->orderBy('id')
+            ->get();
+
+        if ($unsectionedCases->isNotEmpty()) {
+            $virtualSection = [
+                'id'          => 0,
+                'suite_id'    => $suite->id,
+                'parent_id'   => null,
+                'name'        => __('app.sections.default_name'),
+                'description' => null,
+                'testCases'   => $unsectionedCases->map(fn (TestCase $tc) => $this->transformSuiteCase($tc))->values()->all(),
+                'children'    => [],
+            ];
+
+            $serialized = collect([$virtualSection])->concat($serialized);
+        }
 
         return Inertia::render('suites/show', [
             'project'  => $project,
             'suite'    => $suite,
-            'sections' => $sections->map(fn (Section $section) => $this->serializeSection($section)),
+            'sections' => $serialized->values()->all(),
         ]);
     }
 
@@ -154,6 +180,8 @@ class SuiteController extends Controller
             'estimate'         => $testCase->estimate,
             'references'       => $testCase->refs,
             'has_requirements' => ($testCase->requirements_count ?? 0) > 0,
+            'assigned_to_id'   => $testCase->assigned_to,
+            'assignee_name'    => $testCase->assignedTo?->name,
         ];
     }
 

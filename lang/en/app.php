@@ -163,6 +163,7 @@ return [
         'create' => 'Create',
         'empty' => 'No sections yet.',
         'reordered' => 'Sections reordered.',
+        'default_name' => 'Test Cases',
     ],
     'test_cases' => [
         'title' => 'Test Cases',
@@ -177,6 +178,7 @@ return [
         'bulk_updated' => 'Test cases updated.',
         'bulk_deleted' => 'Test cases deleted.',
         'empty' => 'No test cases yet.',
+        'empty_section' => 'No test cases. Drag cases here.',
         'add' => 'Add Case',
         'unsectioned' => 'Test Cases',
         'count' => ':count cases',
@@ -224,6 +226,7 @@ return [
             'type_placeholder' => 'Select type...',
             'estimate' => 'Estimate',
             'references' => 'References',
+            'assigned_to' => 'Assigned To',
             'preconditions' => 'Preconditions',
             'body' => 'Description',
             'steps' => 'Steps',
@@ -261,6 +264,9 @@ return [
             'export' => 'Export',
             'edit_selected' => 'Edit Selected',
             'delete_selected' => 'Delete Selected',
+            'hide_unassigned' => 'Hide Unassigned',
+            'show_all' => 'Show All',
+            'drag_hint' => 'Drag to move between sections',
         ],
     ],
     'runs' => [

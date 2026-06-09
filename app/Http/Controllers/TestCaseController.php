@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\Requirement;
+use App\Models\Section;
 use App\Models\Suite;
 use App\Models\TestCase;
 use Illuminate\Http\RedirectResponse;
@@ -283,7 +284,7 @@ class TestCaseController extends Controller
             'ids'        => ['required', 'array'],
             'ids.*'      => ['integer', 'exists:test_cases,id'],
             'priority'   => ['nullable', 'in:critical,high,medium,low'],
-            'section_id' => ['nullable', 'integer', 'exists:sections,id'],
+            'section_id' => ['nullable', 'integer'],
             'case_type'  => ['nullable', 'string', 'max:100'],
         ]);
 
@@ -293,9 +294,21 @@ class TestCaseController extends Controller
 
         $update = array_filter([
             'priority'   => $validated['priority'] ?? null,
-            'section_id' => $validated['section_id'] ?? null,
             'case_type'  => $validated['case_type'] ?? null,
         ], fn ($value): bool => $value !== null && $value !== '');
+
+        // Section moves: a section_id of 0 (or null when the key is present)
+        // unsets the section, moving cases into the virtual "Test Cases" group.
+        if ($request->has('section_id')) {
+            $sectionId = $validated['section_id'] ?? null;
+
+            if ($sectionId !== null && $sectionId !== 0) {
+                abort_unless(Section::query()->whereKey($sectionId)->exists(), 422);
+                $update['section_id'] = $sectionId;
+            } else {
+                $update['section_id'] = null;
+            }
+        }
 
         if ($update !== []) {
             TestCase::query()->whereIn('id', $validated['ids'])->update($update);

@@ -1,14 +1,26 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
+    DndContext,
+    PointerSensor,
+    closestCenter,
+    useDraggable,
+    useDroppable,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+} from '@dnd-kit/core';
+import {
     ArrowDownUp,
     ChevronDown,
     ChevronRight,
     Columns3,
     Download,
     Filter,
+    GripVertical,
     Pencil,
     Plus,
     Trash2,
+    User,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -90,9 +102,9 @@ const TEMPLATE_OPTIONS = [1, 2, 3, 4, 5];
 
 // ── Column visibility ─────────────────────────────────────────────────────────
 
-type ColumnKey = 'priority' | 'template' | 'type' | 'estimate' | 'references';
+type ColumnKey = 'priority' | 'template' | 'type' | 'estimate' | 'references' | 'assigned_to';
 
-const COLUMN_KEYS: ColumnKey[] = ['priority', 'template', 'type', 'estimate', 'references'];
+const COLUMN_KEYS: ColumnKey[] = ['priority', 'template', 'type', 'estimate', 'references', 'assigned_to'];
 
 const DEFAULT_COLUMNS: Record<ColumnKey, boolean> = {
     priority: true,
@@ -100,6 +112,7 @@ const DEFAULT_COLUMNS: Record<ColumnKey, boolean> = {
     type: true,
     estimate: false,
     references: false,
+    assigned_to: true,
 };
 
 function columnsStorageKey(suiteId: number): string {
@@ -193,6 +206,90 @@ type SectionDialogState =
     | { mode: 'edit'; section: Section }
     | null;
 
+// ── DraggableCaseRow ────────────────────────────────────────────────────────
+
+function DraggableCaseRow({
+    c,
+    visibleCols,
+    selectedIds,
+    onToggleCase,
+}: {
+    c: SuiteCase;
+    visibleCols: Record<ColumnKey, boolean>;
+    selectedIds: Set<number>;
+    onToggleCase: (id: number) => void;
+}) {
+    const t = useTrans();
+    const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+        id: `case-${c.id}`,
+        data: { caseId: c.id },
+    });
+
+    return (
+        <tr
+            ref={setNodeRef}
+            className={`border-b border-border last:border-0 hover:bg-muted/40 ${isDragging ? 'opacity-50' : ''}`}
+        >
+            <td className="w-10 px-2 py-2">
+                <div className="flex items-center gap-1">
+                    <button
+                        type="button"
+                        className="cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
+                        title={t('app.test_cases.toolbar.drag_hint')}
+                        {...attributes}
+                        {...listeners}
+                    >
+                        <GripVertical className="size-4" />
+                    </button>
+                    <Checkbox
+                        checked={selectedIds.has(c.id)}
+                        onCheckedChange={() => onToggleCase(c.id)}
+                    />
+                </div>
+            </td>
+            <td className="px-3 py-2 font-medium">
+                <Link href={showCase.url(c.id)} className="hover:text-primary hover:underline">
+                    {c.title}
+                </Link>
+            </td>
+            {visibleCols.priority && (
+                <td className="w-28 px-3 py-2">
+                    {c.priority_id ? (
+                        <span className={`text-xs capitalize ${PRIORITY_COLORS[c.priority_id] ?? ''}`}>
+                            {t(`app.requirements.priorities.${PRIORITY_KEYS[c.priority_id]}`)}
+                        </span>
+                    ) : <span className="text-muted-foreground">—</span>}
+                </td>
+            )}
+            {visibleCols.template && (
+                <td className="w-28 px-3 py-2 text-xs text-muted-foreground capitalize">
+                    {t(`app.test_cases.templates.${TEMPLATE_KEYS[c.template] ?? 'steps'}`)}
+                </td>
+            )}
+            {visibleCols.type && (
+                <td className="w-32 px-3 py-2 text-xs text-muted-foreground capitalize">
+                    {c.type_id ?? '—'}
+                </td>
+            )}
+            {visibleCols.estimate && (
+                <td className="w-24 px-3 py-2 text-xs text-muted-foreground">
+                    {formatEstimate(c.estimate)}
+                </td>
+            )}
+            {visibleCols.references && (
+                <td className="w-32 max-w-[8rem] truncate px-3 py-2 text-xs text-muted-foreground">
+                    {c.references ?? '—'}
+                </td>
+            )}
+            {visibleCols.assigned_to && (
+                <td className="w-32 px-3 py-2 text-xs text-muted-foreground">
+                    {c.assignee_name ?? '—'}
+                </td>
+            )}
+        </tr>
+    );
+}
+
 // ── SectionRow ────────────────────────────────────────────────────────────────
 
 function SectionRow({
@@ -203,6 +300,7 @@ function SectionRow({
     sortDir,
     visibleCols,
     filters,
+    hideUnassigned,
     selectedIds,
     onToggleCollapse,
     onToggleCase,
@@ -217,6 +315,7 @@ function SectionRow({
     sortDir: SortDir;
     visibleCols: Record<ColumnKey, boolean>;
     filters: Filters;
+    hideUnassigned: boolean;
     selectedIds: Set<number>;
     onToggleCollapse: (id: number) => void;
     onToggleCase: (id: number) => void;
@@ -225,15 +324,25 @@ function SectionRow({
     onDelete: (section: Section) => void;
 }) {
     const t = useTrans();
+    const isVirtual = section.id === 0;
     const isCollapsed = collapsed.has(section.id);
     const rawCases = (section.testCases as SuiteCase[] | undefined) ?? [];
-    const cases = sortCases(rawCases.filter((c) => caseMatches(c, filters)), sortField, sortDir);
+    const cases = sortCases(
+        rawCases.filter((c) => caseMatches(c, filters) && (!hideUnassigned || c.assigned_to_id !== null)),
+        sortField,
+        sortDir,
+    );
+
+    const { setNodeRef: setDropRef, isOver } = useDroppable({
+        id: `section-${section.id}`,
+        data: { sectionId: section.id },
+    });
 
     return (
         <>
             {/* Section header row */}
             <div
-                className="flex items-center justify-between gap-2 rounded-md border p-3"
+                className={`flex items-center justify-between gap-2 rounded-md border border-border p-3 ${isOver ? 'ring-2 ring-primary' : ''}`}
                 style={{ marginLeft: `${depth * 1.5}rem` }}
             >
                 <button
@@ -247,81 +356,57 @@ function SectionRow({
                     <span className="truncate text-sm font-medium">{section.name}</span>
                     <span className="text-xs text-muted-foreground">({rawCases.length})</span>
                 </button>
-                <div className="flex shrink-0 items-center gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => onAddChild(section.id)} title={t('app.sections.add_subsection')}>
-                        <Plus className="size-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => onEdit(section)} title={t('app.sections.edit')}>
-                        <Pencil className="size-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => onDelete(section)} title={t('app.common.delete')}>
-                        <Trash2 className="size-4" />
-                    </Button>
-                </div>
+                {!isVirtual && (
+                    <div className="flex shrink-0 items-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => onAddChild(section.id)} title={t('app.sections.add_subsection')}>
+                            <Plus className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => onEdit(section)} title={t('app.sections.edit')}>
+                            <Pencil className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => onDelete(section)} title={t('app.common.delete')}>
+                            <Trash2 className="size-4" />
+                        </Button>
+                    </div>
+                )}
             </div>
 
-            {/* Cases table */}
-            {!isCollapsed && cases.length > 0 ? (
-                <div className="overflow-x-auto rounded-md border" style={{ marginLeft: `${(depth + 1) * 1.5}rem` }}>
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b text-left text-xs text-muted-foreground">
-                                <th className="w-10 px-3 py-2" />
-                                <th className="px-3 py-2 font-medium">{t('app.test_cases.fields.title')}</th>
-                                {visibleCols.priority   && <th className="w-28 px-3 py-2 font-medium">{t('app.test_cases.fields.priority')}</th>}
-                                {visibleCols.template   && <th className="w-28 px-3 py-2 font-medium">{t('app.test_cases.fields.template')}</th>}
-                                {visibleCols.type       && <th className="w-32 px-3 py-2 font-medium">{t('app.test_cases.fields.type')}</th>}
-                                {visibleCols.estimate   && <th className="w-24 px-3 py-2 font-medium">{t('app.test_cases.fields.estimate')}</th>}
-                                {visibleCols.references && <th className="w-32 px-3 py-2 font-medium">{t('app.test_cases.fields.references')}</th>}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {cases.map((c) => (
-                                <tr key={c.id} className="border-b last:border-0 hover:bg-muted/40">
-                                    <td className="w-10 px-3 py-2">
-                                        <Checkbox
-                                            checked={selectedIds.has(c.id)}
-                                            onCheckedChange={() => onToggleCase(c.id)}
-                                        />
-                                    </td>
-                                    <td className="px-3 py-2 font-medium">
-                                        <Link href={showCase.url(c.id)} className="hover:text-primary hover:underline">
-                                            {c.title}
-                                        </Link>
-                                    </td>
-                                    {visibleCols.priority && (
-                                        <td className="w-28 px-3 py-2">
-                                            {c.priority_id ? (
-                                                <span className={`text-xs capitalize ${PRIORITY_COLORS[c.priority_id] ?? ''}`}>
-                                                    {t(`app.requirements.priorities.${PRIORITY_KEYS[c.priority_id]}`)}
-                                                </span>
-                                            ) : <span className="text-muted-foreground">—</span>}
-                                        </td>
-                                    )}
-                                    {visibleCols.template && (
-                                        <td className="w-28 px-3 py-2 text-xs text-muted-foreground capitalize">
-                                            {t(`app.test_cases.templates.${TEMPLATE_KEYS[c.template] ?? 'steps'}`)}
-                                        </td>
-                                    )}
-                                    {visibleCols.type && (
-                                        <td className="w-32 px-3 py-2 text-xs text-muted-foreground capitalize">
-                                            {c.type_id ?? '—'}
-                                        </td>
-                                    )}
-                                    {visibleCols.estimate && (
-                                        <td className="w-24 px-3 py-2 text-xs text-muted-foreground">
-                                            {formatEstimate(c.estimate)}
-                                        </td>
-                                    )}
-                                    {visibleCols.references && (
-                                        <td className="w-32 px-3 py-2 text-xs text-muted-foreground truncate max-w-[8rem]">
-                                            {c.references ?? '—'}
-                                        </td>
-                                    )}
+            {/* Cases table — droppable target */}
+            {!isCollapsed ? (
+                <div
+                    ref={setDropRef}
+                    className={`overflow-hidden rounded-md border border-border ${isOver ? 'ring-2 ring-primary' : ''}`}
+                    style={{ marginLeft: `${(depth + 1) * 1.5}rem` }}
+                >
+                    {cases.length > 0 ? (
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-border bg-muted/50 text-left text-xs text-muted-foreground">
+                                    <th className="w-10 px-3 py-2" />
+                                    <th className="px-3 py-2 font-medium">{t('app.test_cases.fields.title')}</th>
+                                    {visibleCols.priority    && <th className="w-28 px-3 py-2 font-medium">{t('app.test_cases.fields.priority')}</th>}
+                                    {visibleCols.template    && <th className="w-28 px-3 py-2 font-medium">{t('app.test_cases.fields.template')}</th>}
+                                    {visibleCols.type        && <th className="w-32 px-3 py-2 font-medium">{t('app.test_cases.fields.type')}</th>}
+                                    {visibleCols.estimate    && <th className="w-24 px-3 py-2 font-medium">{t('app.test_cases.fields.estimate')}</th>}
+                                    {visibleCols.references  && <th className="w-32 px-3 py-2 font-medium">{t('app.test_cases.fields.references')}</th>}
+                                    {visibleCols.assigned_to && <th className="w-32 px-3 py-2 font-medium">{t('app.test_cases.fields.assigned_to')}</th>}
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {cases.map((c) => (
+                                    <DraggableCaseRow
+                                        key={c.id}
+                                        c={c}
+                                        visibleCols={visibleCols}
+                                        selectedIds={selectedIds}
+                                        onToggleCase={onToggleCase}
+                                    />
+                                ))}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <p className="px-3 py-3 text-xs text-muted-foreground">{t('app.test_cases.empty_section')}</p>
+                    )}
                 </div>
             ) : null}
 
@@ -337,6 +422,7 @@ function SectionRow({
                           sortDir={sortDir}
                           visibleCols={visibleCols}
                           filters={filters}
+                          hideUnassigned={hideUnassigned}
                           selectedIds={selectedIds}
                           onToggleCollapse={onToggleCollapse}
                           onToggleCase={onToggleCase}
@@ -369,6 +455,27 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
     const [filterOpen, setFilterOpen] = useState(false);
     const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
     const [draftFilters, setDraftFilters] = useState<Filters>(EMPTY_FILTERS);
+    const [hideUnassigned, setHideUnassigned] = useState(false);
+
+    // Drag-and-drop sensors — a small activation distance avoids hijacking clicks
+    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+    function handleDragEnd(event: DragEndEvent) {
+        const caseId = event.active.data.current?.caseId as number | undefined;
+        const targetSectionId = event.over?.data.current?.sectionId as number | undefined;
+
+        if (caseId === undefined || targetSectionId === undefined) return;
+
+        const source = allCases.find((c) => c.id === caseId);
+        const currentSectionId = source?.section_id ?? 0;
+        if (currentSectionId === targetSectionId) return;
+
+        router.patch(
+            bulkUpdate.url(),
+            { ids: [caseId], section_id: targetSectionId },
+            { preserveScroll: true },
+        );
+    }
 
     // Selection + bulk edit
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -591,6 +698,16 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                         {activeFilterCount > 0 && <Badge className="ml-1">{activeFilterCount}</Badge>}
                     </Button>
 
+                    {/* Hide unassigned */}
+                    <Button
+                        variant={hideUnassigned ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setHideUnassigned((v) => !v)}
+                    >
+                        <User className="mr-1 size-4" />
+                        {hideUnassigned ? t('app.test_cases.toolbar.show_all') : t('app.test_cases.toolbar.hide_unassigned')}
+                    </Button>
+
                     {/* Collapse/expand */}
                     <Button variant="outline" size="sm" onClick={toggleCollapseAll}>
                         {allCollapsed ? t('app.test_cases.toolbar.expand_all') : t('app.test_cases.toolbar.collapse_all')}
@@ -695,26 +812,29 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                         {sections.length === 0 ? (
                             <p className="py-4 text-sm text-muted-foreground">{t('app.sections.empty')}</p>
                         ) : (
-                            <div className="grid gap-2">
-                                {sections.map((section) => (
-                                    <SectionRow
-                                        key={section.id}
-                                        section={section}
-                                        depth={0}
-                                        collapsed={collapsed}
-                                        sortField={sortField}
-                                        sortDir={sortDir}
-                                        visibleCols={visibleCols}
-                                        filters={filters}
-                                        selectedIds={selectedIds}
-                                        onToggleCollapse={toggleCollapse}
-                                        onToggleCase={toggleCase}
-                                        onAddChild={openCreate}
-                                        onEdit={openEdit}
-                                        onDelete={deleteSection}
-                                    />
-                                ))}
-                            </div>
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                <div className="grid gap-2">
+                                    {sections.map((section) => (
+                                        <SectionRow
+                                            key={section.id}
+                                            section={section}
+                                            depth={0}
+                                            collapsed={collapsed}
+                                            sortField={sortField}
+                                            sortDir={sortDir}
+                                            visibleCols={visibleCols}
+                                            filters={filters}
+                                            hideUnassigned={hideUnassigned}
+                                            selectedIds={selectedIds}
+                                            onToggleCollapse={toggleCollapse}
+                                            onToggleCase={toggleCase}
+                                            onAddChild={openCreate}
+                                            onEdit={openEdit}
+                                            onDelete={deleteSection}
+                                        />
+                                    ))}
+                                </div>
+                            </DndContext>
                         )}
 
                         <div className="flex gap-2 pt-2">
