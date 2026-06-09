@@ -277,6 +277,7 @@ class TestCaseController extends Controller
                 'checklist_items', 'bdd_scenario', 'display_order',
             ]);
 
+            $attributes['title'] = $testCase->title.' (Copy)';
             $attributes['suite_id'] = $targetSuite->id;
             $attributes['section_id'] = $validated['section_id'] ?? null;
             $attributes['created_by'] = Auth::id();
