@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Layers, Pencil, Plus } from 'lucide-react';
+import { LayoutGrid, Layers, List, Pencil, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -7,6 +8,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { useTrans } from '@/hooks/use-trans';
 import type { PaginatedData, Project, Suite } from '@/types';
 import {
@@ -16,8 +18,37 @@ import {
 } from '@/actions/App/Http/Controllers/SuiteController';
 import { index as projectsIndex } from '@/routes/projects';
 
-function SuiteCard({ suite }: { suite: Suite }) {
+type ViewMode = 'grid' | 'list';
+
+function SuiteCard({ suite, view }: { suite: Suite; view: ViewMode }) {
     const t = useTrans();
+
+    if (view === 'list') {
+        return (
+            <div className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary hover:bg-accent/40">
+                <Layers className="size-4 shrink-0 text-muted-foreground" />
+                <Link href={show.url(suite.id)} className="min-w-0 flex-1 truncate font-medium">
+                    {suite.name}
+                </Link>
+                {suite.description ? (
+                    <span className="hidden truncate text-sm text-muted-foreground sm:block sm:max-w-xs lg:max-w-sm">
+                        {suite.description}
+                    </span>
+                ) : null}
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    asChild
+                    className="h-7 w-7 shrink-0"
+                    title={t('app.common.edit')}
+                >
+                    <Link href={edit.url(suite.id)}>
+                        <Pencil className="size-3.5" />
+                    </Link>
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <Card className="relative h-full transition-colors hover:border-primary">
@@ -54,6 +85,17 @@ export default function SuitesIndex({
     suites: PaginatedData<Suite>;
 }) {
     const t = useTrans();
+    const [view, setView] = useState<ViewMode>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('suites-view') as ViewMode) ?? 'grid';
+        }
+        return 'grid';
+    });
+
+    const changeView = (v: ViewMode) => {
+        setView(v);
+        localStorage.setItem('suites-view', v);
+    };
 
     return (
         <>
@@ -64,12 +106,42 @@ export default function SuitesIndex({
                     <h1 className="text-2xl font-semibold">
                         {t('app.suites.title')}
                     </h1>
-                    <Button asChild>
-                        <Link href={create.url(project.id)}>
-                            <Plus className="size-4" />
-                            {t('app.suites.new_suite')}
-                        </Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {/* View toggle */}
+                        <div className="flex items-center rounded-md border border-border">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                    'h-8 w-8 rounded-r-none',
+                                    view === 'grid' && 'bg-muted text-foreground',
+                                )}
+                                onClick={() => changeView('grid')}
+                                title="Grid view"
+                            >
+                                <LayoutGrid className="size-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                    'h-8 w-8 rounded-l-none border-l border-border',
+                                    view === 'list' && 'bg-muted text-foreground',
+                                )}
+                                onClick={() => changeView('list')}
+                                title="List view"
+                            >
+                                <List className="size-4" />
+                            </Button>
+                        </div>
+
+                        <Button asChild>
+                            <Link href={create.url(project.id)}>
+                                <Plus className="size-4" />
+                                {t('app.suites.new_suite')}
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 {suites.data.length === 0 ? (
@@ -87,9 +159,17 @@ export default function SuitesIndex({
                     </div>
                 ) : (
                     <>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className={cn(
+                            view === 'grid'
+                                ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'
+                                : 'flex flex-col gap-2',
+                        )}>
                             {suites.data.map((suite) => (
-                                <SuiteCard key={suite.id} suite={suite} />
+                                <SuiteCard
+                                    key={suite.id}
+                                    suite={suite}
+                                    view={view}
+                                />
                             ))}
                         </div>
 

@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { FolderOpen, Plus } from 'lucide-react';
+import { FolderOpen, LayoutGrid, List, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,6 +10,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { useTrans } from '@/hooks/use-trans';
 import {
     create as projectsCreate,
@@ -16,6 +18,8 @@ import {
     show as projectsShow,
 } from '@/routes/projects';
 import type { PaginatedProjects, Project, SuiteMode } from '@/types';
+
+type ViewMode = 'grid' | 'list';
 
 function SuiteModeBadge({ mode }: { mode: SuiteMode }) {
     const t = useTrans();
@@ -28,8 +32,33 @@ function SuiteModeBadge({ mode }: { mode: SuiteMode }) {
     return <Badge variant="secondary">{labels[mode]}</Badge>;
 }
 
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({ project, view }: { project: Project; view: ViewMode }) {
     const t = useTrans();
+
+    if (view === 'list') {
+        return (
+            <Link
+                href={projectsShow(project.id).url}
+                className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary hover:bg-accent/40"
+            >
+                <FolderOpen className="size-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1 truncate font-medium">
+                    {project.name}
+                </span>
+                {project.description ? (
+                    <span className="hidden truncate text-sm text-muted-foreground sm:block sm:max-w-xs lg:max-w-sm">
+                        {project.description}
+                    </span>
+                ) : null}
+                <div className="flex shrink-0 items-center gap-2">
+                    {project.is_completed ? (
+                        <Badge variant="outline">{t('app.projects.completed')}</Badge>
+                    ) : null}
+                    <SuiteModeBadge mode={project.suite_mode} />
+                </div>
+            </Link>
+        );
+    }
 
     return (
         <Link href={projectsShow(project.id).url} className="block">
@@ -63,6 +92,17 @@ export default function ProjectsIndex({
     projects: PaginatedProjects;
 }) {
     const t = useTrans();
+    const [view, setView] = useState<ViewMode>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('projects-view') as ViewMode) ?? 'grid';
+        }
+        return 'grid';
+    });
+
+    const changeView = (v: ViewMode) => {
+        setView(v);
+        localStorage.setItem('projects-view', v);
+    };
 
     return (
         <>
@@ -73,12 +113,42 @@ export default function ProjectsIndex({
                     <h1 className="text-2xl font-semibold">
                         {t('app.projects.title')}
                     </h1>
-                    <Button asChild>
-                        <Link href={projectsCreate().url}>
-                            <Plus className="size-4" />
-                            {t('app.projects.create')}
-                        </Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {/* View toggle */}
+                        <div className="flex items-center rounded-md border border-border">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                    'h-8 w-8 rounded-r-none',
+                                    view === 'grid' && 'bg-muted text-foreground',
+                                )}
+                                onClick={() => changeView('grid')}
+                                title="Grid view"
+                            >
+                                <LayoutGrid className="size-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                    'h-8 w-8 rounded-l-none border-l border-border',
+                                    view === 'list' && 'bg-muted text-foreground',
+                                )}
+                                onClick={() => changeView('list')}
+                                title="List view"
+                            >
+                                <List className="size-4" />
+                            </Button>
+                        </div>
+
+                        <Button asChild>
+                            <Link href={projectsCreate().url}>
+                                <Plus className="size-4" />
+                                {t('app.projects.create')}
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 {projects.data.length === 0 ? (
@@ -99,11 +169,16 @@ export default function ProjectsIndex({
                     </div>
                 ) : (
                     <>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className={cn(
+                            view === 'grid'
+                                ? 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'
+                                : 'flex flex-col gap-2',
+                        )}>
                             {projects.data.map((project) => (
                                 <ProjectCard
                                     key={project.id}
                                     project={project}
+                                    view={view}
                                 />
                             ))}
                         </div>
