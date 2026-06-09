@@ -89,17 +89,16 @@ class SuiteController extends Controller
 
         $this->authorizeProjectAccess($request, $project);
 
-        $suite->load([
-            'sections' => function ($query): void {
-                $query->whereNull('parent_id')
-                    ->orderBy('display_order')
-                    ->with('children');
-            },
-        ]);
+        $sections = $suite->sections()
+            ->whereNull('parent_id')
+            ->orderBy('display_order')
+            ->with(['children' => fn ($q) => $q->orderBy('display_order'), 'testCases', 'children.testCases'])
+            ->get();
 
         return Inertia::render('suites/show', [
-            'project' => $project,
-            'suite'   => $suite,
+            'project'  => $project,
+            'suite'    => $suite,
+            'sections' => $sections,
         ]);
     }
 

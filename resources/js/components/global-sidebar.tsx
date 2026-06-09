@@ -1,12 +1,10 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BarChart2, FolderOpen, LayoutDashboard, Settings, ShieldCheck } from 'lucide-react';
-import AppLogo from '@/components/app-logo';
+import { FolderOpen, LayoutDashboard, Settings, ShieldCheck } from 'lucide-react';
 import {
     Sidebar,
     SidebarContent,
     SidebarGroup,
     SidebarGroupLabel,
-    SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
@@ -23,7 +21,7 @@ export function GlobalSidebar() {
     const mainItems = [
         { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard },
         { key: 'projects',  href: '/projects',  icon: FolderOpen      },
-        { key: 'reports',   href: '/reports',   icon: BarChart2       },
+
     ];
 
     const systemItems = [
@@ -33,18 +31,6 @@ export function GlobalSidebar() {
 
     return (
         <Sidebar>
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href="/dashboard">
-                                <AppLogo />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarHeader>
-
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarGroupLabel>{t('app.navigation.main')}</SidebarGroupLabel>
