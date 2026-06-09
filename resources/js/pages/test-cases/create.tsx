@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,7 @@ type TestCaseForm = {
     section_id: string;
     priority_id: string;
     type_id: string;
+    assigned_to: string;
     estimate: string;
     references: string;
     preconditions: string;
@@ -86,11 +87,13 @@ export default function TestCasesCreate({
     suites = [],
     sections,
     requirements,
+    members = [],
 }: {
     suite: (Suite & { project: Project }) | null;
     suites?: { id: number; name: string }[];
     sections: Section[];
     requirements: LinkedRequirement[];
+    members?: { id: number; name: string }[];
 }) {
     const t = useTrans();
 
@@ -133,13 +136,12 @@ export default function TestCasesCreate({
 
     const availableSections = needsSuitePicker ? dynamicSections : sections;
 
+    const [submitting, setSubmitting] = useState(false);
+
     const {
         data,
         setData,
-        post,
-        processing,
         errors,
-        transform,
         setError,
         clearErrors,
     } = useForm<TestCaseForm>({
@@ -148,6 +150,7 @@ export default function TestCasesCreate({
         section_id: '',
         priority_id: '',
         type_id: '',
+        assigned_to: '',
         estimate: '',
         references: '',
         preconditions: '',
@@ -263,20 +266,26 @@ export default function TestCasesCreate({
 
         clearErrors('estimate');
 
-        transform((current) => ({
-            ...current,
+        const payload = {
+            ...data,
             add_and_create: addAndCreateRef.current,
             steps: usesSteps
-                ? current.steps.filter((s) => s.action.trim() !== '')
+                ? data.steps.filter((s) => s.action.trim() !== '')
                 : [],
             checklist_items: usesChecklist
-                ? current.checklist_items.filter((i) => i.label.trim() !== '')
+                ? data.checklist_items.filter((i) => i.label.trim() !== '')
                 : [],
-            bdd_scenario: usesBdd ? current.bdd_scenario : '',
-            body: usesBody ? current.body : '',
-        }));
+            bdd_scenario: usesBdd ? data.bdd_scenario : '',
+            body: usesBody ? data.body : '',
+        };
 
-        post(store.url(Number(suiteId)));
+        setSubmitting(true);
+        router.post(store.url(Number(suiteId)), payload, {
+            onFinish: () => {
+                setSubmitting(false);
+                addAndCreateRef.current = false;
+            },
+        });
     }
 
     useEffect(() => {
@@ -507,6 +516,32 @@ export default function TestCasesCreate({
                                     </Select>
                                 </div>
 
+                                {members.length > 0 && (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="assigned_to">
+                                        {t('app.test_cases.fields.assigned_to')}
+                                    </Label>
+                                    <Select
+                                        value={data.assigned_to || 'none'}
+                                        onValueChange={(v) =>
+                                            setData('assigned_to', v === 'none' ? '' : v)
+                                        }
+                                    >
+                                        <SelectTrigger id="assigned_to">
+                                            <SelectValue placeholder="—" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">—</SelectItem>
+                                            {members.map((m) => (
+                                                <SelectItem key={m.id} value={String(m.id)}>
+                                                    {m.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                )}
+
                                 <div className="grid gap-2">
                                     <Label htmlFor="estimate">
                                         {t('app.test_cases.fields.estimate')}
@@ -645,48 +680,28 @@ export default function TestCasesCreate({
                                                     </Button>
                                                 </div>
                                             </div>
-                                            <div className="grid gap-1">
-                                                <Label className="text-xs text-muted-foreground">
-                                                    {t(
-                                                        'app.test_cases.fields.action',
-                                                    )}
+                                            <div className="grid gap-1.5">
+                                                <Label className="text-xs font-medium text-muted-foreground">
+                                                    {t('app.test_cases.fields.action')}
                                                 </Label>
-                                                <textarea
+                                                <RichTextEditor
                                                     value={step.action}
-                                                    onChange={(e) =>
-                                                        setStep(
-                                                            index,
-                                                            'action',
-                                                            e.target.value,
-                                                        )
+                                                    onChange={(v) =>
+                                                        setStep(index, 'action', v)
                                                     }
-                                                    rows={3}
-                                                    placeholder={t(
-                                                        'app.test_cases.fields.action',
-                                                    )}
-                                                    className={textareaClass}
+                                                    placeholder={t('app.test_cases.fields.action')}
                                                 />
                                             </div>
-                                            <div className="grid gap-1">
-                                                <Label className="text-xs text-muted-foreground">
-                                                    {t(
-                                                        'app.test_cases.fields.expected',
-                                                    )}
+                                            <div className="grid gap-1.5">
+                                                <Label className="text-xs font-medium text-muted-foreground">
+                                                    {t('app.test_cases.fields.expected')}
                                                 </Label>
-                                                <textarea
+                                                <RichTextEditor
                                                     value={step.expected}
-                                                    onChange={(e) =>
-                                                        setStep(
-                                                            index,
-                                                            'expected',
-                                                            e.target.value,
-                                                        )
+                                                    onChange={(v) =>
+                                                        setStep(index, 'expected', v)
                                                     }
-                                                    rows={3}
-                                                    placeholder={t(
-                                                        'app.test_cases.fields.expected',
-                                                    )}
-                                                    className={textareaClass}
+                                                    placeholder={t('app.test_cases.fields.expected')}
                                                 />
                                             </div>
                                         </div>
@@ -807,13 +822,13 @@ export default function TestCasesCreate({
 
                             {/* Actions */}
                             <div className="flex flex-wrap gap-2">
-                                <Button type="submit" disabled={processing}>
+                                <Button type="submit" disabled={submitting}>
                                     {t('app.test_cases.add_test_case')}
                                 </Button>
                                 <Button
                                     type="button"
                                     variant="secondary"
-                                    disabled={processing}
+                                    disabled={submitting}
                                     onClick={() => {
                                         addAndCreateRef.current = true;
                                         submit();

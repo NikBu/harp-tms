@@ -29,6 +29,7 @@ return [
     ],
     'common' => [
         'save' => 'Save',
+        'saving' => 'Saving...',
         'cancel' => 'Cancel',
         'delete' => 'Delete',
         'edit' => 'Edit',
@@ -268,6 +269,9 @@ return [
             'export' => 'Export',
             'edit_selected' => 'Edit Selected',
             'delete_selected' => 'Delete Selected',
+            'copy_selected' => 'Copy Selected',
+            'copy' => 'Copy',
+            'copying' => 'Copying…',
             'hide_unassigned' => 'Hide Unassigned',
             'show_all' => 'Show All',
             'drag_hint' => 'Drag to move between sections',

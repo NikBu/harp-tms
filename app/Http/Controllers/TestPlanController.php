@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -81,16 +82,18 @@ class TestPlanController extends Controller
                 $includeAll = $entry['include_all'] ?? true;
 
                 $run = $project->testRuns()->create([
-                    'suite_id' => $entry['suite_id'],
-                    'plan_id' => $plan->id,
-                    'name' => $plan->name,
+                    'suite_id'    => $entry['suite_id'],
+                    'plan_id'     => $plan->id,
+                    'name'        => $plan->name,
                     'description' => $entry['description'] ?? null,
-                    'refs' => $entry['refs'] ?? null,
-                    'start_on' => $entry['start_on'] ?? null,
-                    'end_on' => $entry['end_on'] ?? null,
+                    'refs'        => $entry['refs'] ?? null,
                     'include_all' => $includeAll,
                     'assigned_to' => $entry['assigned_to'] ?? null,
-                    'created_by' => Auth::id(),
+                    'created_by'  => Auth::id(),
+                    ...(Schema::hasColumn('test_runs', 'start_on') ? [
+                        'start_on' => $entry['start_on'] ?? null,
+                        'end_on'   => $entry['end_on'] ?? null,
+                    ] : []),
                 ]);
 
                 $plan->entries()->create([

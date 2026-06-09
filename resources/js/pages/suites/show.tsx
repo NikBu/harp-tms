@@ -14,6 +14,7 @@ import {
     ChevronDown,
     ChevronRight,
     Columns3,
+    Copy,
     Download,
     Filter,
     GripVertical,
@@ -69,6 +70,7 @@ import {
 import {
     bulkDestroy,
     bulkUpdate,
+    copy,
     show as showCase,
 } from '@/actions/App/Http/Controllers/TestCaseController';
 import { index as projectsIndex } from '@/routes/projects';
@@ -212,12 +214,16 @@ function DraggableCaseRow({
     c,
     visibleCols,
     selectedIds,
+    copyingId,
     onToggleCase,
+    onCopy,
 }: {
     c: SuiteCase;
     visibleCols: Record<ColumnKey, boolean>;
     selectedIds: Set<number>;
+    copyingId: number | null;
     onToggleCase: (id: number) => void;
+    onCopy: (id: number) => void;
 }) {
     const t = useTrans();
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -286,6 +292,18 @@ function DraggableCaseRow({
                     {c.assignee_name ?? '—'}
                 </td>
             )}
+            <td className="w-10 px-2 py-2 text-right">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    disabled={copyingId === c.id}
+                    onClick={() => onCopy(c.id)}
+                    title={t('app.test_cases.toolbar.copy')}
+                >
+                    <Copy className="size-4" />
+                </Button>
+            </td>
         </tr>
     );
 }
@@ -302,8 +320,10 @@ function SectionRow({
     filters,
     hideUnassigned,
     selectedIds,
+    copyingId,
     onToggleCollapse,
     onToggleCase,
+    onCopy,
     onAddChild,
     onEdit,
     onDelete,
@@ -317,8 +337,10 @@ function SectionRow({
     filters: Filters;
     hideUnassigned: boolean;
     selectedIds: Set<number>;
+    copyingId: number | null;
     onToggleCollapse: (id: number) => void;
     onToggleCase: (id: number) => void;
+    onCopy: (id: number) => void;
     onAddChild: (parentId: number) => void;
     onEdit: (section: Section) => void;
     onDelete: (section: Section) => void;
@@ -390,6 +412,7 @@ function SectionRow({
                                     {visibleCols.estimate    && <th className="w-24 px-3 py-2 font-medium">{t('app.test_cases.fields.estimate')}</th>}
                                     {visibleCols.references  && <th className="w-32 px-3 py-2 font-medium">{t('app.test_cases.fields.references')}</th>}
                                     {visibleCols.assigned_to && <th className="w-32 px-3 py-2 font-medium">{t('app.test_cases.fields.assigned_to')}</th>}
+                                    <th className="w-10 px-2 py-2" />
                                 </tr>
                             </thead>
                             <tbody>
@@ -399,7 +422,9 @@ function SectionRow({
                                         c={c}
                                         visibleCols={visibleCols}
                                         selectedIds={selectedIds}
+                                        copyingId={copyingId}
                                         onToggleCase={onToggleCase}
+                                        onCopy={onCopy}
                                     />
                                 ))}
                             </tbody>
@@ -424,8 +449,10 @@ function SectionRow({
                           filters={filters}
                           hideUnassigned={hideUnassigned}
                           selectedIds={selectedIds}
+                          copyingId={copyingId}
                           onToggleCollapse={onToggleCollapse}
                           onToggleCase={onToggleCase}
+                          onCopy={onCopy}
                           onAddChild={onAddChild}
                           onEdit={onEdit}
                           onDelete={onDelete}
@@ -479,6 +506,8 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
 
     // Selection + bulk edit
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+    const [copyingId, setCopyingId] = useState<number | null>(null);
+    const [bulkCopying, setBulkCopying] = useState(false);
     const [bulkOpen, setBulkOpen] = useState(false);
     const [bulkPriority, setBulkPriority] = useState('');
     const [bulkSection, setBulkSection] = useState('');
@@ -601,6 +630,43 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
         setDraftFilters(EMPTY_FILTERS);
         setFilters(EMPTY_FILTERS);
         setFilterOpen(false);
+    }
+
+    // Copy a single case into the current suite
+    function copyCase(id: number) {
+        setCopyingId(id);
+        router.post(
+            copy.url(id),
+            { suite_id: suite.id },
+            {
+                preserveScroll: true,
+                onFinish: () => setCopyingId(null),
+            },
+        );
+    }
+
+    // Copy all selected cases into the current suite
+    function copySelected() {
+        if (selectedIds.size === 0) return;
+        const ids = Array.from(selectedIds);
+        setBulkCopying(true);
+        let remaining = ids.length;
+        ids.forEach((id) => {
+            router.post(
+                copy.url(id),
+                { suite_id: suite.id },
+                {
+                    preserveScroll: true,
+                    onFinish: () => {
+                        remaining -= 1;
+                        if (remaining === 0) {
+                            setBulkCopying(false);
+                            setSelectedIds(new Set());
+                        }
+                    },
+                },
+            );
+        });
     }
 
     // Bulk delete/edit
@@ -745,6 +811,10 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                                     {t('app.test_cases.toolbar.edit_selected')}
                                     <Badge variant="secondary" className="ml-1">{selectedIds.size}</Badge>
                                 </Button>
+                                <Button variant="outline" size="sm" onClick={copySelected} disabled={bulkCopying}>
+                                    <Copy className="mr-1 size-4" />
+                                    {bulkCopying ? t('app.test_cases.toolbar.copying') : t('app.test_cases.toolbar.copy_selected')}
+                                </Button>
                                 <Button variant="destructive" size="sm" onClick={deleteSelected}>
                                     <Trash2 className="mr-1 size-4" />
                                     {t('app.test_cases.toolbar.delete_selected')}
@@ -826,8 +896,10 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                                             filters={filters}
                                             hideUnassigned={hideUnassigned}
                                             selectedIds={selectedIds}
+                                            copyingId={copyingId}
                                             onToggleCollapse={toggleCollapse}
                                             onToggleCase={toggleCase}
+                                            onCopy={copyCase}
                                             onAddChild={openCreate}
                                             onEdit={openEdit}
                                             onDelete={deleteSection}

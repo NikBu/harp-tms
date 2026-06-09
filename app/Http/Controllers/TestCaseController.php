@@ -61,10 +61,11 @@ class TestCaseController extends Controller
             ->get(['id', 'display_id', 'title', 'priority', 'status']);
 
         return Inertia::render('test-cases/create', [
-            'suite' => $suite->load('project'),
-            'suites' => $suite->project->suites()->orderBy('name')->get(['id', 'name']),
-            'sections' => $suite->sections()->orderBy('display_order')->get(),
+            'suite'        => $suite->load('project'),
+            'suites'       => $suite->project->suites()->orderBy('name')->get(['id', 'name']),
+            'sections'     => $suite->sections()->orderBy('display_order')->get(),
             'requirements' => $requirements,
+            'members'      => $suite->project->members()->get(['users.id', 'users.name']),
         ]);
     }
 
@@ -82,11 +83,12 @@ class TestCaseController extends Controller
             ->get(['id', 'display_id', 'title', 'priority', 'status']);
 
         return Inertia::render('test-cases/create', [
-            'suite' => null,
-            'suites' => $project->suites()->orderBy('name')->get(['id', 'name']),
-            'project' => $project->only(['id', 'name']),
-            'sections' => [],
+            'suite'        => null,
+            'suites'       => $project->suites()->orderBy('name')->get(['id', 'name']),
+            'project'      => $project->only(['id', 'name']),
+            'sections'     => [],
             'requirements' => $requirements,
+            'members'      => $project->members()->get(['users.id', 'users.name']),
         ]);
     }
 
@@ -401,6 +403,7 @@ class TestCaseController extends Controller
             'steps.*.display_order' => ['nullable', 'integer'],
             'requirement_ids' => ['nullable', 'array'],
             'requirement_ids.*' => ['integer', 'exists:requirements,id'],
+            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
         ]);
     }
 
@@ -415,9 +418,10 @@ class TestCaseController extends Controller
                 : null,
             'section_id' => $validated['section_id'] ?? null,
             'estimate' => self::parseEstimate($validated['estimate'] ?? null),
-            'refs' => $validated['references'] ?? null,
-            'preconditions' => $validated['preconditions'] ?? null,
+            'refs'            => $validated['references'] ?? null,
+            'preconditions'   => $validated['preconditions'] ?? null,
             'expected_result' => $validated['body'] ?? null,
+            'assigned_to'     => $validated['assigned_to'] ?? null,
         ], $extra);
     }
 

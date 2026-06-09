@@ -79,7 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('api.suites.sections');
 
     Route::get('api/suites/{suite}/sections-with-cases', function (Suite $suite) {
-        return $suite->sections()
+        $sections = $suite->sections()
             ->whereNull('parent_id')
             ->with([
                 'testCases:id,title,section_id',
@@ -88,6 +88,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ])
             ->orderBy('display_order')
             ->get(['id', 'name', 'suite_id', 'parent_id']);
+
+        // Prepend a virtual section for unsectioned cases
+        $unsectioned = $suite->testCases()->whereNull('section_id')->get(['id', 'title', 'section_id']);
+        if ($unsectioned->isNotEmpty()) {
+            $virtual = (object) [
+                'id'          => 0,
+                'name'        => __('app.sections.default_name'),
+                'suite_id'    => $suite->id,
+                'parent_id'   => null,
+                'testCases'   => $unsectioned,
+                'children'    => collect(),
+            ];
+            $sections->prepend($virtual);
+        }
+
+        return $sections;
     })->name('api.suites.sections-with-cases');
 
     // Test Runs

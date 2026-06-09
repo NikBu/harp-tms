@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -73,16 +74,18 @@ class TestRunController extends Controller
 
         $run = DB::transaction(function () use ($project, $validated): TestRun {
             $run = $project->testRuns()->create([
-                'suite_id' => $validated['suite_id'] ?? null,
+                'suite_id'    => $validated['suite_id'] ?? null,
                 'milestone_id' => $validated['milestone_id'] ?? null,
-                'name' => $validated['name'],
-                'description' => $validated['description'] ?? null,
-                'refs' => $validated['refs'] ?? null,
-                'start_on' => $validated['start_on'] ?? null,
-                'end_on' => $validated['end_on'] ?? null,
-                'include_all' => $validated['include_all'] ?? false,
-                'assigned_to' => $validated['assigned_to'] ?? null,
-                'created_by' => Auth::id(),
+                'name'         => $validated['name'],
+                'description'  => $validated['description'] ?? null,
+                'refs'         => $validated['refs'] ?? null,
+                'include_all'  => $validated['include_all'] ?? false,
+                'assigned_to'  => $validated['assigned_to'] ?? null,
+                'created_by'   => Auth::id(),
+                ...(Schema::hasColumn('test_runs', 'start_on') ? [
+                    'start_on' => $validated['start_on'] ?? null,
+                    'end_on'   => $validated['end_on'] ?? null,
+                ] : []),
             ]);
 
             if ($run->include_all && $run->suite_id) {

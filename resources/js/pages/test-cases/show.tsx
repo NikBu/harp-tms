@@ -108,6 +108,7 @@ export default function TestCasesShow({
 }) {
     const t = useTrans();
     const [copyOpen, setCopyOpen] = useState(false);
+    const [copying, setCopying] = useState(false);
     const [targetSuite, setTargetSuite] = useState<string>('');
 
     const usesSteps =
@@ -163,14 +164,21 @@ export default function TestCasesShow({
     function submitCopy(event: React.FormEvent) {
         event.preventDefault();
 
-        if (!targetSuite) {
+        if (!targetSuite || copying) {
             return;
         }
 
+        setCopying(true);
         router.post(
             copy.url(testCase.id),
             { suite_id: Number(targetSuite) },
-            { onSuccess: () => setCopyOpen(false) },
+            {
+                onSuccess: () => {
+                    setCopyOpen(false);
+                    setCopying(false);
+                },
+                onError: () => setCopying(false),
+            },
         );
     }
 
@@ -444,8 +452,8 @@ export default function TestCasesShow({
                             >
                                 {t('app.common.cancel')}
                             </Button>
-                            <Button type="submit" disabled={!targetSuite}>
-                                {t('app.common.save')}
+                            <Button type="submit" disabled={!targetSuite || copying}>
+                                {copying ? t('app.common.saving') : t('app.common.copy')}
                             </Button>
                         </DialogFooter>
                     </form>

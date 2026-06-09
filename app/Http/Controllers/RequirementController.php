@@ -135,6 +135,8 @@ class RequirementController extends Controller
         ]);
 
         $validated['tags'] = $this->parseTags($validated['tags'] ?? null);
+        $validated['type']     = $validated['type']     ?: 'functional';
+        $validated['priority'] = $validated['priority'] ?: 'medium';
 
         $seq = Requirement::where('project_id', $project->id)->count() + 1;
         $displayId = 'REQ-'.str_pad($seq, 4, '0', STR_PAD_LEFT);
@@ -190,7 +192,9 @@ class RequirementController extends Controller
             'tags' => ['nullable', 'string'],
         ]);
 
-        $validated['tags'] = $this->parseTags($validated['tags'] ?? null);
+        $validated['tags']     = $this->parseTags($validated['tags'] ?? null);
+        $validated['type']     = $validated['type']     ?: 'functional';
+        $validated['priority'] = $validated['priority'] ?: 'medium';
 
         $requirement->update(array_merge($validated, [
             'updated_by' => Auth::id(),
