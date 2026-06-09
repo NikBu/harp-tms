@@ -269,7 +269,7 @@ class TestCaseController extends Controller
 
         abort_unless($targetSuite->project_id === $project->id, 422);
 
-        $copy = DB::transaction(function () use ($testCase, $targetSuite, $validated): TestCase {
+        DB::transaction(function () use ($testCase, $targetSuite, $validated): TestCase {
             $attributes = $testCase->only([
                 'title', 'template', 'case_type', 'priority', 'estimate',
                 'estimate_forecast', 'preconditions', 'expected_result', 'refs',
@@ -297,7 +297,7 @@ class TestCaseController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.copied')]);
 
-        return to_route('cases.show', $copy);
+        return back();
     }
 
     /**

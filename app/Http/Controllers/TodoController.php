@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\Test;
+use App\Models\TestCase;
+use App\Models\TestRun;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -58,6 +60,77 @@ class TodoController extends Controller
             'project' => $project->only(['id', 'name']),
             'todos' => $groups,
             'totalCount' => $tests->count(),
+        ]);
+    }
+
+    /**
+     * Display all entities assigned to the current user across every project
+     * they can access, grouped by project.
+     */
+    public function globalIndex(Request $request): Response
+    {
+        $user = $request->user();
+
+        $accessibleProjectIds = $user->hasRole('admin')
+            ? Project::query()->pluck('id')
+            : $user->projects()->pluck('projects.id');
+
+        $cases = TestCase::query()
+            ->where('assigned_to', $user->id)
+            ->whereHas('suite', fn ($q) => $q->whereIn('project_id', $accessibleProjectIds))
+            ->with(['suite:id,project_id,name', 'suite.project:id,name'])
+            ->orderBy('title')
+            ->get(['id', 'suite_id', 'title', 'priority', 'assigned_to']);
+
+        $runs = TestRun::query()
+            ->where('assigned_to', $user->id)
+            ->whereIn('project_id', $accessibleProjectIds)
+            ->with('project:id,name')
+            ->orderBy('name')
+            ->get(['id', 'project_id', 'name', 'is_completed']);
+
+        /** @var array<int, array{project: array{id: int, name: string}, cases: list<array<string, mixed>>, runs: list<array<string, mixed>>, plans: list<array<string, mixed>>}> $grouped */
+        $grouped = [];
+
+        $ensureGroup = function (int $projectId, string $projectName) use (&$grouped): void {
+            if (! isset($grouped[$projectId])) {
+                $grouped[$projectId] = [
+                    'project' => ['id' => $projectId, 'name' => $projectName],
+                    'cases' => [],
+                    'runs' => [],
+                    'plans' => [],
+                ];
+            }
+        };
+
+        foreach ($cases as $case) {
+            $project = $case->suite->project;
+            $ensureGroup($project->id, $project->name);
+            $grouped[$project->id]['cases'][] = [
+                'id' => $case->id,
+                'title' => $case->title,
+                'priority' => $case->priority,
+            ];
+        }
+
+        foreach ($runs as $run) {
+            $ensureGroup($run->project->id, $run->project->name);
+            $grouped[$run->project->id]['runs'][] = [
+                'id' => $run->id,
+                'name' => $run->name,
+                'is_completed' => (bool) $run->is_completed,
+            ];
+        }
+
+        $groups = collect($grouped)
+            ->sortBy(fn ($group) => $group['project']['name'])
+            ->values();
+
+        $totalCount = $cases->count() + $runs->count();
+
+        return Inertia::render('todo/global', [
+            'groups' => $groups,
+            'totalCount' => $totalCount,
         ]);
     }
 

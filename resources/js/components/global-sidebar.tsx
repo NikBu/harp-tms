@@ -4,6 +4,7 @@ import {
     ChevronsUpDown,
     FolderOpen,
     LayoutDashboard,
+    ListChecks,
     ScrollText,
     Settings,
     ShieldCheck,
@@ -48,6 +49,7 @@ export function GlobalSidebar() {
     const mainItems = [
         { key: 'dashboard',    href: '/dashboard',  icon: LayoutDashboard },
         { key: 'projects',     href: '/projects',   icon: FolderOpen      },
+        { key: 'todo',         href: '/todo',       icon: ListChecks      },
         { key: 'reports',      href: reportsHref,   icon: BarChart2       },
         { key: 'requirements', href: '/requirements', icon: ScrollText    },
     ];
