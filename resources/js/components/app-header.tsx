@@ -43,9 +43,18 @@ function useAddItems(url: string, t: TransFn, projectId?: number): { label: stri
     }
 
     if (url.includes('/suites') || url.includes('/cases')) {
+        const suiteMatch = url.match(/\/suites\/(\d+)/);
+        const suiteId = suiteMatch ? suiteMatch[1] : null;
+
         return [
-            { label: t('app.test_cases.create'), href: `${base}/suites` },
-            { label: t('app.sections.add'), href: `${base}/suites` },
+            {
+                label: t('app.test_cases.create'),
+                href: suiteId ? `${base}/suites/${suiteId}/cases/create` : `${base}/suites`,
+            },
+            {
+                label: t('app.sections.add'),
+                href: suiteId ? `${base}/suites/${suiteId}` : `${base}/suites`,
+            },
             { label: t('app.runs.create'), href: `${base}/runs/create` },
             { label: t('app.runs.milestones.create'), href: `${base}/milestones/create` },
         ];

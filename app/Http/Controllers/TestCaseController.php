@@ -21,7 +21,7 @@ class TestCaseController extends Controller
      *
      * @var array<int, string>
      */
-    private const TEMPLATE_MAP = [
+    public const TEMPLATE_MAP = [
         1 => 'text',
         2 => 'steps',
         3 => 'exploratory',
@@ -32,7 +32,7 @@ class TestCaseController extends Controller
     /**
      * @var array<int, string>
      */
-    private const PRIORITY_MAP = [
+    public const PRIORITY_MAP = [
         1 => 'critical',
         2 => 'high',
         3 => 'medium',
