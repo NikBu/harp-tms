@@ -1,11 +1,9 @@
 import { Link, usePage } from '@inertiajs/react';
 import { BarChart2, FolderOpen, LayoutDashboard, Settings, ShieldCheck } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarGroup,
     SidebarGroupLabel,
     SidebarHeader,
@@ -88,10 +86,6 @@ export function GlobalSidebar() {
                     </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>
-
-            <SidebarFooter>
-                <NavUser />
-            </SidebarFooter>
         </Sidebar>
     );
 }

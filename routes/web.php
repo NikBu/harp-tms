@@ -4,6 +4,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectSettingsController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RequirementController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\SuiteController;
@@ -12,7 +13,11 @@ use App\Http\Controllers\TestPlanController;
 use App\Http\Controllers\TestRunController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', function () {
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
+})->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
@@ -20,6 +25,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('projects/create', [ProjectController::class, 'create'])->name('projects.create');
     Route::resource('projects', ProjectController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    Route::get('projects/{project}/reports', [ReportController::class, 'index'])
+        ->name('projects.reports.index');
 
     // Project Settings (separate controller, scoped under a project)
     Route::get('projects/{project}/settings', [ProjectSettingsController::class, 'show'])
@@ -89,7 +97,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::post('/locale', [LocaleController::class, 'update'])
-    ->middleware('auth')
     ->name('locale.update');
 
 require __DIR__.'/settings.php';

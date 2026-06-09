@@ -156,6 +156,13 @@
         @apply bg-background text-foreground;
     }
 
+    /* Hide the browser's native password reveal/clear controls so only the
+       custom toggle in <PasswordInput> is shown (avoids a duplicate icon). */
+    input[type='password']::-ms-reveal,
+    input[type='password']::-ms-clear {
+        display: none;
+    }
+
     h1 {
         font-size: var(--text-2xl);
         font-weight: var(--font-weight-medium);

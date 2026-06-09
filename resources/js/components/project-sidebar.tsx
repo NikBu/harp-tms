@@ -11,7 +11,6 @@ import {
     BookOpen,
     ScrollText,
 } from 'lucide-react';
-import { NavUser } from '@/components/nav-user';
 import { Badge } from '@/components/ui/badge';
 import {
     DropdownMenu,
@@ -22,7 +21,6 @@ import {
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarGroup,
     SidebarHeader,
     SidebarMenu,
@@ -130,10 +128,6 @@ export function ProjectSidebar({ project }: Props) {
                     </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>
-
-            <SidebarFooter>
-                <NavUser />
-            </SidebarFooter>
         </Sidebar>
     );
 }

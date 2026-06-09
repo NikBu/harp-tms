@@ -77,6 +77,18 @@ return [
     'settings' => [
         'title' => 'Project Settings',
         'saved' => 'Settings saved.',
+        'security' => [
+            'page_title' => 'Security settings',
+            'update_password_title' => 'Update password',
+            'update_password_description' => 'Ensure your account is using a long, random password to stay secure',
+            'current_password' => 'Current password',
+            'current_password_placeholder' => 'Current password',
+            'new_password' => 'New password',
+            'new_password_placeholder' => 'New password',
+            'confirm_password' => 'Confirm password',
+            'confirm_password_placeholder' => 'Confirm password',
+            'save' => 'Save',
+        ],
         'general' => 'General',
         'members' => 'Members',
         'members_current' => 'Current Members',
@@ -326,6 +338,21 @@ return [
             'under_review' => 'Under Review',
             'approved' => 'Approved',
             'obsolete' => 'Obsolete',
+        ],
+    ],
+    'admin' => [
+        'nav' => [
+            'site_settings' => 'Site Settings',
+        ],
+    ],
+    'reports' => [
+        'title' => 'Reports',
+        'description' => 'Insights and metrics for this project.',
+        'empty' => 'No reports available yet.',
+        'stats' => [
+            'test_runs' => 'Test Runs',
+            'test_cases' => 'Test Cases',
+            'milestones' => 'Milestones',
         ],
     ],
 ];

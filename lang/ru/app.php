@@ -77,6 +77,18 @@ return [
     'settings' => [
         'title' => 'Настройки проекта',
         'saved' => 'Настройки сохранены.',
+        'security' => [
+            'page_title' => 'Настройки безопасности',
+            'update_password_title' => 'Обновить пароль',
+            'update_password_description' => 'Убедитесь, что для вашей учётной записи используется длинный случайный пароль для большей безопасности',
+            'current_password' => 'Текущий пароль',
+            'current_password_placeholder' => 'Текущий пароль',
+            'new_password' => 'Новый пароль',
+            'new_password_placeholder' => 'Новый пароль',
+            'confirm_password' => 'Подтвердите пароль',
+            'confirm_password_placeholder' => 'Подтвердите пароль',
+            'save' => 'Сохранить',
+        ],
         'general' => 'Общие',
         'members' => 'Участники',
         'members_current' => 'Текущие участники',
@@ -324,6 +336,21 @@ return [
             'under_review' => 'На проверке',
             'approved' => 'Утверждено',
             'obsolete' => 'Устарело',
+        ],
+    ],
+    'admin' => [
+        'nav' => [
+            'site_settings' => 'Настройки сайта',
+        ],
+    ],
+    'reports' => [
+        'title' => 'Отчёты',
+        'description' => 'Аналитика и метрики по этому проекту.',
+        'empty' => 'Отчётов пока нет.',
+        'stats' => [
+            'test_runs' => 'Тест-раны',
+            'test_cases' => 'Тест-кейсы',
+            'milestones' => 'Вехи',
         ],
     ],
 ];

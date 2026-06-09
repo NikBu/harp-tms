@@ -37,6 +37,7 @@ export type Project = {
     test_runs_count?: number;
     requirements_count?: number;
     suites_count?: number;
+    milestones_count?: number;
 };
 
 export type PaginationLink = {
