@@ -122,7 +122,7 @@ test('a member can create a section within a suite', function (): void {
     $suite = Suite::factory()->create(['project_id' => $project->id]);
 
     actingAs($user)
-        ->post(route('suites.sections.store', $suite), [
+        ->post(route('projects.suites.sections.store', [$suite->project, $suite]), [
             'name' => 'Authentication',
         ])
         ->assertRedirect();

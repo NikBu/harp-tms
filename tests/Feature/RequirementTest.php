@@ -97,7 +97,7 @@ class RequirementTest extends TestCase
             ->assertRedirect();
 
         $req = Requirement::where('project_id', $project->id)->sole();
-        $this->assertStringStartsWith('REQ-'.$project->id.'-', $req->display_id);
+        $this->assertMatchesRegularExpression('/^REQ-\d{4}$/', $req->display_id);
     }
 
     public function test_store_requires_title(): void
