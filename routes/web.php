@@ -67,6 +67,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::patch('cases/bulk', [TestCaseController::class, 'bulkUpdate'])->name('cases.bulkUpdate');
     Route::delete('cases/bulk', [TestCaseController::class, 'bulkDestroy'])->name('cases.bulkDestroy');
+    Route::post('cases/bulk-assign', [TestCaseController::class, 'bulkAssign'])->name('cases.bulk-assign');
 
     // Global test case create — suite chosen via picker in the form
     Route::get('projects/{project}/cases/create', [TestCaseController::class, 'createGlobal'])

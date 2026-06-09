@@ -68,9 +68,11 @@ import {
     update as updateSection,
 } from '@/actions/App/Http/Controllers/SectionController';
 import {
+    bulkAssign,
     bulkDestroy,
     bulkUpdate,
     copy,
+    edit as editCase,
     show as showCase,
 } from '@/actions/App/Http/Controllers/TestCaseController';
 import { index as projectsIndex } from '@/routes/projects';
@@ -104,9 +106,22 @@ const TEMPLATE_OPTIONS = [1, 2, 3, 4, 5];
 
 // ── Column visibility ─────────────────────────────────────────────────────────
 
-type ColumnKey = 'priority' | 'template' | 'type' | 'estimate' | 'references' | 'assigned_to';
+type ColumnKey =
+    | 'priority'
+    | 'template'
+    | 'type'
+    | 'estimate'
+    | 'references'
+    | 'assigned_to';
 
-const COLUMN_KEYS: ColumnKey[] = ['priority', 'template', 'type', 'estimate', 'references', 'assigned_to'];
+const COLUMN_KEYS: ColumnKey[] = [
+    'priority',
+    'template',
+    'type',
+    'estimate',
+    'references',
+    'assigned_to',
+];
 
 const DEFAULT_COLUMNS: Record<ColumnKey, boolean> = {
     priority: true,
@@ -129,7 +144,10 @@ function loadColumns(suiteId: number): Record<ColumnKey, boolean> {
         const parsed = JSON.parse(raw) as Partial<Record<ColumnKey, boolean>>;
         return COLUMN_KEYS.reduce(
             (acc, key) => {
-                acc[key] = typeof parsed[key] === 'boolean' ? parsed[key]! : DEFAULT_COLUMNS[key];
+                acc[key] =
+                    typeof parsed[key] === 'boolean'
+                        ? parsed[key]!
+                        : DEFAULT_COLUMNS[key];
                 return acc;
             },
             {} as Record<ColumnKey, boolean>,
@@ -144,15 +162,29 @@ function loadColumns(suiteId: number): Record<ColumnKey, boolean> {
 type SortField = 'id' | 'title' | 'priority' | 'type' | 'estimate';
 type SortDir = 'asc' | 'desc';
 
-function sortCases(cases: SuiteCase[], field: SortField, dir: SortDir): SuiteCase[] {
+function sortCases(
+    cases: SuiteCase[],
+    field: SortField,
+    dir: SortDir,
+): SuiteCase[] {
     const sorted = [...cases].sort((a, b) => {
         let cmp = 0;
         switch (field) {
-            case 'id':       cmp = a.id - b.id; break;
-            case 'title':    cmp = a.title.localeCompare(b.title); break;
-            case 'priority': cmp = (a.priority_id ?? 999) - (b.priority_id ?? 999); break;
-            case 'type':     cmp = (a.type_id ?? '').localeCompare(b.type_id ?? ''); break;
-            case 'estimate': cmp = (a.estimate ?? 999999) - (b.estimate ?? 999999); break;
+            case 'id':
+                cmp = a.id - b.id;
+                break;
+            case 'title':
+                cmp = a.title.localeCompare(b.title);
+                break;
+            case 'priority':
+                cmp = (a.priority_id ?? 999) - (b.priority_id ?? 999);
+                break;
+            case 'type':
+                cmp = (a.type_id ?? '').localeCompare(b.type_id ?? '');
+                break;
+            case 'estimate':
+                cmp = (a.estimate ?? 999999) - (b.estimate ?? 999999);
+                break;
         }
         return dir === 'asc' ? cmp : -cmp;
     });
@@ -168,13 +200,24 @@ type Filters = {
     hasRequirements: boolean | null;
 };
 
-const EMPTY_FILTERS: Filters = { priorities: [], templates: [], sectionId: null, hasRequirements: null };
+const EMPTY_FILTERS: Filters = {
+    priorities: [],
+    templates: [],
+    sectionId: null,
+    hasRequirements: null,
+};
 
 function caseMatches(c: SuiteCase, f: Filters): boolean {
-    if (f.priorities.length > 0 && (c.priority_id === null || !f.priorities.includes(c.priority_id))) return false;
-    if (f.templates.length > 0 && !f.templates.includes(c.template)) return false;
+    if (
+        f.priorities.length > 0 &&
+        (c.priority_id === null || !f.priorities.includes(c.priority_id))
+    )
+        return false;
+    if (f.templates.length > 0 && !f.templates.includes(c.template))
+        return false;
     if (f.sectionId !== null && c.section_id !== f.sectionId) return false;
-    if (f.hasRequirements !== null && c.has_requirements !== f.hasRequirements) return false;
+    if (f.hasRequirements !== null && c.has_requirements !== f.hasRequirements)
+        return false;
     return true;
 }
 
@@ -204,7 +247,12 @@ function formatEstimate(seconds: number | null): string {
 // ── Dialog types ──────────────────────────────────────────────────────────────
 
 type SectionDialogState =
-    | { mode: 'create'; parentId: number | null; suiteId: number; projectId: number }
+    | {
+          mode: 'create';
+          parentId: number | null;
+          suiteId: number;
+          projectId: number;
+      }
     | { mode: 'edit'; section: Section }
     | null;
 
@@ -250,26 +298,38 @@ function DraggableCaseRow({
                     <Checkbox
                         checked={selectedIds.has(c.id)}
                         onCheckedChange={() => onToggleCase(c.id)}
+                        className="size-5 border-2 border-gray-400 dark:border-gray-500"
                     />
                 </div>
             </td>
             <td className="px-3 py-2 font-medium">
-                <Link href={showCase.url(c.id)} className="hover:text-primary hover:underline">
+                <Link
+                    href={showCase.url(c.id)}
+                    className="hover:text-primary hover:underline"
+                >
                     {c.title}
                 </Link>
             </td>
             {visibleCols.priority && (
                 <td className="w-28 px-3 py-2">
                     {c.priority_id ? (
-                        <span className={`text-xs capitalize ${PRIORITY_COLORS[c.priority_id] ?? ''}`}>
-                            {t(`app.requirements.priorities.${PRIORITY_KEYS[c.priority_id]}`)}
+                        <span
+                            className={`text-xs capitalize ${PRIORITY_COLORS[c.priority_id] ?? ''}`}
+                        >
+                            {t(
+                                `app.requirements.priorities.${PRIORITY_KEYS[c.priority_id]}`,
+                            )}
                         </span>
-                    ) : <span className="text-muted-foreground">—</span>}
+                    ) : (
+                        <span className="text-muted-foreground">—</span>
+                    )}
                 </td>
             )}
             {visibleCols.template && (
                 <td className="w-28 px-3 py-2 text-xs text-muted-foreground capitalize">
-                    {t(`app.test_cases.templates.${TEMPLATE_KEYS[c.template] ?? 'steps'}`)}
+                    {t(
+                        `app.test_cases.templates.${TEMPLATE_KEYS[c.template] ?? 'steps'}`,
+                    )}
                 </td>
             )}
             {visibleCols.type && (
@@ -292,17 +352,30 @@ function DraggableCaseRow({
                     {c.assignee_name ?? '—'}
                 </td>
             )}
-            <td className="w-10 px-2 py-2 text-right">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-7"
-                    disabled={copyingId === c.id}
-                    onClick={() => onCopy(c.id)}
-                    title={t('app.test_cases.toolbar.copy')}
-                >
-                    <Copy className="size-4" />
-                </Button>
+            <td className="w-16 px-2 py-2 text-right">
+                <div className="flex items-center justify-end gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        asChild
+                        title={t('app.common.edit')}
+                    >
+                        <Link href={editCase.url(c.id)}>
+                            <Pencil className="size-4" />
+                        </Link>
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        disabled={copyingId === c.id}
+                        onClick={() => onCopy(c.id)}
+                        title={t('app.test_cases.toolbar.copy')}
+                    >
+                        <Copy className="size-4" />
+                    </Button>
+                </div>
             </td>
         </tr>
     );
@@ -350,7 +423,11 @@ function SectionRow({
     const isCollapsed = collapsed.has(section.id);
     const rawCases = (section.testCases as SuiteCase[] | undefined) ?? [];
     const cases = sortCases(
-        rawCases.filter((c) => caseMatches(c, filters) && (!hideUnassigned || c.assigned_to_id !== null)),
+        rawCases.filter(
+            (c) =>
+                caseMatches(c, filters) &&
+                (!hideUnassigned || c.assigned_to_id !== null),
+        ),
         sortField,
         sortDir,
     );
@@ -375,18 +452,37 @@ function SectionRow({
                     <ChevronRight
                         className={`size-4 shrink-0 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
                     />
-                    <span className="truncate text-sm font-medium">{section.name}</span>
-                    <span className="text-xs text-muted-foreground">({rawCases.length})</span>
+                    <span className="truncate text-sm font-medium">
+                        {section.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                        ({rawCases.length})
+                    </span>
                 </button>
                 {!isVirtual && (
                     <div className="flex shrink-0 items-center gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => onAddChild(section.id)} title={t('app.sections.add_subsection')}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onAddChild(section.id)}
+                            title={t('app.sections.add_subsection')}
+                        >
                             <Plus className="size-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => onEdit(section)} title={t('app.sections.edit')}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onEdit(section)}
+                            title={t('app.sections.edit')}
+                        >
                             <Pencil className="size-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => onDelete(section)} title={t('app.common.delete')}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onDelete(section)}
+                            title={t('app.common.delete')}
+                        >
                             <Trash2 className="size-4" />
                         </Button>
                     </div>
@@ -405,14 +501,50 @@ function SectionRow({
                             <thead>
                                 <tr className="border-b border-border bg-muted/50 text-left text-xs text-muted-foreground">
                                     <th className="w-10 px-3 py-2" />
-                                    <th className="px-3 py-2 font-medium">{t('app.test_cases.fields.title')}</th>
-                                    {visibleCols.priority    && <th className="w-28 px-3 py-2 font-medium">{t('app.test_cases.fields.priority')}</th>}
-                                    {visibleCols.template    && <th className="w-28 px-3 py-2 font-medium">{t('app.test_cases.fields.template')}</th>}
-                                    {visibleCols.type        && <th className="w-32 px-3 py-2 font-medium">{t('app.test_cases.fields.type')}</th>}
-                                    {visibleCols.estimate    && <th className="w-24 px-3 py-2 font-medium">{t('app.test_cases.fields.estimate')}</th>}
-                                    {visibleCols.references  && <th className="w-32 px-3 py-2 font-medium">{t('app.test_cases.fields.references')}</th>}
-                                    {visibleCols.assigned_to && <th className="w-32 px-3 py-2 font-medium">{t('app.test_cases.fields.assigned_to')}</th>}
-                                    <th className="w-10 px-2 py-2" />
+                                    <th className="px-3 py-2 font-medium">
+                                        {t('app.test_cases.fields.title')}
+                                    </th>
+                                    {visibleCols.priority && (
+                                        <th className="w-28 px-3 py-2 font-medium">
+                                            {t(
+                                                'app.test_cases.fields.priority',
+                                            )}
+                                        </th>
+                                    )}
+                                    {visibleCols.template && (
+                                        <th className="w-28 px-3 py-2 font-medium">
+                                            {t(
+                                                'app.test_cases.fields.template',
+                                            )}
+                                        </th>
+                                    )}
+                                    {visibleCols.type && (
+                                        <th className="w-32 px-3 py-2 font-medium">
+                                            {t('app.test_cases.fields.type')}
+                                        </th>
+                                    )}
+                                    {visibleCols.estimate && (
+                                        <th className="w-24 px-3 py-2 font-medium">
+                                            {t(
+                                                'app.test_cases.fields.estimate',
+                                            )}
+                                        </th>
+                                    )}
+                                    {visibleCols.references && (
+                                        <th className="w-32 px-3 py-2 font-medium">
+                                            {t(
+                                                'app.test_cases.fields.references',
+                                            )}
+                                        </th>
+                                    )}
+                                    {visibleCols.assigned_to && (
+                                        <th className="w-32 px-3 py-2 font-medium">
+                                            {t(
+                                                'app.test_cases.fields.assigned_to',
+                                            )}
+                                        </th>
+                                    )}
+                                    <th className="w-16 px-2 py-2" />
                                 </tr>
                             </thead>
                             <tbody>
@@ -430,7 +562,9 @@ function SectionRow({
                             </tbody>
                         </table>
                     ) : (
-                        <p className="px-3 py-3 text-xs text-muted-foreground">{t('app.test_cases.empty_section')}</p>
+                        <p className="px-3 py-3 text-xs text-muted-foreground">
+                            {t('app.test_cases.empty_section')}
+                        </p>
                     )}
                 </div>
             ) : null}
@@ -465,7 +599,17 @@ function SectionRow({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function SuitesShow({ suite, sections }: { suite: Suite; sections: Section[] }) {
+type ProjectMember = { id: number; name: string };
+
+export default function SuitesShow({
+    suite,
+    sections,
+    members = [],
+}: {
+    suite: Suite;
+    sections: Section[];
+    members?: ProjectMember[];
+}) {
     const t = useTrans();
 
     // Section dialog
@@ -476,7 +620,9 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
     const [sortField, setSortField] = useState<SortField>('id');
     const [sortDir, setSortDir] = useState<SortDir>('asc');
     const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
-    const [visibleCols, setVisibleCols] = useState<Record<ColumnKey, boolean>>(() => loadColumns(suite.id));
+    const [visibleCols, setVisibleCols] = useState<Record<ColumnKey, boolean>>(
+        () => loadColumns(suite.id),
+    );
 
     // Filter state
     const [filterOpen, setFilterOpen] = useState(false);
@@ -485,11 +631,15 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
     const [hideUnassigned, setHideUnassigned] = useState(false);
 
     // Drag-and-drop sensors — a small activation distance avoids hijacking clicks
-    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    );
 
     function handleDragEnd(event: DragEndEvent) {
         const caseId = event.active.data.current?.caseId as number | undefined;
-        const targetSectionId = event.over?.data.current?.sectionId as number | undefined;
+        const targetSectionId = event.over?.data.current?.sectionId as
+            | number
+            | undefined;
 
         if (caseId === undefined || targetSectionId === undefined) return;
 
@@ -525,7 +675,10 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
     // Persist column visibility
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            window.localStorage.setItem(columnsStorageKey(suite.id), JSON.stringify(visibleCols));
+            window.localStorage.setItem(
+                columnsStorageKey(suite.id),
+                JSON.stringify(visibleCols),
+            );
         }
     }, [suite.id, visibleCols]);
 
@@ -533,10 +686,14 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
     function allSectionIds(secs: Section[]): number[] {
         return secs.flatMap((s) => [s.id, ...allSectionIds(s.children ?? [])]);
     }
-    const allCollapsed = sections.length > 0 && allSectionIds(sections).every((id) => collapsed.has(id));
+    const allCollapsed =
+        sections.length > 0 &&
+        allSectionIds(sections).every((id) => collapsed.has(id));
 
     function toggleCollapseAll() {
-        setCollapsed(allCollapsed ? new Set() : new Set(allSectionIds(sections)));
+        setCollapsed(
+            allCollapsed ? new Set() : new Set(allSectionIds(sections)),
+        );
     }
 
     function toggleCollapse(id: number) {
@@ -548,10 +705,13 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
     }
 
     // Selection helpers
-    const allSelected = allCases.length > 0 && allCases.every((c) => selectedIds.has(c.id));
+    const allSelected =
+        allCases.length > 0 && allCases.every((c) => selectedIds.has(c.id));
 
     function toggleSelectAll(checked: boolean) {
-        setSelectedIds(checked ? new Set(allCases.map((c) => c.id)) : new Set());
+        setSelectedIds(
+            checked ? new Set(allCases.map((c) => c.id)) : new Set(),
+        );
     }
 
     function toggleCase(id: number) {
@@ -565,7 +725,12 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
     // Section dialog helpers
     function openCreate(parentId: number | null) {
         setName('');
-        setDialog({ mode: 'create', parentId, suiteId: suite.id, projectId: suite.project_id });
+        setDialog({
+            mode: 'create',
+            parentId,
+            suiteId: suite.id,
+            projectId: suite.project_id,
+        });
     }
 
     function openEdit(section: Section) {
@@ -583,7 +748,10 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
 
         if (dialog.mode === 'create') {
             router.post(
-                storeSection.url({ project: dialog.projectId, suite: dialog.suiteId }),
+                storeSection.url({
+                    project: dialog.projectId,
+                    suite: dialog.suiteId,
+                }),
                 { name, parent_id: dialog.parentId },
                 { onSuccess: closeDialog, preserveScroll: true },
             );
@@ -610,14 +778,18 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
     function toggleDraftPriority(value: number) {
         setDraftFilters((f) => ({
             ...f,
-            priorities: f.priorities.includes(value) ? f.priorities.filter((p) => p !== value) : [...f.priorities, value],
+            priorities: f.priorities.includes(value)
+                ? f.priorities.filter((p) => p !== value)
+                : [...f.priorities, value],
         }));
     }
 
     function toggleDraftTemplate(value: number) {
         setDraftFilters((f) => ({
             ...f,
-            templates: f.templates.includes(value) ? f.templates.filter((tpl) => tpl !== value) : [...f.templates, value],
+            templates: f.templates.includes(value)
+                ? f.templates.filter((tpl) => tpl !== value)
+                : [...f.templates, value],
         }));
     }
 
@@ -671,12 +843,32 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
 
     // Bulk delete/edit
     function deleteSelected() {
-        if (selectedIds.size === 0 || !window.confirm(t('app.common.confirm_delete'))) return;
+        if (
+            selectedIds.size === 0 ||
+            !window.confirm(t('app.common.confirm_delete'))
+        )
+            return;
         router.delete(bulkDestroy.url(), {
             data: { ids: Array.from(selectedIds) },
             preserveScroll: true,
             onSuccess: () => setSelectedIds(new Set()),
         });
+    }
+
+    // Bulk assign selected cases to a project member (or unassign)
+    function assignSelected(assignedToId: number | null) {
+        if (selectedIds.size === 0) return;
+        router.post(
+            bulkAssign.url(),
+            { ids: Array.from(selectedIds), assigned_to_id: assignedToId },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setSelectedIds(new Set());
+                    router.reload({ preserveScroll: true });
+                },
+            },
+        );
     }
 
     function submitBulkEdit() {
@@ -701,20 +893,22 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
         );
     }
 
-    const exportUrl = (format: string) => `/suites/${suite.id}/export?format=${format}`;
+    const exportUrl = (format: string) =>
+        `/suites/${suite.id}/export?format=${format}`;
 
     return (
         <>
             <Head title={suite.name} />
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
-
                 {/* Page header */}
                 <div className="flex items-start justify-between gap-2">
                     <div className="grid gap-1">
                         <h1 className="text-2xl font-semibold">{suite.name}</h1>
                         {suite.description && (
-                            <p className="text-sm text-muted-foreground">{suite.description}</p>
+                            <p className="text-sm text-muted-foreground">
+                                {suite.description}
+                            </p>
                         )}
                     </div>
                     <Button variant="outline" size="sm" asChild>
@@ -727,7 +921,6 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
 
                 {/* ── Toolbar ───────────────────────────────────────────────── */}
                 <div className="flex flex-wrap items-center gap-1 border-b pb-2">
-
                     {/* Sort */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -738,7 +931,15 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
-                            {(['id', 'title', 'priority', 'type', 'estimate'] as SortField[]).map((field) => (
+                            {(
+                                [
+                                    'id',
+                                    'title',
+                                    'priority',
+                                    'type',
+                                    'estimate',
+                                ] as SortField[]
+                            ).map((field) => (
                                 <DropdownMenuCheckboxItem
                                     key={field}
                                     checked={sortField === field}
@@ -748,10 +949,16 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                                 </DropdownMenuCheckboxItem>
                             ))}
                             <DropdownMenuSeparator />
-                            <DropdownMenuCheckboxItem checked={sortDir === 'asc'} onCheckedChange={() => setSortDir('asc')}>
+                            <DropdownMenuCheckboxItem
+                                checked={sortDir === 'asc'}
+                                onCheckedChange={() => setSortDir('asc')}
+                            >
                                 A → Z
                             </DropdownMenuCheckboxItem>
-                            <DropdownMenuCheckboxItem checked={sortDir === 'desc'} onCheckedChange={() => setSortDir('desc')}>
+                            <DropdownMenuCheckboxItem
+                                checked={sortDir === 'desc'}
+                                onCheckedChange={() => setSortDir('desc')}
+                            >
                                 Z → A
                             </DropdownMenuCheckboxItem>
                         </DropdownMenuContent>
@@ -761,7 +968,9 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                     <Button variant="outline" size="sm" onClick={openFilters}>
                         <Filter className="mr-1 size-4" />
                         {t('app.test_cases.toolbar.filter')}
-                        {activeFilterCount > 0 && <Badge className="ml-1">{activeFilterCount}</Badge>}
+                        {activeFilterCount > 0 && (
+                            <Badge className="ml-1">{activeFilterCount}</Badge>
+                        )}
                     </Button>
 
                     {/* Hide unassigned */}
@@ -771,16 +980,23 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                         onClick={() => setHideUnassigned((v) => !v)}
                     >
                         <User className="mr-1 size-4" />
-                        {hideUnassigned ? t('app.test_cases.toolbar.show_all') : t('app.test_cases.toolbar.hide_unassigned')}
+                        {hideUnassigned
+                            ? t('app.test_cases.toolbar.show_all')
+                            : t('app.test_cases.toolbar.hide_unassigned')}
                     </Button>
 
                     {/* Collapse/expand */}
-                    <Button variant="outline" size="sm" onClick={toggleCollapseAll}>
-                        {allCollapsed ? t('app.test_cases.toolbar.expand_all') : t('app.test_cases.toolbar.collapse_all')}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleCollapseAll}
+                    >
+                        {allCollapsed
+                            ? t('app.test_cases.toolbar.expand_all')
+                            : t('app.test_cases.toolbar.collapse_all')}
                     </Button>
 
                     <div className="ml-auto flex flex-wrap items-center gap-1">
-
                         {/* Add Case + Add Section */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -792,12 +1008,16 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
-                                    <Link href={`/suites/${suite.id}/cases/create`}>
+                                    <Link
+                                        href={`/suites/${suite.id}/cases/create`}
+                                    >
                                         {t('app.test_cases.toolbar.add_case')}
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => openCreate(null)}>
+                                <DropdownMenuItem
+                                    onSelect={() => openCreate(null)}
+                                >
                                     {t('app.test_cases.toolbar.add_section')}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -806,18 +1026,89 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                         {/* Bulk edit — only when items selected */}
                         {selectedIds.size > 0 && (
                             <>
-                                <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)}>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setBulkOpen(true)}
+                                >
                                     <Pencil className="mr-1 size-4" />
                                     {t('app.test_cases.toolbar.edit_selected')}
-                                    <Badge variant="secondary" className="ml-1">{selectedIds.size}</Badge>
+                                    <Badge variant="secondary" className="ml-1">
+                                        {selectedIds.size}
+                                    </Badge>
                                 </Button>
-                                <Button variant="outline" size="sm" onClick={copySelected} disabled={bulkCopying}>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={copySelected}
+                                    disabled={bulkCopying}
+                                >
                                     <Copy className="mr-1 size-4" />
-                                    {bulkCopying ? t('app.test_cases.toolbar.copying') : t('app.test_cases.toolbar.copy_selected')}
+                                    {bulkCopying
+                                        ? t('app.test_cases.toolbar.copying')
+                                        : t(
+                                              'app.test_cases.toolbar.copy_selected',
+                                          )}
                                 </Button>
-                                <Button variant="destructive" size="sm" onClick={deleteSelected}>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm">
+                                            <User className="mr-1 size-4" />
+                                            {t(
+                                                'app.test_cases.toolbar.assign_to',
+                                            )}
+                                            <ChevronDown className="ml-1 size-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        align="end"
+                                        className="max-h-72 overflow-y-auto"
+                                    >
+                                        <DropdownMenuLabel>
+                                            {t(
+                                                'app.test_cases.toolbar.assign_to',
+                                            )}
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        {members.length === 0 ? (
+                                            <DropdownMenuItem disabled>
+                                                {t(
+                                                    'app.test_cases.toolbar.no_members',
+                                                )}
+                                            </DropdownMenuItem>
+                                        ) : (
+                                            members.map((m) => (
+                                                <DropdownMenuItem
+                                                    key={m.id}
+                                                    onSelect={() =>
+                                                        assignSelected(m.id)
+                                                    }
+                                                >
+                                                    {m.name}
+                                                </DropdownMenuItem>
+                                            ))
+                                        )}
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            onSelect={() =>
+                                                assignSelected(null)
+                                            }
+                                        >
+                                            {t(
+                                                'app.test_cases.toolbar.unassign',
+                                            )}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={deleteSelected}
+                                >
                                     <Trash2 className="mr-1 size-4" />
-                                    {t('app.test_cases.toolbar.delete_selected')}
+                                    {t(
+                                        'app.test_cases.toolbar.delete_selected',
+                                    )}
                                 </Button>
                             </>
                         )}
@@ -832,8 +1123,12 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild><a href={exportUrl('csv')}>CSV</a></DropdownMenuItem>
-                                <DropdownMenuItem asChild><a href={exportUrl('xml')}>XML</a></DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                    <a href={exportUrl('csv')}>CSV</a>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                    <a href={exportUrl('xml')}>XML</a>
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
 
@@ -847,14 +1142,21 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>{t('app.test_cases.toolbar.visible_columns')}</DropdownMenuLabel>
+                                <DropdownMenuLabel>
+                                    {t(
+                                        'app.test_cases.toolbar.visible_columns',
+                                    )}
+                                </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 {COLUMN_KEYS.map((key) => (
                                     <DropdownMenuCheckboxItem
                                         key={key}
                                         checked={visibleCols[key]}
                                         onCheckedChange={(checked) =>
-                                            setVisibleCols((prev) => ({ ...prev, [key]: checked === true }))
+                                            setVisibleCols((prev) => ({
+                                                ...prev,
+                                                [key]: checked === true,
+                                            }))
                                         }
                                     >
                                         {t(`app.test_cases.fields.${key}`)}
@@ -871,18 +1173,31 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                         <div className="flex items-center gap-2">
                             <Checkbox
                                 checked={allSelected}
-                                onCheckedChange={(checked) => toggleSelectAll(checked === true)}
+                                onCheckedChange={(checked) =>
+                                    toggleSelectAll(checked === true)
+                                }
                                 disabled={allCases.length === 0}
                                 aria-label={t('app.common.select_all')}
+                                className="size-5 border-2 border-gray-400 dark:border-gray-500"
                             />
-                            <h2 className="text-lg font-medium">{t('app.sections.title')}</h2>
-                            <span className="text-sm text-muted-foreground">({allCases.length})</span>
+                            <h2 className="text-lg font-medium">
+                                {t('app.sections.title')}
+                            </h2>
+                            <span className="text-sm text-muted-foreground">
+                                ({allCases.length})
+                            </span>
                         </div>
 
                         {sections.length === 0 ? (
-                            <p className="py-4 text-sm text-muted-foreground">{t('app.sections.empty')}</p>
+                            <p className="py-4 text-sm text-muted-foreground">
+                                {t('app.sections.empty')}
+                            </p>
                         ) : (
-                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEnd}
+                            >
                                 <div className="grid gap-2">
                                     {sections.map((section) => (
                                         <SectionRow
@@ -910,7 +1225,10 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                         )}
 
                         <div className="flex gap-2 pt-2">
-                            <Button variant="outline" onClick={() => openCreate(null)}>
+                            <Button
+                                variant="outline"
+                                onClick={() => openCreate(null)}
+                            >
                                 <Plus className="size-4" />
                                 {t('app.sections.add')}
                             </Button>
@@ -920,21 +1238,43 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
             </div>
 
             {/* ── Section create/edit dialog ─────────────────────────────────── */}
-            <Dialog open={dialog !== null} onOpenChange={(open) => { if (!open) closeDialog(); }}>
+            <Dialog
+                open={dialog !== null}
+                onOpenChange={(open) => {
+                    if (!open) closeDialog();
+                }}
+            >
                 <DialogContent>
                     <form onSubmit={submitDialog} className="grid gap-4">
                         <DialogHeader>
                             <DialogTitle>
-                                {dialog?.mode === 'edit' ? t('app.sections.edit') : t('app.sections.add')}
+                                {dialog?.mode === 'edit'
+                                    ? t('app.sections.edit')
+                                    : t('app.sections.add')}
                             </DialogTitle>
                         </DialogHeader>
                         <div className="grid gap-2">
-                            <Label htmlFor="section-name">{t('app.sections.name')}</Label>
-                            <Input id="section-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+                            <Label htmlFor="section-name">
+                                {t('app.sections.name')}
+                            </Label>
+                            <Input
+                                id="section-name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                autoFocus
+                            />
                         </div>
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={closeDialog}>{t('app.common.cancel')}</Button>
-                            <Button type="submit">{t('app.common.save')}</Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={closeDialog}
+                            >
+                                {t('app.common.cancel')}
+                            </Button>
+                            <Button type="submit">
+                                {t('app.common.save')}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -944,66 +1284,139 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
             <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
                 <SheetContent className="flex flex-col">
                     <SheetHeader>
-                        <SheetTitle>{t('app.test_cases.filters.title')}</SheetTitle>
+                        <SheetTitle>
+                            {t('app.test_cases.filters.title')}
+                        </SheetTitle>
                     </SheetHeader>
                     <div className="flex-1 space-y-6 overflow-y-auto px-4">
                         <div className="grid gap-2">
-                            <Label>{t('app.test_cases.filters.priority')}</Label>
+                            <Label>
+                                {t('app.test_cases.filters.priority')}
+                            </Label>
                             {PRIORITY_OPTIONS.map((p) => (
-                                <label key={p} className="flex items-center gap-2 text-sm">
+                                <label
+                                    key={p}
+                                    className="flex items-center gap-2 text-sm"
+                                >
                                     <Checkbox
-                                        checked={draftFilters.priorities.includes(p)}
-                                        onCheckedChange={() => toggleDraftPriority(p)}
+                                        checked={draftFilters.priorities.includes(
+                                            p,
+                                        )}
+                                        onCheckedChange={() =>
+                                            toggleDraftPriority(p)
+                                        }
                                     />
-                                    {t(`app.requirements.priorities.${PRIORITY_KEYS[p]}`)}
+                                    {t(
+                                        `app.requirements.priorities.${PRIORITY_KEYS[p]}`,
+                                    )}
                                 </label>
                             ))}
                         </div>
                         <div className="grid gap-2">
-                            <Label>{t('app.test_cases.filters.template')}</Label>
+                            <Label>
+                                {t('app.test_cases.filters.template')}
+                            </Label>
                             {TEMPLATE_OPTIONS.map((tpl) => (
-                                <label key={tpl} className="flex items-center gap-2 text-sm">
+                                <label
+                                    key={tpl}
+                                    className="flex items-center gap-2 text-sm"
+                                >
                                     <Checkbox
-                                        checked={draftFilters.templates.includes(tpl)}
-                                        onCheckedChange={() => toggleDraftTemplate(tpl)}
+                                        checked={draftFilters.templates.includes(
+                                            tpl,
+                                        )}
+                                        onCheckedChange={() =>
+                                            toggleDraftTemplate(tpl)
+                                        }
                                     />
-                                    {t(`app.test_cases.templates.${TEMPLATE_KEYS[tpl]}`)}
+                                    {t(
+                                        `app.test_cases.templates.${TEMPLATE_KEYS[tpl]}`,
+                                    )}
                                 </label>
                             ))}
                         </div>
                         <div className="grid gap-2">
                             <Label>{t('app.test_cases.filters.section')}</Label>
                             <Select
-                                value={draftFilters.sectionId === null ? 'all' : String(draftFilters.sectionId)}
-                                onValueChange={(v) => setDraftFilters((f) => ({ ...f, sectionId: v === 'all' ? null : Number(v) }))}
+                                value={
+                                    draftFilters.sectionId === null
+                                        ? 'all'
+                                        : String(draftFilters.sectionId)
+                                }
+                                onValueChange={(v) =>
+                                    setDraftFilters((f) => ({
+                                        ...f,
+                                        sectionId:
+                                            v === 'all' ? null : Number(v),
+                                    }))
+                                }
                             >
-                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">{t('app.test_cases.filters.all')}</SelectItem>
+                                    <SelectItem value="all">
+                                        {t('app.test_cases.filters.all')}
+                                    </SelectItem>
                                     {flatSections.map((s) => (
-                                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                                        <SelectItem
+                                            key={s.id}
+                                            value={String(s.id)}
+                                        >
+                                            {s.name}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="grid gap-2">
-                            <Label>{t('app.test_cases.filters.has_requirements')}</Label>
+                            <Label>
+                                {t('app.test_cases.filters.has_requirements')}
+                            </Label>
                             <Select
-                                value={draftFilters.hasRequirements === null ? 'all' : draftFilters.hasRequirements ? 'yes' : 'no'}
-                                onValueChange={(v) => setDraftFilters((f) => ({ ...f, hasRequirements: v === 'all' ? null : v === 'yes' }))}
+                                value={
+                                    draftFilters.hasRequirements === null
+                                        ? 'all'
+                                        : draftFilters.hasRequirements
+                                          ? 'yes'
+                                          : 'no'
+                                }
+                                onValueChange={(v) =>
+                                    setDraftFilters((f) => ({
+                                        ...f,
+                                        hasRequirements:
+                                            v === 'all' ? null : v === 'yes',
+                                    }))
+                                }
                             >
-                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">{t('app.test_cases.filters.all')}</SelectItem>
-                                    <SelectItem value="yes">{t('app.test_cases.filters.yes')}</SelectItem>
-                                    <SelectItem value="no">{t('app.test_cases.filters.no')}</SelectItem>
+                                    <SelectItem value="all">
+                                        {t('app.test_cases.filters.all')}
+                                    </SelectItem>
+                                    <SelectItem value="yes">
+                                        {t('app.test_cases.filters.yes')}
+                                    </SelectItem>
+                                    <SelectItem value="no">
+                                        {t('app.test_cases.filters.no')}
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
                     <SheetFooter className="flex-row gap-2">
-                        <Button variant="outline" className="flex-1" onClick={clearFilters}>{t('app.test_cases.filters.clear')}</Button>
-                        <Button className="flex-1" onClick={applyFilters}>{t('app.test_cases.filters.apply')}</Button>
+                        <Button
+                            variant="outline"
+                            className="flex-1"
+                            onClick={clearFilters}
+                        >
+                            {t('app.test_cases.filters.clear')}
+                        </Button>
+                        <Button className="flex-1" onClick={applyFilters}>
+                            {t('app.test_cases.filters.apply')}
+                        </Button>
                     </SheetFooter>
                 </SheetContent>
             </Sheet>
@@ -1012,18 +1425,34 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
             <Sheet open={bulkOpen} onOpenChange={setBulkOpen}>
                 <SheetContent className="flex flex-col">
                     <SheetHeader>
-                        <SheetTitle>{t('app.test_cases.bulk.title', { count: String(selectedIds.size) })}</SheetTitle>
+                        <SheetTitle>
+                            {t('app.test_cases.bulk.title', {
+                                count: String(selectedIds.size),
+                            })}
+                        </SheetTitle>
                     </SheetHeader>
                     <div className="flex-1 space-y-4 overflow-y-auto px-4">
                         <div className="grid gap-2">
                             <Label>{t('app.test_cases.fields.priority')}</Label>
-                            <Select value={bulkPriority || 'keep'} onValueChange={(v) => setBulkPriority(v === 'keep' ? '' : v)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
+                            <Select
+                                value={bulkPriority || 'keep'}
+                                onValueChange={(v) =>
+                                    setBulkPriority(v === 'keep' ? '' : v)
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="keep">—</SelectItem>
                                     {PRIORITY_OPTIONS.map((p) => (
-                                        <SelectItem key={p} value={PRIORITY_KEYS[p]}>
-                                            {t(`app.requirements.priorities.${PRIORITY_KEYS[p]}`)}
+                                        <SelectItem
+                                            key={p}
+                                            value={PRIORITY_KEYS[p]}
+                                        >
+                                            {t(
+                                                `app.requirements.priorities.${PRIORITY_KEYS[p]}`,
+                                            )}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -1031,26 +1460,51 @@ export default function SuitesShow({ suite, sections }: { suite: Suite; sections
                         </div>
                         <div className="grid gap-2">
                             <Label>{t('app.test_cases.fields.section')}</Label>
-                            <Select value={bulkSection || 'keep'} onValueChange={(v) => setBulkSection(v === 'keep' ? '' : v)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
+                            <Select
+                                value={bulkSection || 'keep'}
+                                onValueChange={(v) =>
+                                    setBulkSection(v === 'keep' ? '' : v)
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="keep">—</SelectItem>
                                     {flatSections.map((s) => (
-                                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                                        <SelectItem
+                                            key={s.id}
+                                            value={String(s.id)}
+                                        >
+                                            {s.name}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="grid gap-2">
                             <Label>{t('app.test_cases.fields.type')}</Label>
-                            <Input value={bulkType} onChange={(e) => setBulkType(e.target.value)} />
+                            <Input
+                                value={bulkType}
+                                onChange={(e) => setBulkType(e.target.value)}
+                            />
                         </div>
-                        <p className="text-xs text-muted-foreground">{t('app.test_cases.bulk.note')}</p>
+                        <p className="text-xs text-muted-foreground">
+                            {t('app.test_cases.bulk.note')}
+                        </p>
                     </div>
                     <SheetFooter className="flex-row gap-2">
-                        <Button variant="outline" className="flex-1" onClick={() => setBulkOpen(false)}>{t('app.common.cancel')}</Button>
+                        <Button
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => setBulkOpen(false)}
+                        >
+                            {t('app.common.cancel')}
+                        </Button>
                         <Button className="flex-1" onClick={submitBulkEdit}>
-                            {t('app.test_cases.bulk.apply', { count: String(selectedIds.size) })}
+                            {t('app.test_cases.bulk.apply', {
+                                count: String(selectedIds.size),
+                            })}
                         </Button>
                     </SheetFooter>
                 </SheetContent>
