@@ -26,7 +26,7 @@ test('a member can view the project reports page', function (): void {
         ->get(route('projects.reports.index', $project))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->component('projects/reports')
+            ->component('reports/index')
             ->where('project.id', $project->id)
         );
 });

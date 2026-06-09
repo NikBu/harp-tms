@@ -3,39 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
-use App\Models\Section;
 use App\Models\Suite;
-use App\Models\TestCase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SuiteController extends Controller
 {
-    /**
-     * @var array<int, string>
-     */
-    private const TEMPLATE_MAP = [
-        1 => 'text',
-        2 => 'steps',
-        3 => 'exploratory',
-        4 => 'bdd',
-        5 => 'checklist',
-    ];
-
-    /**
-     * @var array<int, string>
-     */
-    private const PRIORITY_MAP = [
-        1 => 'critical',
-        2 => 'high',
-        3 => 'medium',
-        4 => 'low',
-    ];
-
     /**
      * Display a listing of the suites for the given project.
      */
@@ -72,7 +48,7 @@ class SuiteController extends Controller
                 'message' => __('app.suites.single_mode_limit'),
             ]);
 
-            return to_route('suites.index', $project);
+            return to_route('projects.suites.index', $project);
         }
 
         return Inertia::render('suites/create', [
@@ -113,114 +89,18 @@ class SuiteController extends Controller
 
         $this->authorizeProjectAccess($request, $project);
 
-        $caseEager = [
-            'testCases' => function ($query): void {
-                $query->orderBy('display_order')
-                    ->orderBy('id')
-                    ->withCount('requirements');
-            },
-        ];
-
         $suite->load([
-            'sections' => function ($query) use ($caseEager): void {
+            'sections' => function ($query): void {
                 $query->whereNull('parent_id')
                     ->orderBy('display_order')
-                    ->with(array_merge($caseEager, [
-                        'children' => function ($child) use ($caseEager): void {
-                            $child->orderBy('display_order')->with($caseEager);
-                        },
-                    ]));
+                    ->with('children');
             },
         ]);
 
         return Inertia::render('suites/show', [
-            'project'  => $project,
-            'suite'    => $suite->only(['id', 'project_id', 'name', 'description', 'created_at', 'updated_at']),
-            'sections' => $suite->sections->map(fn (Section $section): array => $this->transformSection($section))->all(),
+            'project' => $project,
+            'suite'   => $suite,
         ]);
-    }
-
-    /**
-     * Show the form for editing the specified suite.
-     */
-    public function edit(Request $request, Suite $suite): Response
-    {
-        $this->authorizeProjectAccess($request, $suite->project);
-
-        return Inertia::render('suites/edit', [
-            'suite' => $suite->load('project'),
-        ]);
-    }
-
-    /**
-     * Export the suite's test cases as CSV or XML.
-     */
-    public function export(Request $request, Suite $suite): StreamedResponse|Response
-    {
-        $this->authorizeProjectAccess($request, $suite->project);
-
-        $format = $request->string('format', 'csv')->lower()->value();
-
-        $suite->load(['sections' => function ($query): void {
-            $query->orderBy('display_order')->with(['testCases' => function ($cases): void {
-                $cases->orderBy('display_order')->orderBy('id')->with('section:id,name');
-            }]);
-        }]);
-
-        $cases = $suite->sections
-            ->flatMap(fn (Section $section) => $section->testCases)
-            ->values();
-
-        $filename = preg_replace('/[^A-Za-z0-9_-]+/', '_', $suite->name) ?: 'suite';
-
-        if ($format === 'xml') {
-            $xml = new \SimpleXMLElement('<suite/>');
-            $xml->addChild('name', htmlspecialchars($suite->name));
-            $casesEl = $xml->addChild('cases');
-
-            foreach ($cases as $case) {
-                $cEl = $casesEl->addChild('case');
-                $cEl->addChild('id', (string) $case->id);
-                $cEl->addChild('title', htmlspecialchars((string) $case->title));
-                $cEl->addChild('section', htmlspecialchars((string) ($case->section?->name ?? '')));
-                $cEl->addChild('priority', htmlspecialchars((string) ($case->priority ?? '')));
-                $cEl->addChild('type', htmlspecialchars((string) ($case->case_type ?? '')));
-                $cEl->addChild('template', htmlspecialchars((string) $case->template));
-            }
-
-            return response($xml->asXML(), 200, [
-                'Content-Type'        => 'application/xml',
-                'Content-Disposition' => 'attachment; filename="'.$filename.'.xml"',
-            ]);
-        }
-
-        // CSV (also the fallback for any unsupported format such as xlsx)
-        $headers = [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'.csv"',
-        ];
-
-        $callback = function () use ($cases): void {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['ID', 'Title', 'Section', 'Priority', 'Type', 'Template', 'Preconditions', 'References']);
-
-            foreach ($cases as $case) {
-                fputcsv($handle, [
-                    $case->id,
-                    $case->title,
-                    $case->section?->name,
-                    $case->priority,
-                    $case->case_type,
-                    $case->template,
-                    strip_tags((string) ($case->preconditions ?? '')),
-                    $case->refs ?? '',
-                ]);
-            }
-
-            fclose($handle);
-        };
-
-        return response()->stream($callback, 200, $headers);
     }
 
     /**
@@ -261,7 +141,7 @@ class SuiteController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('app.suites.deleted')]);
 
-        return to_route('suites.index', $project);
+        return to_route('projects.suites.index', $project);
     }
 
     // -------------------------------------------------------------------------
@@ -284,50 +164,6 @@ class SuiteController extends Controller
         }
 
         return $project->suites()->exists();
-    }
-
-    /**
-     * Transform a section (and its children) into the shape the suite page expects.
-     *
-     * @return array<string, mixed>
-     */
-    private function transformSection(Section $section): array
-    {
-        return [
-            'id'         => $section->id,
-            'suite_id'   => $section->suite_id,
-            'parent_id'  => $section->parent_id,
-            'name'       => $section->name,
-            'description' => $section->description,
-            'testCases'  => $section->relationLoaded('testCases')
-                ? $section->testCases->map(fn (TestCase $case): array => $this->transformCase($case))->all()
-                : [],
-            'children'   => $section->relationLoaded('children')
-                ? $section->children->map(fn (Section $child): array => $this->transformSection($child))->all()
-                : [],
-        ];
-    }
-
-    /**
-     * Minimal test-case shape for the suite listing.
-     *
-     * @return array<string, mixed>
-     */
-    private function transformCase(TestCase $case): array
-    {
-        $templateInt = array_search($case->template, self::TEMPLATE_MAP, true);
-        $priorityInt = array_search($case->priority, self::PRIORITY_MAP, true);
-
-        return [
-            'id'               => $case->id,
-            'suite_id'         => $case->suite_id,
-            'section_id'       => $case->section_id,
-            'title'            => $case->title,
-            'template'         => $templateInt === false ? 2 : $templateInt,
-            'type_id'          => $case->case_type,
-            'priority_id'      => $priorityInt === false ? null : $priorityInt,
-            'has_requirements' => ($case->requirements_count ?? 0) > 0,
-        ];
     }
 
     /**

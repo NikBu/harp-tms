@@ -33,6 +33,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('projects/{project}/reports', [ReportController::class, 'index'])
         ->name('projects.reports.index');
+    Route::get('projects/{project}/reports/{type}', [ReportController::class, 'show'])
+        ->name('projects.reports.show');
 
     // Project Settings (separate controller, scoped under a project)
     Route::get('projects/{project}/settings', [ProjectSettingsController::class, 'show'])
@@ -106,8 +108,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('requirements.test-cases.unlink');
 
     // Reports
-    Route::get('projects/{project}/reports', [ReportController::class, 'index'])->name('reports.index');
-    Route::get('projects/{project}/reports/{type}', [ReportController::class, 'show'])->name('reports.show');
+    // Report show route (named under projects.* prefix above)
 
     // Integrations
     Route::get('projects/{project}/integrations', [IntegrationController::class, 'index'])
