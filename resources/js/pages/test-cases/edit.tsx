@@ -1,7 +1,9 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Eye, Plus, Trash2 } from 'lucide-react';
+import { useEffect } from 'react';
 import {
     index as casesIndex,
+    show as showCase,
     update,
 } from '@/actions/App/Http/Controllers/TestCaseController';
 import { Button } from '@/components/ui/button';
@@ -25,6 +27,7 @@ import {
     TEMPLATE_EXPLORATORY,
     TEMPLATE_STEPS,
     TEMPLATE_TEXT,
+    TEST_CASE_TYPES,
 } from '@/types/test-case';
 import type {
     ChecklistItem,
@@ -72,6 +75,9 @@ const PRIORITY_OPTIONS = [
 const textareaClass =
     'flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
+// Accepts a plain integer (seconds) or duration tokens like "1h 30m 15s".
+const ESTIMATE_PATTERN = /^(\d+|(\d+\s*h)?\s*(\d+\s*m)?\s*(\d+\s*s)?)$/i;
+
 const PRIORITY_COLORS: Record<string, string> = {
     critical: 'text-destructive',
     high: 'text-orange-500',
@@ -92,28 +98,34 @@ export default function TestCasesEdit({
 }) {
     const t = useTrans();
 
-    const { data, setData, put, processing, errors, transform } =
-        useForm<TestCaseForm>({
-            title: testCase.title,
-            template: testCase.template,
-            section_id: testCase.section_id ? String(testCase.section_id) : '',
-            priority_id: testCase.priority_id
-                ? String(testCase.priority_id)
-                : '',
-            type_id: testCase.type_id ?? '',
-            estimate: testCase.estimate ?? '',
-            references: testCase.references ?? '',
-            preconditions: testCase.preconditions ?? '',
-            body: testCase.body ?? '',
-            bdd_scenario: testCase.bdd_scenario ?? '',
-            checklist_items: testCase.checklist_items ?? [],
-            steps: testCase.steps?.map((s) => ({
-                action: s.action,
-                expected: s.expected ?? '',
-                display_order: s.display_order,
-            })) ?? [{ action: '', expected: '', display_order: 1 }],
-            requirement_ids: testCase.requirements?.map((r) => r.id) ?? [],
-        });
+    const {
+        data,
+        setData,
+        put,
+        processing,
+        errors,
+        transform,
+        setError,
+        clearErrors,
+    } = useForm<TestCaseForm>({
+        title: testCase.title,
+        template: testCase.template,
+        section_id: testCase.section_id ? String(testCase.section_id) : '',
+        priority_id: testCase.priority_id ? String(testCase.priority_id) : '',
+        type_id: testCase.type_id ?? '',
+        estimate: testCase.estimate ?? '',
+        references: testCase.references ?? '',
+        preconditions: testCase.preconditions ?? '',
+        body: testCase.body ?? '',
+        bdd_scenario: testCase.bdd_scenario ?? '',
+        checklist_items: testCase.checklist_items ?? [],
+        steps: testCase.steps?.map((s) => ({
+            action: s.action,
+            expected: s.expected ?? '',
+            display_order: s.display_order,
+        })) ?? [{ action: '', expected: '', display_order: 1 }],
+        requirement_ids: testCase.requirements?.map((r) => r.id) ?? [],
+    });
 
     const usesSteps = data.template === TEMPLATE_STEPS;
     const usesBdd = data.template === TEMPLATE_BDD;
@@ -192,8 +204,17 @@ export default function TestCasesEdit({
 
     // ── Submit ────────────────────────────────────────────────────────────────
 
-    function submit(event: React.FormEvent) {
-        event.preventDefault();
+    function submit(event?: React.FormEvent) {
+        event?.preventDefault();
+
+        if (
+            data.estimate.trim() !== '' &&
+            !ESTIMATE_PATTERN.test(data.estimate.trim())
+        ) {
+            setError('estimate', t('app.test_cases.errors.estimate_format'));
+            return;
+        }
+        clearErrors('estimate');
 
         transform((current) => ({
             ...current,
@@ -209,6 +230,18 @@ export default function TestCasesEdit({
 
         put(update.url(testCase.id));
     }
+
+    useEffect(() => {
+        function onKeyDown(event: KeyboardEvent) {
+            if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+                event.preventDefault();
+                submit();
+            }
+        }
+
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    });
 
     return (
         <>
@@ -352,14 +385,37 @@ export default function TestCasesEdit({
                                     <Label htmlFor="type">
                                         {t('app.test_cases.fields.type')}
                                     </Label>
-                                    <Input
-                                        id="type"
-                                        value={data.type_id}
-                                        onChange={(e) =>
-                                            setData('type_id', e.target.value)
+                                    <Select
+                                        value={data.type_id || 'none'}
+                                        onValueChange={(v) =>
+                                            setData(
+                                                'type_id',
+                                                v === 'none' ? '' : v,
+                                            )
                                         }
-                                        placeholder="e.g. functional"
-                                    />
+                                    >
+                                        <SelectTrigger id="type">
+                                            <SelectValue
+                                                placeholder={t(
+                                                    'app.test_cases.fields.type_placeholder',
+                                                )}
+                                            />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">
+                                                —
+                                            </SelectItem>
+                                            {TEST_CASE_TYPES.map((type) => (
+                                                <SelectItem
+                                                    key={type}
+                                                    value={type}
+                                                    className="capitalize"
+                                                >
+                                                    {type}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div className="grid gap-2">
@@ -374,6 +430,11 @@ export default function TestCasesEdit({
                                         }
                                         placeholder="e.g. 1h 30m"
                                     />
+                                    {errors.estimate && (
+                                        <p className="text-sm text-destructive">
+                                            {errors.estimate}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -636,6 +697,12 @@ export default function TestCasesEdit({
                             <div className="flex gap-2">
                                 <Button type="submit" disabled={processing}>
                                     {t('app.common.save')}
+                                </Button>
+                                <Button variant="outline" asChild>
+                                    <Link href={showCase.url(testCase.id)}>
+                                        <Eye className="size-4" />
+                                        {t('app.test_cases.view')}
+                                    </Link>
                                 </Button>
                                 <Button variant="outline" asChild>
                                     <Link href={casesIndex.url(suite.id)}>

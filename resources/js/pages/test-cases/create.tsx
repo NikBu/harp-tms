@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
+import { useEffect } from 'react';
 import {
     index as casesIndex,
     store,
@@ -25,6 +26,7 @@ import {
     TEMPLATE_EXPLORATORY,
     TEMPLATE_STEPS,
     TEMPLATE_TEXT,
+    TEST_CASE_TYPES,
 } from '@/types/test-case';
 import type { ChecklistItem, LinkedRequirement } from '@/types/test-case';
 
@@ -68,6 +70,9 @@ const PRIORITY_OPTIONS = [
 const textareaClass =
     'flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
+// Accepts a plain integer (seconds) or duration tokens like "1h 30m 15s".
+const ESTIMATE_PATTERN = /^(\d+|(\d+\s*h)?\s*(\d+\s*m)?\s*(\d+\s*s)?)$/i;
+
 const PRIORITY_COLORS: Record<string, string> = {
     critical: 'text-destructive',
     high: 'text-orange-500',
@@ -86,22 +91,30 @@ export default function TestCasesCreate({
 }) {
     const t = useTrans();
 
-    const { data, setData, post, processing, errors, transform } =
-        useForm<TestCaseForm>({
-            title: '',
-            template: TEMPLATE_STEPS,
-            section_id: '',
-            priority_id: '',
-            type_id: '',
-            estimate: '',
-            references: '',
-            preconditions: '',
-            body: '',
-            bdd_scenario: '',
-            checklist_items: [],
-            steps: [{ action: '', expected: '', display_order: 1 }],
-            requirement_ids: [],
-        });
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        errors,
+        transform,
+        setError,
+        clearErrors,
+    } = useForm<TestCaseForm>({
+        title: '',
+        template: TEMPLATE_STEPS,
+        section_id: '',
+        priority_id: '',
+        type_id: '',
+        estimate: '',
+        references: '',
+        preconditions: '',
+        body: '',
+        bdd_scenario: '',
+        checklist_items: [],
+        steps: [{ action: '', expected: '', display_order: 1 }],
+        requirement_ids: [],
+    });
 
     const usesSteps = data.template === TEMPLATE_STEPS;
     const usesBdd = data.template === TEMPLATE_BDD;
@@ -180,8 +193,17 @@ export default function TestCasesCreate({
 
     // ── Submit ────────────────────────────────────────────────────────────────
 
-    function submit(event: React.FormEvent) {
-        event.preventDefault();
+    function submit(event?: React.FormEvent) {
+        event?.preventDefault();
+
+        if (
+            data.estimate.trim() !== '' &&
+            !ESTIMATE_PATTERN.test(data.estimate.trim())
+        ) {
+            setError('estimate', t('app.test_cases.errors.estimate_format'));
+            return;
+        }
+        clearErrors('estimate');
 
         transform((current) => ({
             ...current,
@@ -197,6 +219,18 @@ export default function TestCasesCreate({
 
         post(store.url(suite.id));
     }
+
+    useEffect(() => {
+        function onKeyDown(event: KeyboardEvent) {
+            if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+                event.preventDefault();
+                submit();
+            }
+        }
+
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    });
 
     return (
         <>
@@ -340,14 +374,37 @@ export default function TestCasesCreate({
                                     <Label htmlFor="type">
                                         {t('app.test_cases.fields.type')}
                                     </Label>
-                                    <Input
-                                        id="type"
-                                        value={data.type_id}
-                                        onChange={(e) =>
-                                            setData('type_id', e.target.value)
+                                    <Select
+                                        value={data.type_id || 'none'}
+                                        onValueChange={(v) =>
+                                            setData(
+                                                'type_id',
+                                                v === 'none' ? '' : v,
+                                            )
                                         }
-                                        placeholder="e.g. functional"
-                                    />
+                                    >
+                                        <SelectTrigger id="type">
+                                            <SelectValue
+                                                placeholder={t(
+                                                    'app.test_cases.fields.type_placeholder',
+                                                )}
+                                            />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">
+                                                —
+                                            </SelectItem>
+                                            {TEST_CASE_TYPES.map((type) => (
+                                                <SelectItem
+                                                    key={type}
+                                                    value={type}
+                                                    className="capitalize"
+                                                >
+                                                    {type}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div className="grid gap-2">
@@ -362,6 +419,11 @@ export default function TestCasesCreate({
                                         }
                                         placeholder="e.g. 1h 30m"
                                     />
+                                    {errors.estimate && (
+                                        <p className="text-sm text-destructive">
+                                            {errors.estimate}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

@@ -1,10 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Copy, Pencil, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, Copy, Pencil, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import {
     copy,
     destroy,
     edit,
+    index as casesIndex,
+    show as showCase,
 } from '@/actions/App/Http/Controllers/TestCaseController';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -92,10 +94,16 @@ function RequirementBadge({ req }: { req: LinkedRequirement }) {
 
 export default function TestCasesShow({
     testCase,
+    suiteId,
+    prevCaseId,
+    nextCaseId,
     projectSuites,
 }: {
     testCase: TestCase;
     suite: Suite & { project: Project };
+    suiteId: number;
+    prevCaseId: number | null;
+    nextCaseId: number | null;
     projectSuites: Pick<Suite, 'id' | 'name'>[];
 }) {
     const t = useTrans();
@@ -114,6 +122,41 @@ export default function TestCasesShow({
         router.delete(destroy.url(testCase.id));
     }
 
+    useEffect(() => {
+        function onKeyDown(event: KeyboardEvent) {
+            if (event.metaKey || event.ctrlKey || event.altKey) {
+                return;
+            }
+
+            const target = event.target as HTMLElement | null;
+            if (
+                target &&
+                (target.isContentEditable ||
+                    ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+            ) {
+                return;
+            }
+
+            if (event.key === 'e' || event.key === 'E') {
+                event.preventDefault();
+                router.visit(edit.url(testCase.id));
+            } else if (event.key === 'j' || event.key === 'J') {
+                if (nextCaseId !== null) {
+                    event.preventDefault();
+                    router.visit(showCase.url(nextCaseId));
+                }
+            } else if (event.key === 'k' || event.key === 'K') {
+                if (prevCaseId !== null) {
+                    event.preventDefault();
+                    router.visit(showCase.url(prevCaseId));
+                }
+            }
+        }
+
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [testCase.id, prevCaseId, nextCaseId]);
+
     function submitCopy(event: React.FormEvent) {
         event.preventDefault();
         if (!targetSuite) return;
@@ -129,6 +172,14 @@ export default function TestCasesShow({
             <Head title={testCase.title} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
+                <Link
+                    href={casesIndex.url(suiteId)}
+                    className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                >
+                    <ArrowLeft className="size-4" />
+                    {t('app.test_cases.back_to_suite')}
+                </Link>
+
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                     <h1 className="text-2xl font-semibold">{testCase.title}</h1>
