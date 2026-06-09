@@ -1,16 +1,8 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Copy, Pencil, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import {
-    copy,
-    destroy,
-    edit,
-    index as casesIndex,
-    show as showCase,
-} from '@/actions/App/Http/Controllers/TestCaseController';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { RichContent } from '@/components/ui/rich-content';
 import {
     Dialog,
     DialogContent,
@@ -19,6 +11,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { RichContent } from '@/components/ui/rich-content';
 import {
     Select,
     SelectContent,
@@ -27,7 +20,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
-import { index as projectsIndex } from '@/routes/projects';
 import type { Project, Suite } from '@/types';
 import {
     TEMPLATE_BDD,
@@ -35,6 +27,14 @@ import {
     TEMPLATE_STEPS,
 } from '@/types/test-case';
 import type { LinkedRequirement, TestCase } from '@/types/test-case';
+import {
+    copy,
+    destroy,
+    edit,
+    index as casesIndex,
+    show as showCase,
+} from '@/actions/App/Http/Controllers/TestCaseController';
+import { index as projectsIndex } from '@/routes/projects';
 
 const TEMPLATE_KEYS: Record<number, string> = {
     1: 'text',
@@ -119,6 +119,7 @@ export default function TestCasesShow({
         if (!window.confirm(t('app.common.confirm_delete'))) {
             return;
         }
+
         router.delete(destroy.url(testCase.id));
     }
 
@@ -129,6 +130,7 @@ export default function TestCasesShow({
             }
 
             const target = event.target as HTMLElement | null;
+
             if (
                 target &&
                 (target.isContentEditable ||
@@ -154,12 +156,17 @@ export default function TestCasesShow({
         }
 
         window.addEventListener('keydown', onKeyDown);
+
         return () => window.removeEventListener('keydown', onKeyDown);
     }, [testCase.id, prevCaseId, nextCaseId]);
 
     function submitCopy(event: React.FormEvent) {
         event.preventDefault();
-        if (!targetSuite) return;
+
+        if (!targetSuite) {
+            return;
+        }
+
         router.post(
             copy.url(testCase.id),
             { suite_id: Number(targetSuite) },

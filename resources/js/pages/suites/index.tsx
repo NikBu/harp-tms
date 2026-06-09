@@ -1,10 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Layers, Pencil, Plus } from 'lucide-react';
-import {
-    create,
-    edit,
-    show,
-} from '@/actions/App/Http/Controllers/SuiteController';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -13,8 +8,13 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
-import { index as projectsIndex } from '@/routes/projects';
 import type { PaginatedData, Project, Suite } from '@/types';
+import {
+    create,
+    edit,
+    show,
+} from '@/actions/App/Http/Controllers/SuiteController';
+import { index as projectsIndex } from '@/routes/projects';
 
 function SuiteCard({ suite }: { suite: Suite }) {
     const t = useTrans();
@@ -104,8 +104,9 @@ export default function SuitesIndex({
                                         size="sm"
                                         disabled={link.url === null}
                                         onClick={() => {
-                                            if (link.url)
+                                            if (link.url) {
                                                 router.visit(link.url);
+                                            }
                                         }}
                                         dangerouslySetInnerHTML={{
                                             __html: link.label,

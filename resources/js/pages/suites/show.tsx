@@ -9,17 +9,6 @@ import {
     Trash2,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import {
-    destroy as destroySection,
-    store as storeSection,
-    update as updateSection,
-} from '@/actions/App/Http/Controllers/SectionController';
-import { edit as editSuite } from '@/actions/App/Http/Controllers/SuiteController';
-import {
-    bulkDestroy,
-    bulkUpdate,
-    show as showCase,
-} from '@/actions/App/Http/Controllers/TestCaseController';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -54,8 +43,19 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { useTrans } from '@/hooks/use-trans';
+import type { Section, Suite, SuiteCase } from '@/types';
+import {
+    destroy as destroySection,
+    store as storeSection,
+    update as updateSection,
+} from '@/actions/App/Http/Controllers/SectionController';
+import { edit as editSuite } from '@/actions/App/Http/Controllers/SuiteController';
+import {
+    bulkDestroy,
+    bulkUpdate,
+    show as showCase,
+} from '@/actions/App/Http/Controllers/TestCaseController';
 import { index as projectsIndex } from '@/routes/projects';
-import type { Project, Section, Suite, SuiteCase } from '@/types';
 
 const PRIORITY_KEYS: Record<number, string> = {
     1: 'critical',
@@ -113,18 +113,22 @@ function caseMatches(c: SuiteCase, f: Filters): boolean {
     ) {
         return false;
     }
+
     if (f.templates.length > 0 && !f.templates.includes(c.template)) {
         return false;
     }
+
     if (f.sectionId !== null && c.section_id !== f.sectionId) {
         return false;
     }
+
     if (
         f.hasRequirements !== null &&
         c.has_requirements !== f.hasRequirements
     ) {
         return false;
     }
+
     return true;
 }
 
@@ -133,11 +137,9 @@ function flattenSections(sections: Section[]): Section[] {
 }
 
 export default function SuitesShow({
-    project,
     suite,
     sections,
 }: {
-    project: Project;
     suite: Suite;
     sections: Section[];
 }) {
@@ -224,11 +226,13 @@ export default function SuitesShow({
     function toggleCase(id: number) {
         setSelectedIds((prev) => {
             const next = new Set(prev);
+
             if (next.has(id)) {
                 next.delete(id);
             } else {
                 next.add(id);
             }
+
             return next;
         });
     }

@@ -1,10 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
-import {
-    destroy,
-    show,
-    update,
-} from '@/actions/App/Http/Controllers/SuiteController';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -18,8 +13,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { useTrans } from '@/hooks/use-trans';
-import { index as projectsIndex } from '@/routes/projects';
 import type { Suite } from '@/types';
+import {
+    destroy,
+    show,
+    update,
+} from '@/actions/App/Http/Controllers/SuiteController';
+import { index as projectsIndex } from '@/routes/projects';
 
 type SuiteForm = {
     name: string;

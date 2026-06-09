@@ -1,10 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
-import {
-    index as casesIndex,
-    store,
-} from '@/actions/App/Http/Controllers/TestCaseController';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,7 +14,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useTrans } from '@/hooks/use-trans';
-import { index as projectsIndex } from '@/routes/projects';
 import type { Project, Section, Suite } from '@/types';
 import {
     TEMPLATE_BDD,
@@ -29,6 +24,11 @@ import {
     TEST_CASE_TYPES,
 } from '@/types/test-case';
 import type { ChecklistItem, LinkedRequirement } from '@/types/test-case';
+import {
+    index as casesIndex,
+    store,
+} from '@/actions/App/Http/Controllers/TestCaseController';
+import { index as projectsIndex } from '@/routes/projects';
 
 type StepInput = {
     action: string;
@@ -160,7 +160,11 @@ export default function TestCasesCreate({
 
     function moveStep(index: number, direction: -1 | 1) {
         const target = index + direction;
-        if (target < 0 || target >= data.steps.length) return;
+
+        if (target < 0 || target >= data.steps.length) {
+            return;
+        }
+
         const next = [...data.steps];
         [next[index], next[target]] = [next[target], next[index]];
         setData(
@@ -201,8 +205,10 @@ export default function TestCasesCreate({
             !ESTIMATE_PATTERN.test(data.estimate.trim())
         ) {
             setError('estimate', t('app.test_cases.errors.estimate_format'));
+
             return;
         }
+
         clearErrors('estimate');
 
         transform((current) => ({
@@ -229,6 +235,7 @@ export default function TestCasesCreate({
         }
 
         window.addEventListener('keydown', onKeyDown);
+
         return () => window.removeEventListener('keydown', onKeyDown);
     });
 
@@ -642,6 +649,7 @@ export default function TestCasesCreate({
                                                 data.requirement_ids.includes(
                                                     req.id,
                                                 );
+
                                             return (
                                                 <label
                                                     key={req.id}
