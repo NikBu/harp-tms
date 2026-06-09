@@ -645,28 +645,50 @@ export default function TestCasesCreate({
                                                     </Button>
                                                 </div>
                                             </div>
-                                            <RichTextEditor
-                                                value={step.action}
-                                                onChange={(v) =>
-                                                    setStep(index, 'action', v)
-                                                }
-                                                placeholder={t(
-                                                    'app.test_cases.fields.action',
-                                                )}
-                                            />
-                                            <RichTextEditor
-                                                value={step.expected}
-                                                onChange={(v) =>
-                                                    setStep(
-                                                        index,
-                                                        'expected',
-                                                        v,
-                                                    )
-                                                }
-                                                placeholder={t(
-                                                    'app.test_cases.fields.expected',
-                                                )}
-                                            />
+                                            <div className="grid gap-1">
+                                                <Label className="text-xs text-muted-foreground">
+                                                    {t(
+                                                        'app.test_cases.fields.action',
+                                                    )}
+                                                </Label>
+                                                <textarea
+                                                    value={step.action}
+                                                    onChange={(e) =>
+                                                        setStep(
+                                                            index,
+                                                            'action',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    rows={3}
+                                                    placeholder={t(
+                                                        'app.test_cases.fields.action',
+                                                    )}
+                                                    className={textareaClass}
+                                                />
+                                            </div>
+                                            <div className="grid gap-1">
+                                                <Label className="text-xs text-muted-foreground">
+                                                    {t(
+                                                        'app.test_cases.fields.expected',
+                                                    )}
+                                                </Label>
+                                                <textarea
+                                                    value={step.expected}
+                                                    onChange={(e) =>
+                                                        setStep(
+                                                            index,
+                                                            'expected',
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    rows={3}
+                                                    placeholder={t(
+                                                        'app.test_cases.fields.expected',
+                                                    )}
+                                                    className={textareaClass}
+                                                />
+                                            </div>
                                         </div>
                                     ))}
                                     <Button
