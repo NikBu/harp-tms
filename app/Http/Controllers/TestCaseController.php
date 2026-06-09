@@ -102,15 +102,23 @@ class TestCaseController extends Controller
                 ->map(fn ($v) => (int) $v)
                 ->all();
 
-            $syncData = array_fill_keys($ids, [
-                'created_by' => Auth::id(),
-                'created_at' => now(),
-            ]);
+            // Only attach IDs not already linked — avoids triggering an UPDATE
+            // on the pivot (which has no updated_at column).
+            $existing = $testCase->requirements()->pluck('requirements.id')->all();
+            $toAttach = array_diff($ids, $existing);
 
-            $testCase->requirements()->syncWithoutDetaching($syncData);
+            if ($toAttach) {
+                $testCase->requirements()->attach(
+                    array_fill_keys($toAttach, ['created_by' => Auth::id()]),
+                );
+            }
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.created')]);
+
+        if ($request->boolean('add_and_create')) {
+            return to_route('suites.cases.create', $suite);
+        }
 
         return to_route('cases.show', $testCase);
     }

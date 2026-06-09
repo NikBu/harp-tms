@@ -167,6 +167,8 @@ return [
     'test_cases' => [
         'title' => 'Test Cases',
         'create' => 'New Test Case',
+        'add_test_case' => 'Add Test Case',
+        'add_and_create' => 'Add & Create Another',
         'edit' => 'Edit Test Case',
         'created' => 'Test case created successfully.',
         'updated' => 'Test case updated successfully.',

@@ -1,6 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -50,6 +50,7 @@ type TestCaseForm = {
     checklist_items: ChecklistItem[];
     steps: StepInput[];
     requirement_ids: number[];
+    add_and_create: boolean;
 };
 
 const TEMPLATE_OPTIONS = [
@@ -114,6 +115,7 @@ export default function TestCasesCreate({
         checklist_items: [],
         steps: [{ action: '', expected: '', display_order: 1 }],
         requirement_ids: [],
+        add_and_create: false,
     });
 
     const usesSteps = data.template === TEMPLATE_STEPS;
@@ -197,8 +199,11 @@ export default function TestCasesCreate({
 
     // ── Submit ────────────────────────────────────────────────────────────────
 
-    function submit(event?: React.FormEvent) {
+    const addAndCreateRef = useRef(false);
+
+    function submit(event?: React.FormEvent, andCreate = false) {
         event?.preventDefault();
+        if (!andCreate) addAndCreateRef.current = false;
 
         if (
             data.estimate.trim() !== '' &&
@@ -213,6 +218,7 @@ export default function TestCasesCreate({
 
         transform((current) => ({
             ...current,
+            add_and_create: addAndCreateRef.current,
             steps: usesSteps
                 ? current.steps.filter((s) => s.action.trim() !== '')
                 : [],
@@ -691,9 +697,20 @@ export default function TestCasesCreate({
                             )}
 
                             {/* Actions */}
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                                 <Button type="submit" disabled={processing}>
-                                    {t('app.common.create')}
+                                    {t('app.test_cases.add_test_case')}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    disabled={processing}
+                                    onClick={() => {
+                                        addAndCreateRef.current = true;
+                                        submit();
+                                    }}
+                                >
+                                    {t('app.test_cases.add_and_create')}
                                 </Button>
                                 <Button variant="outline" asChild>
                                     <Link href={casesIndex.url(suite.id)}>
