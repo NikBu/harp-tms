@@ -8,6 +8,7 @@ import {
 } from '@/actions/App/Http/Controllers/TestCaseController';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { RichContent } from '@/components/ui/rich-content';
 import {
     Dialog,
     DialogContent,
@@ -26,7 +27,11 @@ import {
 import { useTrans } from '@/hooks/use-trans';
 import { index as projectsIndex } from '@/routes/projects';
 import type { Project, Suite } from '@/types';
-import { TEMPLATE_BDD, TEMPLATE_CHECKLIST, TEMPLATE_STEPS } from '@/types/test-case';
+import {
+    TEMPLATE_BDD,
+    TEMPLATE_CHECKLIST,
+    TEMPLATE_STEPS,
+} from '@/types/test-case';
 import type { LinkedRequirement, TestCase } from '@/types/test-case';
 
 const TEMPLATE_KEYS: Record<number, string> = {
@@ -45,10 +50,10 @@ const PRIORITY_KEYS: Record<number, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-    approved:      'text-green-600 dark:text-green-400',
+    approved: 'text-green-600 dark:text-green-400',
     'under review': 'text-yellow-600 dark:text-yellow-400',
-    draft:         'text-muted-foreground',
-    obsolete:      'text-destructive',
+    draft: 'text-muted-foreground',
+    obsolete: 'text-destructive',
 };
 
 function MetaRow({ label, value }: { label: string; value: string }) {
@@ -61,21 +66,23 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 }
 
 function RequirementBadge({ req }: { req: LinkedRequirement }) {
-    const statusColor = req.status ? (STATUS_COLORS[req.status] ?? 'text-muted-foreground') : '';
+    const statusColor = req.status
+        ? (STATUS_COLORS[req.status] ?? 'text-muted-foreground')
+        : '';
 
     return (
         <li className="flex items-center gap-3 px-4 py-2.5">
-            <span className="font-mono text-xs text-muted-foreground w-28 shrink-0">
+            <span className="w-28 shrink-0 font-mono text-xs text-muted-foreground">
                 {req.display_id}
             </span>
             <span className="flex-1 truncate text-sm">{req.title}</span>
             {req.priority && (
-                <span className="text-xs capitalize text-muted-foreground shrink-0">
+                <span className="shrink-0 text-xs text-muted-foreground capitalize">
                     {req.priority}
                 </span>
             )}
             {req.status && (
-                <span className={`text-xs capitalize shrink-0 ${statusColor}`}>
+                <span className={`shrink-0 text-xs capitalize ${statusColor}`}>
                     {req.status}
                 </span>
             )}
@@ -95,7 +102,9 @@ export default function TestCasesShow({
     const [copyOpen, setCopyOpen] = useState(false);
     const [targetSuite, setTargetSuite] = useState<string>('');
 
-    const usesSteps     = testCase.template === TEMPLATE_STEPS || testCase.template === TEMPLATE_BDD;
+    const usesSteps =
+        testCase.template === TEMPLATE_STEPS ||
+        testCase.template === TEMPLATE_BDD;
     const usesChecklist = testCase.template === TEMPLATE_CHECKLIST;
 
     function deleteCase() {
@@ -120,7 +129,6 @@ export default function TestCasesShow({
             <Head title={testCase.title} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
-
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                     <h1 className="text-2xl font-semibold">{testCase.title}</h1>
@@ -131,7 +139,10 @@ export default function TestCasesShow({
                                 {t('app.common.edit')}
                             </Link>
                         </Button>
-                        <Button variant="outline" onClick={() => setCopyOpen(true)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setCopyOpen(true)}
+                        >
                             <Copy className="size-4" />
                             {t('app.common.copy')}
                         </Button>
@@ -198,9 +209,7 @@ export default function TestCasesShow({
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-sm whitespace-pre-wrap">
-                                {testCase.preconditions}
-                            </p>
+                            <RichContent html={testCase.preconditions} />
                         </CardContent>
                     </Card>
                 ) : null}
@@ -217,37 +226,48 @@ export default function TestCasesShow({
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b text-left text-muted-foreground">
-                                        <th className="w-12 px-4 py-2 font-medium">#</th>
+                                        <th className="w-12 px-4 py-2 font-medium">
+                                            #
+                                        </th>
                                         <th className="px-4 py-2 font-medium">
                                             {t('app.test_cases.fields.action')}
                                         </th>
                                         <th className="px-4 py-2 font-medium">
-                                            {t('app.test_cases.fields.expected')}
+                                            {t(
+                                                'app.test_cases.fields.expected',
+                                            )}
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {(testCase.steps ?? []).map((step, index) => (
-                                        <tr
-                                            key={step.id}
-                                            className="border-b last:border-0 align-top"
-                                        >
-                                            <td className="px-4 py-2 text-muted-foreground">
-                                                {index + 1}
-                                            </td>
-                                            <td className="px-4 py-2 whitespace-pre-wrap">
-                                                {step.action}
-                                            </td>
-                                            <td className="px-4 py-2 whitespace-pre-wrap">
-                                                {step.expected ?? ''}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {(testCase.steps ?? []).map(
+                                        (step, index) => (
+                                            <tr
+                                                key={step.id}
+                                                className="border-b align-top last:border-0"
+                                            >
+                                                <td className="px-4 py-2 text-muted-foreground">
+                                                    {index + 1}
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    <RichContent
+                                                        html={step.action}
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    <RichContent
+                                                        html={
+                                                            step.expected ?? ''
+                                                        }
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ),
+                                    )}
                                 </tbody>
                             </table>
                         </CardContent>
                     </Card>
-
                 ) : usesChecklist && testCase.checklist_items?.length ? (
                     <Card>
                         <CardHeader>
@@ -258,13 +278,16 @@ export default function TestCasesShow({
                         <CardContent>
                             <ul className="flex flex-col gap-2">
                                 {testCase.checklist_items.map((item, index) => (
-                                    <li key={index} className="flex items-center gap-2 text-sm">
-                                        <span className="text-muted-foreground w-5 shrink-0">
+                                    <li
+                                        key={index}
+                                        className="flex items-center gap-2 text-sm"
+                                    >
+                                        <span className="w-5 shrink-0 text-muted-foreground">
                                             {index + 1}.
                                         </span>
                                         <span>{item.label}</span>
                                         {item.is_optional && (
-                                            <span className="text-xs text-muted-foreground ml-1">
+                                            <span className="ml-1 text-xs text-muted-foreground">
                                                 ({t('app.common.optional')})
                                             </span>
                                         )}
@@ -273,7 +296,6 @@ export default function TestCasesShow({
                             </ul>
                         </CardContent>
                     </Card>
-
                 ) : testCase.body ? (
                     <Card>
                         <CardHeader>
@@ -282,9 +304,7 @@ export default function TestCasesShow({
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-sm whitespace-pre-wrap">
-                                {testCase.body}
-                            </p>
+                            <RichContent html={testCase.body} />
                         </CardContent>
                     </Card>
                 ) : null}
@@ -298,7 +318,7 @@ export default function TestCasesShow({
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <pre className="text-sm whitespace-pre-wrap font-mono">
+                            <pre className="font-mono text-sm whitespace-pre-wrap">
                                 {testCase.bdd_scenario}
                             </pre>
                         </CardContent>
@@ -322,7 +342,6 @@ export default function TestCasesShow({
                         </CardContent>
                     </Card>
                 ) : null}
-
             </div>
 
             {/* Copy dialog */}
