@@ -46,6 +46,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('projects/{project}/suites/{suite}/sections/reorder', [SectionController::class, 'reorder'])
         ->name('sections.reorder');
 
+    Route::get('suites/{suite}/export', [SuiteController::class, 'export'])->name('suites.export');
+
+    Route::patch('cases/bulk', [TestCaseController::class, 'bulkUpdate'])->name('cases.bulkUpdate');
+    Route::delete('cases/bulk', [TestCaseController::class, 'bulkDestroy'])->name('cases.bulkDestroy');
+
     Route::resource('suites.cases', TestCaseController::class)
         ->shallow()
         ->parameters(['cases' => 'testCase']);

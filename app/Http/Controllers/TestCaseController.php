@@ -183,9 +183,27 @@ class TestCaseController extends Controller
 
         $suite = $testCase->suite->load('project');
 
+        $siblings = $testCase->section_id !== null
+            ? $suite->testCases()
+                ->where('section_id', $testCase->section_id)
+                ->orderBy('display_order')
+                ->orderBy('id')
+                ->pluck('id')
+                ->all()
+            : $suite->testCases()
+                ->orderBy('display_order')
+                ->orderBy('id')
+                ->pluck('id')
+                ->all();
+
+        $position = array_search($testCase->id, $siblings, true);
+
         return Inertia::render('test-cases/show', [
             'testCase' => $this->transformCase($testCase),
             'suite' => $suite,
+            'suiteId' => $suite->id,
+            'prevCaseId' => $position !== false ? ($siblings[$position - 1] ?? null) : null,
+            'nextCaseId' => $position !== false ? ($siblings[$position + 1] ?? null) : null,
             'projectSuites' => $suite->project->suites()
                 ->orderBy('name')
                 ->get(['id', 'name']),
@@ -264,9 +282,74 @@ class TestCaseController extends Controller
         return to_route('cases.show', $copy);
     }
 
+    /**
+     * Apply a partial update to many test cases at once.
+     */
+    public function bulkUpdate(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids'        => ['required', 'array'],
+            'ids.*'      => ['integer', 'exists:test_cases,id'],
+            'priority'   => ['nullable', 'in:critical,high,medium,low'],
+            'section_id' => ['nullable', 'integer', 'exists:sections,id'],
+            'case_type'  => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $cases = TestCase::query()->whereIn('id', $validated['ids'])->with('suite.project')->get();
+
+        $this->authorizeBulk($request, $cases);
+
+        $update = array_filter([
+            'priority'   => $validated['priority'] ?? null,
+            'section_id' => $validated['section_id'] ?? null,
+            'case_type'  => $validated['case_type'] ?? null,
+        ], fn ($value): bool => $value !== null && $value !== '');
+
+        if ($update !== []) {
+            TestCase::query()->whereIn('id', $validated['ids'])->update($update);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.bulk_updated')]);
+
+        return back();
+    }
+
+    /**
+     * Delete many test cases at once.
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids'   => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:test_cases,id'],
+        ]);
+
+        $cases = TestCase::query()->whereIn('id', $validated['ids'])->with('suite.project')->get();
+
+        $this->authorizeBulk($request, $cases);
+
+        TestCase::query()->whereIn('id', $validated['ids'])->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.bulk_deleted')]);
+
+        return back();
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Authorize a bulk action: every case must belong to a project the user can access.
+     *
+     * @param  \Illuminate\Support\Collection<int, TestCase>  $cases
+     */
+    private function authorizeBulk(Request $request, $cases): void
+    {
+        foreach ($cases->pluck('suite.project')->filter()->unique('id') as $project) {
+            $this->authorizeProjectAccess($request, $project);
+        }
+    }
 
     private function validateCase(Request $request): array
     {
