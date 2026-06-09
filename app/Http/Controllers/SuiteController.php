@@ -131,6 +131,7 @@ class SuiteController extends Controller
             'project'  => $project,
             'suite'    => $suite,
             'sections' => $serialized->values()->all(),
+            'members'  => $project->members()->get(['users.id', 'users.name']),
         ]);
     }
 

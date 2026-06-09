@@ -366,6 +366,30 @@ class TestCaseController extends Controller
         return back();
     }
 
+    /**
+     * Bulk-assign many test cases to a single user (or unassign with null).
+     */
+    public function bulkAssign(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids'            => ['required', 'array'],
+            'ids.*'          => ['integer', 'exists:test_cases,id'],
+            'assigned_to_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+
+        $cases = TestCase::query()->whereIn('id', $validated['ids'])->with('suite.project')->get();
+
+        $this->authorizeBulk($request, $cases);
+
+        TestCase::query()
+            ->whereIn('id', $validated['ids'])
+            ->update(['assigned_to' => $validated['assigned_to_id'] ?? null]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.bulk_updated')]);
+
+        return back();
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------

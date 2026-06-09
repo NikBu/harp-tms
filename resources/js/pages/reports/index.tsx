@@ -18,6 +18,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    ReportDashboard,
+    type DashboardData,
+} from '@/components/reports/report-dashboard';
 import { useTrans } from '@/hooks/use-trans';
 import { index as projectsIndex } from '@/routes/projects';
 
@@ -34,11 +38,13 @@ export default function ReportsIndex({
     projects,
     reportTypes,
     isGlobal,
+    dashboard,
 }: {
     project: { id: number; name: string } | null;
     projects: ProjectOption[] | null;
     reportTypes: ReportType[];
     isGlobal: boolean;
+    dashboard: DashboardData;
 }) {
     const t = useTrans();
 
@@ -50,9 +56,7 @@ export default function ReportsIndex({
 
     function toggleProject(id: number) {
         setSelectedProjects((prev) =>
-            prev.includes(id)
-                ? prev.filter((p) => p !== id)
-                : [...prev, id],
+            prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
         );
     }
 
@@ -124,7 +128,9 @@ export default function ReportsIndex({
                                 >
                                     <input
                                         type="checkbox"
-                                        checked={selectedProjects.includes(p.id)}
+                                        checked={selectedProjects.includes(
+                                            p.id,
+                                        )}
                                         onChange={() => toggleProject(p.id)}
                                         className="size-4 accent-primary"
                                     />
@@ -178,17 +184,36 @@ export default function ReportsIndex({
                 </div>
 
                 {isGlobal ? (
-                    crossPanel
-                ) : (
-                    <Tabs defaultValue="project">
+                    <Tabs defaultValue="dashboard">
                         <TabsList>
-                            <TabsTrigger value="project">
-                                {t('app.reports.tabs.current')}
+                            <TabsTrigger value="dashboard">
+                                {t('app.reports.tabs.dashboard')}
                             </TabsTrigger>
                             <TabsTrigger value="cross">
                                 {t('app.reports.tabs.cross')}
                             </TabsTrigger>
                         </TabsList>
+                        <TabsContent value="dashboard">
+                            <ReportDashboard data={dashboard} />
+                        </TabsContent>
+                        <TabsContent value="cross">{crossPanel}</TabsContent>
+                    </Tabs>
+                ) : (
+                    <Tabs defaultValue="dashboard">
+                        <TabsList>
+                            <TabsTrigger value="dashboard">
+                                {t('app.reports.tabs.dashboard')}
+                            </TabsTrigger>
+                            <TabsTrigger value="project">
+                                {t('app.reports.tabs.types')}
+                            </TabsTrigger>
+                            <TabsTrigger value="cross">
+                                {t('app.reports.tabs.cross')}
+                            </TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="dashboard">
+                            <ReportDashboard data={dashboard} />
+                        </TabsContent>
                         <TabsContent value="project">
                             {projectCards}
                         </TabsContent>
