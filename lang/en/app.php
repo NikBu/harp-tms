@@ -25,6 +25,7 @@ return [
         'integrations' => 'Integrations',
         'ai' => 'AI',
         'all_projects' => 'All projects',
+        'select_project' => 'Select Project',
     ],
     'common' => [
         'save' => 'Save',
@@ -203,6 +204,7 @@ return [
         ],
         'errors' => [
             'estimate_format' => 'Format: 1h 30m 15s',
+            'suite_required' => 'Please select a suite.',
         ],
         'templates' => [
             'text' => 'Text',
@@ -220,6 +222,7 @@ return [
         'fields' => [
             'title' => 'Title',
             'template' => 'Template',
+            'suite' => 'Suite',
             'section' => 'Section',
             'priority' => 'Priority',
             'type' => 'Type',

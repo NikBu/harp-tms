@@ -62,7 +62,30 @@ class TestCaseController extends Controller
 
         return Inertia::render('test-cases/create', [
             'suite' => $suite->load('project'),
+            'suites' => $suite->project->suites()->orderBy('name')->get(['id', 'name']),
             'sections' => $suite->sections()->orderBy('display_order')->get(),
+            'requirements' => $requirements,
+        ]);
+    }
+
+    /**
+     * Global create form: no suite pre-selected. The user picks a suite in the
+     * form, which dynamically loads that suite's sections.
+     */
+    public function createGlobal(Request $request, Project $project): Response
+    {
+        $this->authorizeProjectAccess($request, $project);
+
+        $requirements = Requirement::query()
+            ->where('project_id', $project->id)
+            ->orderBy('display_id')
+            ->get(['id', 'display_id', 'title', 'priority', 'status']);
+
+        return Inertia::render('test-cases/create', [
+            'suite' => null,
+            'suites' => $project->suites()->orderBy('name')->get(['id', 'name']),
+            'project' => $project->only(['id', 'name']),
+            'sections' => [],
             'requirements' => $requirements,
         ]);
     }

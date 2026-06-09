@@ -1,6 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -83,14 +83,55 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 export default function TestCasesCreate({
     suite,
+    suites = [],
     sections,
     requirements,
 }: {
-    suite: Suite & { project: Project };
+    suite: (Suite & { project: Project }) | null;
+    suites?: { id: number; name: string }[];
     sections: Section[];
     requirements: LinkedRequirement[];
 }) {
     const t = useTrans();
+
+    const needsSuitePicker = !suite;
+    const [suiteId, setSuiteId] = useState<string>(
+        suite ? String(suite.id) : '',
+    );
+    const [dynamicSections, setDynamicSections] = useState<Section[]>(sections);
+
+    useEffect(() => {
+        if (!needsSuitePicker) {
+            return;
+        }
+
+        if (!suiteId) {
+            setDynamicSections([]);
+
+            return;
+        }
+
+        let cancelled = false;
+
+        fetch(`/api/suites/${suiteId}/sections`)
+            .then((r) => r.json())
+            .then((data) => {
+                if (!cancelled) {
+                    setDynamicSections(data as Section[]);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setDynamicSections([]);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [needsSuitePicker, suiteId]);
+
+    const availableSections = needsSuitePicker ? dynamicSections : sections;
 
     const {
         data,
@@ -205,6 +246,12 @@ export default function TestCasesCreate({
         event?.preventDefault();
         if (!andCreate) addAndCreateRef.current = false;
 
+        if (needsSuitePicker && !suiteId) {
+            setError('section_id', t('app.test_cases.errors.suite_required'));
+
+            return;
+        }
+
         if (
             data.estimate.trim() !== '' &&
             !ESTIMATE_PATTERN.test(data.estimate.trim())
@@ -229,7 +276,7 @@ export default function TestCasesCreate({
             body: usesBody ? current.body : '',
         }));
 
-        post(store.url(suite.id));
+        post(store.url(Number(suiteId)));
     }
 
     useEffect(() => {
@@ -260,6 +307,46 @@ export default function TestCasesCreate({
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit} className="flex flex-col gap-6">
+                            {/* Suite picker (global create only) */}
+                            {needsSuitePicker && (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="suite">
+                                        {t('app.test_cases.fields.suite')} *
+                                    </Label>
+                                    <Select
+                                        value={suiteId}
+                                        onValueChange={(v) => {
+                                            setSuiteId(v);
+                                            setData('section_id', '');
+                                            clearErrors('section_id');
+                                        }}
+                                    >
+                                        <SelectTrigger id="suite">
+                                            <SelectValue
+                                                placeholder={t(
+                                                    'app.test_cases.fields.suite',
+                                                )}
+                                            />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {suites.map((s) => (
+                                                <SelectItem
+                                                    key={s.id}
+                                                    value={String(s.id)}
+                                                >
+                                                    {s.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.section_id && !suiteId && (
+                                        <p className="text-sm text-destructive">
+                                            {errors.section_id}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Title */}
                             <div className="grid gap-2">
                                 <Label htmlFor="title">
@@ -335,7 +422,7 @@ export default function TestCasesCreate({
                                             <SelectItem value="none">
                                                 —
                                             </SelectItem>
-                                            {sections.map((s) => (
+                                            {availableSections.map((s) => (
                                                 <SelectItem
                                                     key={s.id}
                                                     value={String(s.id)}
@@ -713,7 +800,13 @@ export default function TestCasesCreate({
                                     {t('app.test_cases.add_and_create')}
                                 </Button>
                                 <Button variant="outline" asChild>
-                                    <Link href={casesIndex.url(suite.id)}>
+                                    <Link
+                                        href={
+                                            suite
+                                                ? casesIndex.url(suite.id)
+                                                : projectsIndex().url
+                                        }
+                                    >
                                         {t('app.common.cancel')}
                                     </Link>
                                 </Button>

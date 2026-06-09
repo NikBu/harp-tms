@@ -31,55 +31,38 @@ type Props = {
 
 type TransFn = (key: string) => string;
 
-/** Items injected into the + Add dropdown based on current URL segment */
+/**
+ * Items injected into the + Add dropdown.
+ *
+ * Always offers the four core "create" actions when inside a project, plus an
+ * "Add Section" shortcut while on a suite/cases page.
+ */
 function useAddItems(url: string, t: TransFn, projectId?: number): { label: string; href: string }[] {
     if (!projectId) return [];
 
     const base = `/projects/${projectId}`;
 
-    // No add button on the to-do view.
-    if (url.includes('/todo')) {
-        return [];
-    }
+    const items: { label: string; href: string }[] = [];
 
+    // On suite/cases pages, surface "Add Section" first (targets the active suite).
     if (url.includes('/suites') || url.includes('/cases')) {
         const suiteMatch = url.match(/\/suites\/(\d+)/);
         const suiteId = suiteMatch ? suiteMatch[1] : null;
 
-        return [
-            {
-                label: t('app.test_cases.create'),
-                href: suiteId ? `/suites/${suiteId}/cases/create` : `${base}/suites`,
-            },
-            {
-                label: t('app.sections.add'),
-                href: suiteId ? `/suites/${suiteId}` : `${base}/suites`,
-            },
-            { label: t('app.runs.create'), href: `${base}/runs/create` },
-            { label: t('app.runs.milestones.create'), href: `${base}/milestones/create` },
-        ];
+        items.push({
+            label: t('app.sections.add'),
+            href: suiteId ? `/suites/${suiteId}` : `${base}/suites`,
+        });
     }
 
-    if (url.includes('/runs')) {
-        return [
-            { label: t('app.runs.create'), href: `${base}/runs/create` },
-            { label: t('app.plans.create'), href: `${base}/plans/create` },
-        ];
-    }
-
-    if (url.includes('/milestones')) {
-        return [{ label: t('app.runs.milestones.create'), href: `${base}/milestones/create` }];
-    }
-
-    if (url.includes('/plans')) {
-        return [{ label: t('app.plans.create'), href: `${base}/plans/create` }];
-    }
-
-    // Default — common actions at project root.
-    return [
+    items.push(
+        { label: t('app.test_cases.add_test_case'), href: `${base}/cases/create` },
         { label: t('app.runs.create'), href: `${base}/runs/create` },
+        { label: t('app.plans.create'), href: `${base}/plans/create` },
         { label: t('app.runs.milestones.create'), href: `${base}/milestones/create` },
-    ];
+    );
+
+    return items;
 }
 
 export function AppHeader({ breadcrumbs = [] }: Props) {

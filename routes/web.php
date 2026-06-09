@@ -16,6 +16,7 @@ use App\Http\Controllers\TestCaseController;
 use App\Http\Controllers\TestPlanController;
 use App\Http\Controllers\TestRunController;
 use App\Http\Controllers\TodoController;
+use App\Models\Suite;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -60,10 +61,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('cases/bulk', [TestCaseController::class, 'bulkUpdate'])->name('cases.bulkUpdate');
     Route::delete('cases/bulk', [TestCaseController::class, 'bulkDestroy'])->name('cases.bulkDestroy');
 
+    // Global test case create — suite chosen via picker in the form
+    Route::get('projects/{project}/cases/create', [TestCaseController::class, 'createGlobal'])
+        ->name('projects.cases.create');
+
     Route::resource('suites.cases', TestCaseController::class)
         ->shallow()
         ->parameters(['cases' => 'testCase']);
     Route::post('cases/{testCase}/copy', [TestCaseController::class, 'copy'])->name('cases.copy');
+
+    // Lightweight JSON endpoints used by dynamic form pickers
+    Route::get('api/suites/{suite}/sections', function (Suite $suite) {
+        return $suite->sections()->orderBy('display_order')->get(['id', 'name']);
+    })->name('api.suites.sections');
+
+    Route::get('api/suites/{suite}/sections-with-cases', function (Suite $suite) {
+        return $suite->sections()
+            ->whereNull('parent_id')
+            ->with([
+                'testCases:id,title,section_id',
+                'children:id,name,parent_id,suite_id',
+                'children.testCases:id,title,section_id',
+            ])
+            ->orderBy('display_order')
+            ->get(['id', 'name', 'suite_id', 'parent_id']);
+    })->name('api.suites.sections-with-cases');
 
     // Test Runs
     Route::resource('projects.runs', TestRunController::class)

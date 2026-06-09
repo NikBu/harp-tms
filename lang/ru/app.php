@@ -25,6 +25,7 @@ return [
         'integrations' => 'Интеграции',
         'ai' => 'ИИ',
         'all_projects' => 'Все проекты',
+        'select_project' => 'Выберите проект',
     ],
     'common' => [
         'save' => 'Сохранить',
@@ -203,6 +204,7 @@ return [
         ],
         'errors' => [
             'estimate_format' => 'Формат: 1h 30m 15s',
+            'suite_required' => 'Пожалуйста, выберите набор.',
         ],
         'templates' => [
             'text' => 'Текст',
@@ -220,6 +222,7 @@ return [
         'fields' => [
             'title' => 'Название',
             'template' => 'Шаблон',
+            'suite' => 'Набор',
             'section' => 'Раздел',
             'priority' => 'Приоритет',
             'type' => 'Тип',
