@@ -158,6 +158,19 @@ class SuiteController extends Controller
     }
 
     /**
+     * Show the form for editing the specified suite.
+     */
+    public function edit(Request $request, Suite $suite): Response
+    {
+        $this->authorizeProjectAccess($request, $suite->project);
+
+        return Inertia::render('suites/edit', [
+            'project' => $suite->project,
+            'suite'   => $suite,
+        ]);
+    }
+
+    /**
      * Update the specified suite in storage.
      */
     public function update(Request $request, Suite $suite): RedirectResponse

@@ -43,27 +43,11 @@ class TestCaseController extends Controller
     // Resource actions
     // -------------------------------------------------------------------------
 
-    public function index(Request $request, Suite $suite): Response
+    public function index(Request $request, Suite $suite): RedirectResponse
     {
         $this->authorizeProjectAccess($request, $suite->project);
 
-        $query = $suite->testCases()
-            ->with('section:id,name')
-            ->orderBy('display_order')
-            ->orderBy('id');
-
-        if ($request->filled('section_id')) {
-            $query->where('section_id', $request->integer('section_id'));
-        }
-
-        $cases = $query->paginate(50)->through(fn (TestCase $case): array => $this->transformCase($case));
-
-        return Inertia::render('test-cases/index', [
-            'suite' => $suite->load('project'),
-            'cases' => $cases,
-            'sections' => $suite->sections()->orderBy('display_order')->get(),
-            'filters' => ['section_id' => $request->integer('section_id') ?: null],
-        ]);
+        return to_route('suites.show', $suite);
     }
 
     public function create(Request $request, Suite $suite): Response
