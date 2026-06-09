@@ -31,6 +31,7 @@ return [
         'manage' => 'Manage',
         'select_all' => 'Select all',
         'deselect_all' => 'Deselect all',
+        'optional' => 'optional',
     ],
     'status' => [
         'active' => 'Active',
@@ -304,6 +305,7 @@ return [
     ],
     'requirements' => [
         'title' => 'Requirements',
+        'label' => 'Requirements',
         'create' => 'New Requirement',
         'edit' => 'Edit Requirement',
         'created' => 'Requirement created.',
