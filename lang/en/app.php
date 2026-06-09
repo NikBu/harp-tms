@@ -180,12 +180,6 @@ return [
         'count' => ':count cases',
         'back_to_suite' => 'Back to Suite',
         'view' => 'View',
-        'toolbar' => [
-            'filter' => 'Filter',
-            'export' => 'Export',
-            'edit_selected' => 'Edit Selected',
-            'delete_selected' => 'Delete Selected',
-        ],
         'filters' => [
             'title' => 'Filters',
             'priority' => 'Priority',
@@ -253,13 +247,17 @@ return [
             'add_section' => 'Add Section',
             'add_subsection' => 'Add Subsection',
             'assign_to' => 'Assign To',
-            'edit_selected' => 'Edit',
-            'delete_selected' => 'Delete',
+            // 'edit_selected' => 'Edit',
+            // 'delete_selected' => 'Delete',
             'columns' => 'Columns',
             'select_cases_first' => 'Select one or more cases first.',
             'bulk_edit_not_implemented' => 'Bulk edit is not yet implemented.',
             'assign_not_implemented' => 'Assign is not yet implemented.',
             'delete_confirm' => 'Delete :count selected case(s)?',
+            
+            'export' => 'Export',
+            'edit_selected' => 'Edit Selected',
+            'delete_selected' => 'Delete Selected',
         ],
     ],
     'runs' => [
