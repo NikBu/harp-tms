@@ -3,7 +3,6 @@ import {
     BookOpen,
     ClipboardList,
     Flag,
-    Layers,
     PlayCircle,
     Settings2,
 } from 'lucide-react';
@@ -18,11 +17,13 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
-import {
-    index as projectsIndex,
-    show as projectsShow,
-} from '@/routes/projects';
-import type { Project } from '@/types';
+import { index as projectsIndex } from '@/routes/projects';
+import type {
+    CasesByPriority,
+    LatestRunStats,
+    MilestoneStat,
+    Project,
+} from '@/types';
 import type { TestRun } from '@/types/test-run';
 
 // ── Status bar (reused from runs/index) ──────────────────────────────────────
@@ -96,19 +97,136 @@ function StatCard({
     );
 }
 
+// ── Pass/Fail donut (pure CSS conic-gradient) ────────────────────────────────
+
+function PassFailDonut({ stats }: { stats: LatestRunStats }) {
+    const t = useTrans();
+
+    if (stats === null) {
+        return (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+                {t('app.dashboard.no_runs')}
+            </p>
+        );
+    }
+
+    const total =
+        stats.passed + stats.failed + stats.blocked +
+        stats.retest + stats.skipped + stats.untested;
+
+    if (total === 0) {
+        return (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+                {t('app.runs.no_tests')}
+            </p>
+        );
+    }
+
+    const segments = [
+        { key: 'passed',   color: '#22c55e', count: stats.passed },
+        { key: 'failed',   color: '#ef4444', count: stats.failed },
+        { key: 'blocked',  color: '#fb923c', count: stats.blocked },
+        { key: 'retest',   color: '#facc15', count: stats.retest },
+        { key: 'skipped',  color: '#9ca3af', count: stats.skipped },
+        { key: 'untested', color: '#e2e8f0', count: stats.untested },
+    ].filter(s => s.count > 0);
+
+    let acc = 0;
+    const stops = segments
+        .map((s) => {
+            const start = (acc / total) * 100;
+            acc += s.count;
+            const end = (acc / total) * 100;
+            return `${s.color} ${start}% ${end}%`;
+        })
+        .join(', ');
+
+    const passPct = Math.round((stats.passed / total) * 100);
+
+    return (
+        <div className="flex items-center gap-6">
+            <div
+                className="relative size-32 shrink-0 rounded-full"
+                style={{ background: `conic-gradient(${stops})` }}
+            >
+                <div className="absolute inset-[18%] flex flex-col items-center justify-center rounded-full bg-background">
+                    <span className="text-xl font-semibold">{passPct}%</span>
+                    <span className="text-xs text-muted-foreground">
+                        {t('app.runs.statuses.passed')}
+                    </span>
+                </div>
+            </div>
+            <div className="grid gap-1.5 text-sm">
+                {segments.map((s) => (
+                    <div key={s.key} className="flex items-center gap-2">
+                        <span
+                            className="size-3 shrink-0 rounded-sm"
+                            style={{ backgroundColor: s.color }}
+                        />
+                        <span className="capitalize text-muted-foreground">
+                            {t(`app.runs.statuses.${s.key}`)}
+                        </span>
+                        <span className="ml-auto font-medium tabular-nums">{s.count}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// ── Cases by priority (horizontal bars) ──────────────────────────────────────
+
+const PRIORITY_BAR: { key: keyof CasesByPriority; color: string }[] = [
+    { key: 'critical', color: 'bg-red-500' },
+    { key: 'high',     color: 'bg-orange-400' },
+    { key: 'medium',   color: 'bg-yellow-400' },
+    { key: 'low',      color: 'bg-sky-400' },
+];
+
+function CasesByPriorityChart({ data }: { data: CasesByPriority }) {
+    const t = useTrans();
+    const max = Math.max(data.critical, data.high, data.medium, data.low, 1);
+
+    return (
+        <div className="grid gap-2.5">
+            {PRIORITY_BAR.map(({ key, color }) => (
+                <div key={key} className="grid grid-cols-[5rem_1fr_2rem] items-center gap-2 text-sm">
+                    <span className="text-muted-foreground">
+                        {t(`app.requirements.priorities.${key}`)}
+                    </span>
+                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                            className={`h-full rounded-full ${color}`}
+                            style={{ width: `${(data[key] / max) * 100}%` }}
+                        />
+                    </div>
+                    <span className="text-right font-medium tabular-nums">{data[key]}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ProjectsShow({
     project,
     canManage,
     recentRuns,
+    casesByPriority,
+    latestRunStats,
+    milestoneStats,
 }: {
     project: Project;
     canManage: boolean;
     recentRuns: TestRun[];
+    casesByPriority: CasesByPriority;
+    latestRunStats: LatestRunStats;
+    milestoneStats: MilestoneStat[];
 }) {
     const t = useTrans();
     const pid = project.id;
+    const casesHref = project.cases_href ?? `/projects/${pid}/suites`;
 
     const stats: {
         icon: LucideIcon;
@@ -120,10 +238,7 @@ export default function ProjectsShow({
             icon: ClipboardList,
             label: t('app.projects.stats.test_cases'),
             value: project.test_cases_count ?? 0,
-            // suite_mode 1 = single suite → go straight to that suite; modes 2/3 → suites list
-            href: project.suite_mode === 1
-                ? `/projects/${pid}/suites`
-                : `/projects/${pid}/suites`,
+            href: casesHref,
         },
         {
             icon: PlayCircle,
@@ -136,12 +251,6 @@ export default function ProjectsShow({
             label: t('app.projects.stats.requirements'),
             value: project.requirements_count ?? 0,
             href: `/projects/${pid}/requirements`,
-        },
-        {
-            icon: Layers,
-            label: t('app.projects.stats.suites'),
-            value: project.suites_count ?? 0,
-            href: `/projects/${pid}/suites`,
         },
         {
             icon: Flag,
@@ -200,7 +309,7 @@ export default function ProjectsShow({
                 )}
 
                 {/* Stat cards — each links to its section */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {stats.map((stat) => (
                         <StatCard
                             key={stat.label}
@@ -210,6 +319,36 @@ export default function ProjectsShow({
                             href={stat.href}
                         />
                     ))}
+                </div>
+
+                {/* Charts row */}
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-base">
+                                {t('app.projects.latest_run')}
+                            </CardTitle>
+                            {latestRunStats && (
+                                <CardDescription className="truncate">
+                                    {latestRunStats.name}
+                                </CardDescription>
+                            )}
+                        </CardHeader>
+                        <CardContent>
+                            <PassFailDonut stats={latestRunStats} />
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-base">
+                                {t('app.projects.cases_by_priority')}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <CasesByPriorityChart data={casesByPriority} />
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-2">
@@ -254,36 +393,74 @@ export default function ProjectsShow({
                         </CardContent>
                     </Card>
 
-                    {/* Members */}
+                    {/* Milestone progress */}
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-base">
-                                {t('app.projects.members')}
+                                {t('app.runs.milestones.title')}
                             </CardTitle>
-                            {canManage && (
-                                <Button variant="ghost" size="sm" asChild>
-                                    <Link href={`/projects/${pid}/settings?tab=members`}>
-                                        {t('app.common.manage')}
-                                    </Link>
-                                </Button>
-                            )}
+                            <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/projects/${pid}/milestones`}>
+                                    {t('app.common.view_all')}
+                                </Link>
+                            </Button>
                         </CardHeader>
-                        <CardContent className="grid gap-2">
-                            {(project.members ?? []).map((member) => (
-                                <div
-                                    key={member.id}
-                                    className="flex items-center justify-between text-sm"
-                                >
-                                    <span>{member.name}</span>
-                                    <Badge variant="secondary" className="capitalize">
-                                        {member.pivot.role.replace('_', ' ')}
-                                    </Badge>
-                                </div>
-                            ))}
+                        <CardContent className="grid gap-3">
+                            {milestoneStats.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">
+                                    {t('app.runs.milestones.empty')}
+                                </p>
+                            ) : (
+                                milestoneStats.map((ms) => (
+                                    <div key={ms.id} className="grid gap-1">
+                                        <div className="flex items-center justify-between gap-2 text-sm">
+                                            <span className="truncate font-medium">{ms.name}</span>
+                                            <span className="shrink-0 text-xs text-muted-foreground">
+                                                {ms.run_count} {t('app.runs.milestones.runs')}
+                                            </span>
+                                        </div>
+                                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                            <div
+                                                className="h-full rounded-full bg-primary"
+                                                style={{ width: `${ms.progress}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </CardContent>
                     </Card>
 
                 </div>
+
+                {/* Members */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-base">
+                            {t('app.projects.members')}
+                        </CardTitle>
+                        {canManage && (
+                            <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/projects/${pid}/settings?tab=members`}>
+                                    {t('app.common.manage')}
+                                </Link>
+                            </Button>
+                        )}
+                    </CardHeader>
+                    <CardContent className="grid gap-2 sm:grid-cols-2">
+                        {(project.members ?? []).map((member) => (
+                            <div
+                                key={member.id}
+                                className="flex items-center justify-between text-sm"
+                            >
+                                <span>{member.name}</span>
+                                <Badge variant="secondary" className="capitalize">
+                                    {member.pivot.role.replace('_', ' ')}
+                                </Badge>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
             </div>
         </>
     );

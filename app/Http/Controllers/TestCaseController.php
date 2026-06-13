@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\Requirement;
+use App\Models\Section;
 use App\Models\Suite;
 use App\Models\TestCase;
 use Illuminate\Http\RedirectResponse;
@@ -21,7 +22,7 @@ class TestCaseController extends Controller
      *
      * @var array<int, string>
      */
-    private const TEMPLATE_MAP = [
+    public const TEMPLATE_MAP = [
         1 => 'text',
         2 => 'steps',
         3 => 'exploratory',
@@ -32,7 +33,7 @@ class TestCaseController extends Controller
     /**
      * @var array<int, string>
      */
-    private const PRIORITY_MAP = [
+    public const PRIORITY_MAP = [
         1 => 'critical',
         2 => 'high',
         3 => 'medium',
@@ -43,27 +44,11 @@ class TestCaseController extends Controller
     // Resource actions
     // -------------------------------------------------------------------------
 
-    public function index(Request $request, Suite $suite): Response
+    public function index(Request $request, Suite $suite): RedirectResponse
     {
         $this->authorizeProjectAccess($request, $suite->project);
 
-        $query = $suite->testCases()
-            ->with('section:id,name')
-            ->orderBy('display_order')
-            ->orderBy('id');
-
-        if ($request->filled('section_id')) {
-            $query->where('section_id', $request->integer('section_id'));
-        }
-
-        $cases = $query->paginate(50)->through(fn (TestCase $case): array => $this->transformCase($case));
-
-        return Inertia::render('test-cases/index', [
-            'suite' => $suite->load('project'),
-            'cases' => $cases,
-            'sections' => $suite->sections()->orderBy('display_order')->get(),
-            'filters' => ['section_id' => $request->integer('section_id') ?: null],
-        ]);
+        return to_route('suites.show', $suite);
     }
 
     public function create(Request $request, Suite $suite): Response
@@ -76,9 +61,34 @@ class TestCaseController extends Controller
             ->get(['id', 'display_id', 'title', 'priority', 'status']);
 
         return Inertia::render('test-cases/create', [
-            'suite' => $suite->load('project'),
-            'sections' => $suite->sections()->orderBy('display_order')->get(),
+            'suite'        => $suite->load('project'),
+            'suites'       => $suite->project->suites()->orderBy('name')->get(['id', 'name']),
+            'sections'     => $suite->sections()->orderBy('display_order')->get(),
             'requirements' => $requirements,
+            'members'      => $suite->project->members()->get(['users.id', 'users.name']),
+        ]);
+    }
+
+    /**
+     * Global create form: no suite pre-selected. The user picks a suite in the
+     * form, which dynamically loads that suite's sections.
+     */
+    public function createGlobal(Request $request, Project $project): Response
+    {
+        $this->authorizeProjectAccess($request, $project);
+
+        $requirements = Requirement::query()
+            ->where('project_id', $project->id)
+            ->orderBy('display_id')
+            ->get(['id', 'display_id', 'title', 'priority', 'status']);
+
+        return Inertia::render('test-cases/create', [
+            'suite'        => null,
+            'suites'       => $project->suites()->orderBy('name')->get(['id', 'name']),
+            'project'      => $project->only(['id', 'name']),
+            'sections'     => [],
+            'requirements' => $requirements,
+            'members'      => $project->members()->get(['users.id', 'users.name']),
         ]);
     }
 
@@ -102,15 +112,23 @@ class TestCaseController extends Controller
                 ->map(fn ($v) => (int) $v)
                 ->all();
 
-            $syncData = array_fill_keys($ids, [
-                'created_by' => Auth::id(),
-                'created_at' => now(),
-            ]);
+            // Only attach IDs not already linked — avoids triggering an UPDATE
+            // on the pivot (which has no updated_at column).
+            $existing = $testCase->requirements()->pluck('requirements.id')->all();
+            $toAttach = array_diff($ids, $existing);
 
-            $testCase->requirements()->syncWithoutDetaching($syncData);
+            if ($toAttach) {
+                $testCase->requirements()->attach(
+                    array_fill_keys($toAttach, ['created_by' => Auth::id()]),
+                );
+            }
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.created')]);
+
+        if ($request->boolean('add_and_create')) {
+            return to_route('suites.cases.create', $suite);
+        }
 
         return to_route('cases.show', $testCase);
     }
@@ -183,9 +201,27 @@ class TestCaseController extends Controller
 
         $suite = $testCase->suite->load('project');
 
+        $siblings = $testCase->section_id !== null
+            ? $suite->testCases()
+                ->where('section_id', $testCase->section_id)
+                ->orderBy('display_order')
+                ->orderBy('id')
+                ->pluck('id')
+                ->all()
+            : $suite->testCases()
+                ->orderBy('display_order')
+                ->orderBy('id')
+                ->pluck('id')
+                ->all();
+
+        $position = array_search($testCase->id, $siblings, true);
+
         return Inertia::render('test-cases/show', [
             'testCase' => $this->transformCase($testCase),
             'suite' => $suite,
+            'suiteId' => $suite->id,
+            'prevCaseId' => $position !== false ? ($siblings[$position - 1] ?? null) : null,
+            'nextCaseId' => $position !== false ? ($siblings[$position + 1] ?? null) : null,
             'projectSuites' => $suite->project->suites()
                 ->orderBy('name')
                 ->get(['id', 'name']),
@@ -233,7 +269,7 @@ class TestCaseController extends Controller
 
         abort_unless($targetSuite->project_id === $project->id, 422);
 
-        $copy = DB::transaction(function () use ($testCase, $targetSuite, $validated): TestCase {
+        DB::transaction(function () use ($testCase, $targetSuite, $validated): TestCase {
             $attributes = $testCase->only([
                 'title', 'template', 'case_type', 'priority', 'estimate',
                 'estimate_forecast', 'preconditions', 'expected_result', 'refs',
@@ -241,6 +277,7 @@ class TestCaseController extends Controller
                 'checklist_items', 'bdd_scenario', 'display_order',
             ]);
 
+            $attributes['title'] = $testCase->title.' (Copy)';
             $attributes['suite_id'] = $targetSuite->id;
             $attributes['section_id'] = $validated['section_id'] ?? null;
             $attributes['created_by'] = Auth::id();
@@ -261,12 +298,113 @@ class TestCaseController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.copied')]);
 
-        return to_route('cases.show', $copy);
+        return back();
+    }
+
+    /**
+     * Apply a partial update to many test cases at once.
+     */
+    public function bulkUpdate(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids'        => ['required', 'array'],
+            'ids.*'      => ['integer', 'exists:test_cases,id'],
+            'priority'   => ['nullable', 'in:critical,high,medium,low'],
+            'section_id' => ['nullable', 'integer'],
+            'case_type'  => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $cases = TestCase::query()->whereIn('id', $validated['ids'])->with('suite.project')->get();
+
+        $this->authorizeBulk($request, $cases);
+
+        $update = array_filter([
+            'priority'   => $validated['priority'] ?? null,
+            'case_type'  => $validated['case_type'] ?? null,
+        ], fn ($value): bool => $value !== null && $value !== '');
+
+        // Section moves: a section_id of 0 (or null when the key is present)
+        // unsets the section, moving cases into the virtual "Test Cases" group.
+        if ($request->has('section_id')) {
+            $sectionId = $validated['section_id'] ?? null;
+
+            if ($sectionId !== null && $sectionId !== 0) {
+                abort_unless(Section::query()->whereKey($sectionId)->exists(), 422);
+                $update['section_id'] = $sectionId;
+            } else {
+                $update['section_id'] = null;
+            }
+        }
+
+        if ($update !== []) {
+            TestCase::query()->whereIn('id', $validated['ids'])->update($update);
+        }
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.bulk_updated')]);
+
+        return back();
+    }
+
+    /**
+     * Delete many test cases at once.
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids'   => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:test_cases,id'],
+        ]);
+
+        $cases = TestCase::query()->whereIn('id', $validated['ids'])->with('suite.project')->get();
+
+        $this->authorizeBulk($request, $cases);
+
+        TestCase::query()->whereIn('id', $validated['ids'])->delete();
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.bulk_deleted')]);
+
+        return back();
+    }
+
+    /**
+     * Bulk-assign many test cases to a single user (or unassign with null).
+     */
+    public function bulkAssign(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids'            => ['required', 'array'],
+            'ids.*'          => ['integer', 'exists:test_cases,id'],
+            'assigned_to_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+
+        $cases = TestCase::query()->whereIn('id', $validated['ids'])->with('suite.project')->get();
+
+        $this->authorizeBulk($request, $cases);
+
+        TestCase::query()
+            ->whereIn('id', $validated['ids'])
+            ->update(['assigned_to' => $validated['assigned_to_id'] ?? null]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.bulk_updated')]);
+
+        return back();
     }
 
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    /**
+     * Authorize a bulk action: every case must belong to a project the user can access.
+     *
+     * @param  \Illuminate\Support\Collection<int, TestCase>  $cases
+     */
+    private function authorizeBulk(Request $request, $cases): void
+    {
+        foreach ($cases->pluck('suite.project')->filter()->unique('id') as $project) {
+            $this->authorizeProjectAccess($request, $project);
+        }
+    }
 
     private function validateCase(Request $request): array
     {
@@ -290,6 +428,7 @@ class TestCaseController extends Controller
             'steps.*.display_order' => ['nullable', 'integer'],
             'requirement_ids' => ['nullable', 'array'],
             'requirement_ids.*' => ['integer', 'exists:requirements,id'],
+            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
         ]);
     }
 
@@ -304,9 +443,10 @@ class TestCaseController extends Controller
                 : null,
             'section_id' => $validated['section_id'] ?? null,
             'estimate' => self::parseEstimate($validated['estimate'] ?? null),
-            'refs' => $validated['references'] ?? null,
-            'preconditions' => $validated['preconditions'] ?? null,
+            'refs'            => $validated['references'] ?? null,
+            'preconditions'   => $validated['preconditions'] ?? null,
             'expected_result' => $validated['body'] ?? null,
+            'assigned_to'     => $validated['assigned_to'] ?? null,
         ], $extra);
     }
 

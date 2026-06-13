@@ -1,25 +1,48 @@
 <?php
 
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AiController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectSettingsController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RequirementController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\SuiteController;
 use App\Http\Controllers\TestCaseController;
 use App\Http\Controllers\TestPlanController;
 use App\Http\Controllers\TestRunController;
+use App\Http\Controllers\TodoController;
+use App\Models\Section;
+use App\Models\Suite;
+use App\Models\TestCase;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', function () {
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
+})->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('projects/create', [ProjectController::class, 'create'])->name('projects.create');
     Route::resource('projects', ProjectController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    Route::get('todo', [TodoController::class, 'globalIndex'])->name('todo.global');
+
+    Route::get('reports', [ReportController::class, 'globalIndex'])->name('reports.global');
+    Route::post('reports/cross-project', [ReportController::class, 'crossProject'])
+        ->name('reports.cross');
+    Route::get('projects/{project}/reports', [ReportController::class, 'index'])
+        ->name('projects.reports.index');
+    Route::get('projects/{project}/reports/{type}', [ReportController::class, 'show'])
+        ->name('projects.reports.show');
 
     // Project Settings (separate controller, scoped under a project)
     Route::get('projects/{project}/settings', [ProjectSettingsController::class, 'show'])
@@ -40,10 +63,71 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('projects/{project}/suites/{suite}/sections/reorder', [SectionController::class, 'reorder'])
         ->name('sections.reorder');
 
+    Route::get('suites/{suite}/export', [SuiteController::class, 'export'])->name('suites.export');
+
+    Route::patch('cases/bulk', [TestCaseController::class, 'bulkUpdate'])->name('cases.bulkUpdate');
+    Route::delete('cases/bulk', [TestCaseController::class, 'bulkDestroy'])->name('cases.bulkDestroy');
+    Route::post('cases/bulk-assign', [TestCaseController::class, 'bulkAssign'])->name('cases.bulk-assign');
+
+    // Global test case create — suite chosen via picker in the form
+    Route::get('projects/{project}/cases/create', [TestCaseController::class, 'createGlobal'])
+        ->name('projects.cases.create');
+
     Route::resource('suites.cases', TestCaseController::class)
         ->shallow()
         ->parameters(['cases' => 'testCase']);
     Route::post('cases/{testCase}/copy', [TestCaseController::class, 'copy'])->name('cases.copy');
+
+    // Lightweight JSON endpoints used by dynamic form pickers
+    Route::get('api/suites/{suite}/sections', function (Suite $suite) {
+        return $suite->sections()->orderBy('display_order')->get(['id', 'name']);
+    })->name('api.suites.sections');
+
+    Route::get('api/suites/{suite}/sections-with-cases', function (Suite $suite) {
+        $sections = $suite->sections()
+            ->whereNull('parent_id')
+            ->with([
+                'testCases:id,title,section_id',
+                'children:id,name,parent_id,suite_id',
+                'children.testCases:id,title,section_id',
+            ])
+            ->orderBy('display_order')
+            ->get(['id', 'name', 'suite_id', 'parent_id']);
+
+        $mapCase = fn (TestCase $case): array => [
+            'id'         => $case->id,
+            'title'      => $case->title,
+            'section_id' => $case->section_id,
+        ];
+
+        $mapSection = function (Section $section) use (&$mapSection, $mapCase): array {
+            return [
+                'id'         => $section->id,
+                'name'       => $section->name,
+                'suite_id'   => $section->suite_id,
+                'parent_id'  => $section->parent_id,
+                'test_cases' => $section->testCases->map($mapCase)->values(),
+                'children'   => $section->children->map($mapSection)->values(),
+            ];
+        };
+
+        $tree = $sections->map($mapSection)->values();
+
+        // Prepend a virtual section for unsectioned cases
+        $unsectioned = $suite->testCases()->whereNull('section_id')->get(['id', 'title', 'section_id']);
+        if ($unsectioned->isNotEmpty()) {
+            $tree->prepend([
+                'id'         => 0,
+                'name'       => __('app.sections.default_name'),
+                'suite_id'   => $suite->id,
+                'parent_id'  => null,
+                'test_cases' => $unsectioned->map($mapCase)->values(),
+                'children'   => [],
+            ]);
+        }
+
+        return $tree;
+    })->name('api.suites.sections-with-cases');
 
     // Test Runs
     Route::resource('projects.runs', TestRunController::class)
@@ -76,6 +160,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('plans.entries.destroy');
 
     // Requirements
+    Route::get('requirements', [RequirementController::class, 'globalIndex'])
+        ->name('requirements.global');
     Route::get('projects/{project}/requirements/create', [RequirementController::class, 'create'])
         ->name('requirements.create');
     Route::resource('projects.requirements', RequirementController::class)
@@ -86,10 +172,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('requirements.test-cases.link');
     Route::delete('/requirements/{requirement}/test-cases/{testCase}', [RequirementController::class, 'unlinkTestCase'])
         ->name('requirements.test-cases.unlink');
+
+    // Reports
+    // Report show route (named under projects.* prefix above)
+
+    // Integrations
+    Route::get('projects/{project}/integrations', [IntegrationController::class, 'index'])
+        ->name('integrations.index');
+
+    // To-Do
+    Route::get('projects/{project}/todo', [TodoController::class, 'index'])->name('todo.index');
+
+    // AI
+    Route::get('projects/{project}/ai', [AiController::class, 'index'])->name('ai.index');
+
+    // Administration
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', [AdminController::class, 'index'])->name('index');
+        Route::get('/users', [AdminController::class, 'users'])->name('users');
+        Route::patch('/users/{user}/role', [AdminController::class, 'updateRole'])->name('users.role');
+        Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete');
+        Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
+        Route::patch('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
+    });
 });
 
 Route::post('/locale', [LocaleController::class, 'update'])
-    ->middleware('auth')
     ->name('locale.update');
 
 require __DIR__.'/settings.php';

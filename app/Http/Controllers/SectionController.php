@@ -15,7 +15,7 @@ class SectionController extends Controller
     /**
      * Store a newly created section within the given suite.
      */
-    public function store(Request $request, Suite $suite): RedirectResponse
+    public function store(Request $request, Project $project, Suite $suite): RedirectResponse
     {
         $this->authorizeProjectAccess($request, $suite->project);
 

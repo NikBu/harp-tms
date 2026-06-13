@@ -1,10 +1,12 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+@plugin '@tailwindcss/typography';
+
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
     --font-sans:
@@ -64,6 +66,7 @@
 }
 
 :root {
+    --header-height: 3.5rem; /* h-14 = 56px — keep in sync with AppHeader */
     --font-size: 16px;
     --background: #fafbfc;
     --foreground: #0f172a;
@@ -143,6 +146,144 @@
     --sidebar-ring: #3b82f6;
 }
 
+/* ── Color Schemes ───────────────────────────────────────────────────────── */
+/* "blue" is the default (:root above). Additional schemes below.            */
+
+/* Slate */
+[data-color-scheme="slate"] {
+    --primary: #475569;
+    --primary-foreground: #ffffff;
+    --secondary: #e2e8f0;
+    --secondary-foreground: #1e293b;
+    --accent: #f1f5f9;
+    --accent-foreground: #475569;
+    --ring: #64748b;
+    --sidebar-primary: #334155;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f8fafc;
+    --sidebar-accent-foreground: #475569;
+    --sidebar-ring: #64748b;
+}
+[data-color-scheme="slate"].dark,
+[data-color-scheme="slate"] .dark {
+    --primary: #94a3b8;
+    --primary-foreground: #0f172a;
+    --secondary: #1e293b;
+    --secondary-foreground: #e2e8f0;
+    --accent: #334155;
+    --accent-foreground: #cbd5e1;
+    --ring: #94a3b8;
+    --sidebar-primary: #94a3b8;
+    --sidebar-primary-foreground: #0f172a;
+    --sidebar-accent: #1e293b;
+    --sidebar-accent-foreground: #e2e8f0;
+    --sidebar-ring: #94a3b8;
+}
+
+/* Emerald */
+[data-color-scheme="emerald"] {
+    --primary: #059669;
+    --primary-foreground: #ffffff;
+    --secondary: #d1fae5;
+    --secondary-foreground: #065f46;
+    --accent: #ecfdf5;
+    --accent-foreground: #047857;
+    --ring: #10b981;
+    --sidebar-primary: #059669;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f0fdf4;
+    --sidebar-accent-foreground: #047857;
+    --sidebar-ring: #10b981;
+}
+[data-color-scheme="emerald"].dark,
+[data-color-scheme="emerald"] .dark {
+    --primary: #34d399;
+    --primary-foreground: #022c22;
+    --secondary: #064e3b;
+    --secondary-foreground: #a7f3d0;
+    --accent: #065f46;
+    --accent-foreground: #a7f3d0;
+    --ring: #34d399;
+    --sidebar-primary: #34d399;
+    --sidebar-primary-foreground: #022c22;
+    --sidebar-accent: #064e3b;
+    --sidebar-accent-foreground: #a7f3d0;
+    --sidebar-ring: #34d399;
+}
+
+/* Rose */
+[data-color-scheme="rose"] {
+    --primary: #e11d48;
+    --primary-foreground: #ffffff;
+    --secondary: #ffe4e6;
+    --secondary-foreground: #9f1239;
+    --accent: #fff1f2;
+    --accent-foreground: #be123c;
+    --ring: #f43f5e;
+    --sidebar-primary: #e11d48;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #fff1f2;
+    --sidebar-accent-foreground: #be123c;
+    --sidebar-ring: #f43f5e;
+}
+[data-color-scheme="rose"].dark,
+[data-color-scheme="rose"] .dark {
+    --primary: #fb7185;
+    --primary-foreground: #4c0519;
+    --secondary: #881337;
+    --secondary-foreground: #fecdd3;
+    --accent: #9f1239;
+    --accent-foreground: #fecdd3;
+    --ring: #fb7185;
+    --sidebar-primary: #fb7185;
+    --sidebar-primary-foreground: #4c0519;
+    --sidebar-accent: #881337;
+    --sidebar-accent-foreground: #fecdd3;
+    --sidebar-ring: #fb7185;
+}
+
+/* Violet */
+[data-color-scheme="violet"] {
+    --primary: #7c3aed;
+    --primary-foreground: #ffffff;
+    --secondary: #ede9fe;
+    --secondary-foreground: #4c1d95;
+    --accent: #f5f3ff;
+    --accent-foreground: #6d28d9;
+    --ring: #8b5cf6;
+    --sidebar-primary: #7c3aed;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f5f3ff;
+    --sidebar-accent-foreground: #6d28d9;
+    --sidebar-ring: #8b5cf6;
+}
+[data-color-scheme="violet"].dark,
+[data-color-scheme="violet"] .dark {
+    --primary: #a78bfa;
+    --primary-foreground: #2e1065;
+    --secondary: #4c1d95;
+    --secondary-foreground: #ede9fe;
+    --accent: #5b21b6;
+    --accent-foreground: #ede9fe;
+    --ring: #a78bfa;
+    --sidebar-primary: #a78bfa;
+    --sidebar-primary-foreground: #2e1065;
+    --sidebar-accent: #4c1d95;
+    --sidebar-accent-foreground: #ede9fe;
+    --sidebar-ring: #a78bfa;
+}
+
+/*
+ * The shadcn Sidebar inner panel uses `fixed inset-y-0 h-svh`.
+ * Since AppHeader now sits above SidebarProvider, push the fixed panel
+ * down so it starts below the header and doesn't overlap it.
+ * Line 226 of sidebar.tsx: the second div inside [data-slot="sidebar"].
+ */
+[data-slot="sidebar"] > div:last-child {
+    top: var(--header-height) !important;
+    height: calc(100svh - var(--header-height)) !important;
+}
+
 @layer base {
     * {
         @apply border-border outline-ring/50;
@@ -154,6 +295,13 @@
 
     body {
         @apply bg-background text-foreground;
+    }
+
+    /* Hide the browser's native password reveal/clear controls so only the
+       custom toggle in <PasswordInput> is shown (avoids a duplicate icon). */
+    input[type='password']::-ms-reveal,
+    input[type='password']::-ms-clear {
+        display: none;
     }
 
     h1 {
@@ -209,14 +357,22 @@
     }
 
     ::-webkit-scrollbar-thumb {
-        background: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+        background: color-mix(
+            in srgb,
+            var(--muted-foreground) 35%,
+            transparent
+        );
         border-radius: 4px;
         border: 2px solid transparent;
         background-clip: padding-box;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-        background: color-mix(in srgb, var(--muted-foreground) 65%, transparent);
+        background: color-mix(
+            in srgb,
+            var(--muted-foreground) 65%,
+            transparent
+        );
         background-clip: padding-box;
     }
 
@@ -227,7 +383,12 @@
 
     * {
         scrollbar-width: thin;
-        scrollbar-color: color-mix(in srgb, var(--muted-foreground) 35%, transparent) transparent;
+        scrollbar-color: color-mix(
+                in srgb,
+                var(--muted-foreground) 35%,
+                transparent
+            )
+            transparent;
     }
 
     .sidebar-scroll {
@@ -244,11 +405,20 @@
     }
 
     .sidebar-scroll:hover {
-        scrollbar-color: color-mix(in srgb, var(--muted-foreground) 40%, transparent) transparent;
+        scrollbar-color: color-mix(
+                in srgb,
+                var(--muted-foreground) 40%,
+                transparent
+            )
+            transparent;
     }
 
     .sidebar-scroll:hover::-webkit-scrollbar-thumb {
-        background: color-mix(in srgb, var(--muted-foreground) 40%, transparent);
+        background: color-mix(
+            in srgb,
+            var(--muted-foreground) 40%,
+            transparent
+        );
         background-clip: padding-box;
     }
 }

@@ -15,7 +15,7 @@ class LocaleController extends Controller
             'locale' => 'required|string|in:en,ru',
         ])['locale'];
 
-        $request->user()->update(['locale' => $locale]);
+        $request->user()?->update(['locale' => $locale]);
         session(['locale' => $locale]);
 
         return redirect()->back();

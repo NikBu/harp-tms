@@ -1,10 +1,25 @@
 import type { Section } from './suite';
 
-export const TEMPLATE_TEXT        = 1;
-export const TEMPLATE_STEPS       = 2;
+export const TEMPLATE_TEXT = 1;
+export const TEMPLATE_STEPS = 2;
 export const TEMPLATE_EXPLORATORY = 3;
-export const TEMPLATE_BDD         = 4;
-export const TEMPLATE_CHECKLIST   = 5;
+export const TEMPLATE_BDD = 4;
+export const TEMPLATE_CHECKLIST = 5;
+
+export const TEST_CASE_TYPES = [
+    'acceptance',
+    'accessibility',
+    'automated',
+    'compatibility',
+    'destructive',
+    'functional',
+    'other',
+    'performance',
+    'regression',
+    'security',
+    'smoke',
+    'usability',
+] as const;
 
 export interface TestCaseStep {
     id: number;

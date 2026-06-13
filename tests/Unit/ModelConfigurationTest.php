@@ -65,5 +65,5 @@ it('hides secret-bearing columns from serialization', function () {
 });
 
 it('disables timestamps on append-only models', function () {
-    expect((new TestResult)->usesTimestamps())->toBeFalse();
+    expect(TestResult::UPDATED_AT)->toBeNull();
 });

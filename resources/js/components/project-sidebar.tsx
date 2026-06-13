@@ -11,7 +11,6 @@ import {
     BookOpen,
     ScrollText,
 } from 'lucide-react';
-import { NavUser } from '@/components/nav-user';
 import { Badge } from '@/components/ui/badge';
 import {
     DropdownMenu,
@@ -22,7 +21,6 @@ import {
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarGroup,
     SidebarHeader,
     SidebarMenu,
@@ -37,22 +35,47 @@ interface Props {
 }
 
 export function ProjectSidebar({ project }: Props) {
-    const page       = usePage<any>();
-    const currentUrl = (page as any).url as string ?? '';
-    const projects   = (page.props.accessibleProjects ?? []) as ProjectContext[];
-    const base       = `/projects/${project.id}`;
+    const page = usePage<any>();
+    const currentUrl = ((page as any).url as string) ?? '';
+    const projects = (page.props.accessibleProjects ?? []) as ProjectContext[];
+    const base = `/projects/${project.id}`;
 
     const todoCount = (page.props.todoCount as number) ?? 0;
 
     const navItems = [
-        { key: 'overview',      label: 'Overview',      icon: LayoutDashboard, href: base },
-        { key: 'todo',          label: 'To Do',         icon: ListChecks,      href: `${base}/todo` },
-        { key: 'suites',        label: 'Cases',         icon: ClipboardList,   href: `${base}/suites` },
-        { key: 'requirements',  label: 'Requirements',  icon: ScrollText,      href: `${base}/requirements` },
-        { key: 'runs',          label: 'Runs',          icon: PlayCircle,      href: `${base}/runs` },
-        { key: 'plans',         label: 'Plans',         icon: BookOpen,        href: `${base}/plans` },
-        { key: 'milestones',    label: 'Milestones',    icon: MapPin,          href: `${base}/milestones` },
-        { key: 'reports',       label: 'Reports',       icon: BarChart2,       href: `${base}/reports` },
+        {
+            key: 'overview',
+            label: 'Overview',
+            icon: LayoutDashboard,
+            href: base,
+        },
+        { key: 'todo', label: 'To Do', icon: ListChecks, href: '/todo' },
+        {
+            key: 'suites',
+            label: 'Cases',
+            icon: ClipboardList,
+            href: `${base}/suites`,
+        },
+        {
+            key: 'requirements',
+            label: 'Requirements',
+            icon: ScrollText,
+            href: `${base}/requirements`,
+        },
+        { key: 'runs', label: 'Runs', icon: PlayCircle, href: `${base}/runs` },
+        { key: 'plans', label: 'Plans', icon: BookOpen, href: `${base}/plans` },
+        {
+            key: 'milestones',
+            label: 'Milestones',
+            icon: MapPin,
+            href: `${base}/milestones`,
+        },
+        {
+            key: 'reports',
+            label: 'Reports',
+            icon: BarChart2,
+            href: `${base}/reports`,
+        },
     ];
 
     return (
@@ -91,7 +114,10 @@ export function ProjectSidebar({ project }: Props) {
                             </DropdownMenuItem>
                         ))}
                         <DropdownMenuItem asChild>
-                            <Link href="/projects" className="flex w-full items-center gap-2 text-muted-foreground">
+                            <Link
+                                href="/projects"
+                                className="flex w-full items-center gap-2 text-muted-foreground"
+                            >
                                 All projects…
                             </Link>
                         </DropdownMenuItem>
@@ -108,7 +134,8 @@ export function ProjectSidebar({ project }: Props) {
                                     asChild
                                     isActive={
                                         key === 'overview'
-                                            ? currentUrl === base || currentUrl === `${base}/`
+                                            ? currentUrl === base ||
+                                              currentUrl === `${base}/`
                                             : currentUrl.startsWith(href)
                                     }
                                 >
@@ -130,10 +157,6 @@ export function ProjectSidebar({ project }: Props) {
                     </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>
-
-            <SidebarFooter>
-                <NavUser />
-            </SidebarFooter>
         </Sidebar>
     );
 }

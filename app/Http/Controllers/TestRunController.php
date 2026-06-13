@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,7 +25,7 @@ class TestRunController extends Controller
         $this->authorizeProjectAccess($request, $project);
 
         $runs = $project->testRuns()
-            ->with(['milestone:id,name', 'createdBy:id,name'])
+            ->with(['milestone:id,name', 'createdBy:id,name', 'suite:id,name'])
             ->withCount('tests')
             ->latest()
             ->paginate(20);
@@ -47,6 +48,7 @@ class TestRunController extends Controller
                 ->orderBy('due_on')
                 ->get(['id', 'name']),
             'members' => $project->members()->get(['users.id', 'users.name']),
+            'currentUserId' => Auth::id(),
         ]);
     }
 
@@ -61,27 +63,44 @@ class TestRunController extends Controller
             'suite_id' => ['nullable', 'integer', 'exists:suites,id'],
             'milestone_id' => ['nullable', 'integer', 'exists:milestones,id'],
             'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'start_on' => ['nullable', 'date'],
+            'end_on' => ['nullable', 'date', 'after_or_equal:start_on'],
             'include_all' => ['boolean'],
             'case_ids' => ['nullable', 'array'],
             'case_ids.*' => ['integer', 'exists:test_cases,id'],
+            'filter_priority' => ['nullable', 'string'],
+            'filter_type' => ['nullable', 'string'],
         ]);
 
         $run = DB::transaction(function () use ($project, $validated): TestRun {
             $run = $project->testRuns()->create([
-                'suite_id' => $validated['suite_id'] ?? null,
+                'suite_id'    => $validated['suite_id'] ?? null,
                 'milestone_id' => $validated['milestone_id'] ?? null,
-                'name' => $validated['name'],
-                'description' => $validated['description'] ?? null,
-                'refs' => $validated['refs'] ?? null,
-                'include_all' => $validated['include_all'] ?? false,
-                'assigned_to' => $validated['assigned_to'] ?? null,
-                'created_by' => Auth::id(),
+                'name'         => $validated['name'],
+                'description'  => $validated['description'] ?? null,
+                'refs'         => $validated['refs'] ?? null,
+                'include_all'  => $validated['include_all'] ?? false,
+                'assigned_to'  => $validated['assigned_to'] ?? null,
+                'created_by'   => Auth::id(),
+                ...(Schema::hasColumn('test_runs', 'start_on') ? [
+                    'start_on' => $validated['start_on'] ?? null,
+                    'end_on'   => $validated['end_on'] ?? null,
+                ] : []),
             ]);
 
             if ($run->include_all && $run->suite_id) {
-                $caseIds = TestCase::where('suite_id', $run->suite_id)
-                    ->whereNull('deleted_at')
-                    ->pluck('id');
+                $query = TestCase::where('suite_id', $run->suite_id)
+                    ->whereNull('deleted_at');
+
+                if (! empty($validated['filter_priority'])) {
+                    $query->where('priority', $validated['filter_priority']);
+                }
+
+                if (! empty($validated['filter_type'])) {
+                    $query->where('case_type', $validated['filter_type']);
+                }
+
+                $caseIds = $query->pluck('id');
             } elseif (! empty($validated['case_ids'])) {
                 $caseIds = collect($validated['case_ids']);
             } else {
@@ -99,6 +118,12 @@ class TestRunController extends Controller
 
             return $run;
         });
+
+        if ($request->boolean('add_and_create')) {
+            Inertia::flash('toast', ['type' => 'success', 'message' => __('app.runs.created')]);
+
+            return to_route('projects.runs.create', $project);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('app.runs.created')]);
 

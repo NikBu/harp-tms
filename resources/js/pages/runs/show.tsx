@@ -7,6 +7,7 @@ import {
     Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { useTrans } from '@/hooks/use-trans';
 import { index as projectsIndex } from '@/routes/projects';
 import type { BulkResultItem, TestInstance, TestRun, TestStatus } from '@/types/test-run';
@@ -33,6 +34,11 @@ const STATUS_BAR: Record<TestStatus, string> = {
     skipped:  'bg-gray-400',
     untested: 'bg-slate-200',
 };
+
+
+function stripHtml(html: string): string {
+    return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
 
 
 function StatusBadge({ status }: { status: TestStatus }) {
@@ -149,12 +155,9 @@ function ResultDialog({
                     {/* Comment */}
                     <div className="grid gap-2">
                         <Label htmlFor="comment">{t('app.runs.result.comment')}</Label>
-                        <textarea
-                            id="comment"
+                        <RichTextEditor
                             value={data.comment}
-                            onChange={(e) => setData('comment', e.target.value)}
-                            rows={3}
-                            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            onChange={(v) => setData('comment', v)}
                         />
                     </div>
 
@@ -315,12 +318,9 @@ function BulkResultDialog({
                     {/* Comment */}
                     <div className="grid gap-2">
                         <Label htmlFor="bulk-comment">{t('app.runs.result.comment')}</Label>
-                        <textarea
-                            id="bulk-comment"
+                        <RichTextEditor
                             value={comment}
-                            onChange={e => setComment(e.target.value)}
-                            rows={2}
-                            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            onChange={setComment}
                         />
                     </div>
 
@@ -493,7 +493,7 @@ export default function RunsShow({
                                     {test.latest_result && (
                                         <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
                                             {test.latest_result.comment && (
-                                                <span className="truncate max-w-xs">{test.latest_result.comment}</span>
+                                                <span className="truncate max-w-xs">{stripHtml(test.latest_result.comment)}</span>
                                             )}
                                             {test.latest_result.defect_url && (
                                                 <a

@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-#[Fillable(['suite_id', 'section_id', 'title', 'template', 'case_type', 'priority', 'estimate', 'estimate_forecast', 'preconditions', 'expected_result', 'refs', 'automation_type', 'automation_id', 'status', 'checklist_items', 'bdd_scenario', 'created_by', 'updated_by', 'display_order'])]
+#[Fillable(['suite_id', 'section_id', 'title', 'template', 'case_type', 'priority', 'estimate', 'estimate_forecast', 'preconditions', 'expected_result', 'refs', 'automation_type', 'automation_id', 'status', 'checklist_items', 'bdd_scenario', 'created_by', 'updated_by', 'assigned_to', 'display_order'])]
 class TestCase extends Model
 {
     /** @use HasFactory<TestCaseFactory> */
@@ -81,6 +81,14 @@ class TestCase extends Model
     public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     /**

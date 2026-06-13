@@ -1084,13 +1084,13 @@ class TechnicalSeeder extends Seeder
     {
         foreach ($configurations as $configuration) {
             $exists = DB::table('test_plan_entry_configs')
-                ->where('plan_entry_id', $entry->id)
+                ->where('test_plan_entry_id', $entry->id)
                 ->where('configuration_id', $configuration->id)
                 ->exists();
 
             if (! $exists) {
                 DB::table('test_plan_entry_configs')->insert([
-                    'plan_entry_id' => $entry->id,
+                    'test_plan_entry_id' => $entry->id,
                     'configuration_id' => $configuration->id,
                 ]);
             }

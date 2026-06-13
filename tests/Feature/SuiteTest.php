@@ -3,6 +3,7 @@
 use App\Models\Project;
 use App\Models\Section;
 use App\Models\Suite;
+use App\Models\TestCase;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 
@@ -122,7 +123,7 @@ test('a member can create a section within a suite', function (): void {
     $suite = Suite::factory()->create(['project_id' => $project->id]);
 
     actingAs($user)
-        ->post(route('suites.sections.store', $suite), [
+        ->post(route('projects.suites.sections.store', [$suite->project, $suite]), [
             'name' => 'Authentication',
         ])
         ->assertRedirect();
@@ -132,6 +133,33 @@ test('a member can create a section within a suite', function (): void {
     expect($section)->not->toBeNull();
     expect($section->suite_id)->toBe($suite->id);
     expect($section->display_order)->toBe(1);
+});
+
+test('the suite show page maps test case template and priority to integers', function (): void {
+    $user = User::factory()->create();
+    $project = Project::factory()->create(['suite_mode' => Project::SUITE_MULTI]);
+    $project->members()->attach($user, ['role' => 'member']);
+
+    $suite = Suite::factory()->create(['project_id' => $project->id]);
+    $section = Section::factory()->create(['suite_id' => $suite->id]);
+
+    TestCase::factory()->create([
+        'suite_id' => $suite->id,
+        'section_id' => $section->id,
+        'template' => 'steps',
+        'priority' => 'critical',
+        'created_by' => $user->id,
+    ]);
+
+    actingAs($user)
+        ->get(route('suites.show', $suite))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('suites/show')
+            ->where('sections.0.testCases.0.template', 2)
+            ->where('sections.0.testCases.0.priority_id', 1)
+            ->where('sections.0.testCases.0.has_requirements', false)
+        );
 });
 
 test('the reorder endpoint accepts a valid items payload', function (): void {

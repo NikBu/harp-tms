@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndPermissionsSeeder::class,
             TechnicalSeeder::class,
+            // Uncomment to seed demo data for presentations
+            // DemoSeeder::class,
             BetaGammaSeeder::class,
         ]);
     }

@@ -1,7 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
-    Bell,
     BookOpen,
     Database,
     FileCode2,
@@ -19,11 +18,9 @@ import {
     Webhook,
     CreditCard,
 } from 'lucide-react';
-import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarGroup,
     SidebarGroupLabel,
     SidebarHeader,
@@ -31,6 +28,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useTrans } from '@/hooks/use-trans';
 import { dashboard } from '@/routes';
 
 interface AdminNavItem {
@@ -41,12 +39,14 @@ interface AdminNavItem {
 
 interface AdminNavGroup {
     heading: string;
+    headingKey?: string;
     items: AdminNavItem[];
 }
 
 const ADMIN_GROUPS: AdminNavGroup[] = [
     {
         heading: 'Site Settings',
+        headingKey: 'app.admin.nav.site_settings',
         items: [
             { label: 'General',         href: '/admin/settings/general',        icon: Settings    },
             { label: 'Authentication',  href: '/admin/settings/authentication', icon: Lock        },
@@ -95,6 +95,7 @@ const ADMIN_GROUPS: AdminNavGroup[] = [
 ];
 
 export function AdminSidebar() {
+    const t          = useTrans();
     const page       = usePage<any>();
     const currentUrl = (page as any).url as string ?? '';
 
@@ -117,7 +118,7 @@ export function AdminSidebar() {
                 {ADMIN_GROUPS.map((group) => (
                     <SidebarGroup key={group.heading}>
                         <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground">
-                            {group.heading}
+                            {group.headingKey ? t(group.headingKey) : group.heading}
                         </SidebarGroupLabel>
                         <SidebarMenu>
                             {group.items.map(({ label, href, icon: Icon }) => (
@@ -137,10 +138,6 @@ export function AdminSidebar() {
                     </SidebarGroup>
                 ))}
             </SidebarContent>
-
-            <SidebarFooter>
-                <NavUser />
-            </SidebarFooter>
         </Sidebar>
     );
 }
