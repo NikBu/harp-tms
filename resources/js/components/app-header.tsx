@@ -17,6 +17,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { UserMenuContent } from '@/components/user-menu-content';
+import { useLogoSrc } from '@/components/app-logo';
 import { useInitials } from '@/hooks/use-initials';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useTrans } from '@/hooks/use-trans';
@@ -31,12 +32,6 @@ type Props = {
 
 type TransFn = (key: string) => string;
 
-/**
- * Items injected into the + Add dropdown.
- *
- * Always offers the four core "create" actions when inside a project, plus an
- * "Add Section" shortcut while on a suite/cases page.
- */
 function useAddItems(url: string, t: TransFn, projectId?: number): { label: string; href: string }[] {
     if (!projectId) return [];
 
@@ -44,7 +39,6 @@ function useAddItems(url: string, t: TransFn, projectId?: number): { label: stri
 
     const items: { label: string; href: string }[] = [];
 
-    // On suite/cases pages, surface "Add Section" first (targets the active suite).
     if (url.includes('/suites') || url.includes('/cases')) {
         const suiteMatch = url.match(/\/suites\/(\d+)/);
         const suiteId = suiteMatch ? suiteMatch[1] : null;
@@ -73,6 +67,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const project = page.props.currentProject as ProjectContext | null | undefined;
     const getInitials = useInitials();
     const { isSiteAdmin, canAdd } = usePermissions();
+    const logoSrc = useLogoSrc();
 
     const isInProject = Boolean(project);
     const isInAdmin = currentUrl.startsWith('/admin');
@@ -95,8 +90,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             <SheetTitle className="sr-only">{t('app.navigation.main')}</SheetTitle>
                             <SheetHeader className="flex h-12 items-center border-b border-sidebar-border px-4">
                                 <Link href={dashboard()}>
-                                    <img src="/logo-main.png" alt="HARP TMS" className="h-7 w-auto object-contain dark:hidden" />
-                                    <img src="/logo-main.png" alt="HARP TMS" className="hidden h-7 w-auto object-contain invert dark:block" />
+                                    <img src={logoSrc} alt="HARP TMS" className="h-7 w-auto object-contain" />
                                 </Link>
                             </SheetHeader>
                             <nav className="flex flex-col gap-1 p-3 text-sm">
@@ -130,10 +124,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
                 {/* ── Logo ─────────────────────────────────────── */}
                 <Link href={dashboard()} className="flex shrink-0 items-center" prefetch>
-                    {/* Light mode logo */}
-                    <img src="/logo-main.png" alt="HARP TMS" className="h-10 w-auto object-contain dark:hidden" />
-                    {/* Dark mode logo — replace /logo-dark.png with actual asset when ready */}
-                    <img src="/logo-main.png" alt="HARP TMS" className="hidden h-10 w-auto object-contain invert dark:block" />
+                    <img src={logoSrc} alt="HARP TMS" className="h-10 w-auto object-contain" />
                 </Link>
 
                 {/* ── Context-aware center section ─────────────── */}
@@ -164,10 +155,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </nav>
                 )}
 
-                {/* ── Right side ───────────────────────────────��─ */}
+                {/* ── Right side ───────────────────────────────── */}
                 <div className="ml-auto flex items-center gap-2">
 
-                    {/* + Add dropdown — only inside a project and for permitted roles */}
                     {isInProject && canAdd && addItems.length > 0 && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -187,16 +177,13 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         </DropdownMenu>
                     )}
 
-                    {/* Search */}
                     <Button variant="ghost" size="icon" className="h-8 w-8">
                         <Search className="h-4 w-4 opacity-70" />
                         <span className="sr-only">{t('app.common.search')}</span>
                     </Button>
 
-                    {/* Theme toggle */}
                     <ThemeToggle />
 
-                    {/* Administration button — site admins only, not already in admin */}
                     {isSiteAdmin && !isInAdmin && (
                         <Button
                             variant="ghost"
@@ -209,7 +196,6 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         </Button>
                     )}
 
-                    {/* User avatar + dropdown */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full p-0.5">

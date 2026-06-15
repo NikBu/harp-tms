@@ -265,7 +265,7 @@ return [
             'bulk_edit_not_implemented' => 'Bulk edit is not yet implemented.',
             'assign_not_implemented' => 'Assign is not yet implemented.',
             'delete_confirm' => 'Delete :count selected case(s)?',
-            
+
             'export' => 'Export',
             'edit_selected' => 'Edit Selected',
             'delete_selected' => 'Delete Selected',
@@ -696,5 +696,9 @@ return [
         'profile' => 'Profile',
         'security' => 'Security',
         'appearance' => 'Appearance',
+    ],
+    'footer' => [
+        'diploma_note' => 'Diploma project — MVP Test Management System prototype',
+        'author' => 'Burkov Nikita',
     ],
 ];
