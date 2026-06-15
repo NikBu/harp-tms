@@ -257,15 +257,12 @@ return [
             'add_section' => 'Add Section',
             'add_subsection' => 'Add Subsection',
             'assign_to' => 'Assign To',
-            // 'edit_selected' => 'Edit',
-            // 'delete_selected' => 'Delete',
             'columns' => 'Columns',
             'visible_columns' => 'Visible Columns',
             'select_cases_first' => 'Select one or more cases first.',
             'bulk_edit_not_implemented' => 'Bulk edit is not yet implemented.',
             'assign_not_implemented' => 'Assign is not yet implemented.',
             'delete_confirm' => 'Delete :count selected case(s)?',
-
             'export' => 'Export',
             'edit_selected' => 'Edit Selected',
             'delete_selected' => 'Delete Selected',
@@ -335,7 +332,6 @@ return [
             'elapsed' => 'Elapsed',
             'version' => 'Version',
             'submit' => 'Submit Result',
-
             'defect_url' => 'Defect URL',
             'defect' => 'Defect',
         ],
@@ -374,7 +370,6 @@ return [
             'select_untested' => 'Select untested',
             'submit' => 'Save :count results',
         ],
-
     ],
     'plans' => [
         'title' => 'Test Plans',
@@ -589,6 +584,34 @@ return [
             'results_logged' => 'Results Logged',
             'no_workload' => 'No assignments or results yet.',
         ],
+        'activity' => [
+            'new_cases' => 'New Cases',
+            'updated_cases' => 'Updated Cases',
+            'new_results' => 'Results Logged',
+        ],
+        'coverage' => [
+            'by_priority' => 'Pass Rate by Priority',
+        ],
+        'milestone' => [
+            'total' => 'Total',
+            'completed' => 'Completed',
+            'active' => 'Active',
+        ],
+        'workload' => [
+            'members' => 'Members',
+            'avg_pass_rate' => 'Avg Pass Rate',
+            'pass_rate' => 'Pass Rate',
+            'assigned' => 'Assigned',
+            'logged' => 'Logged',
+            'status_breakdown' => 'Status Breakdown',
+        ],
+        'distribution' => [
+            'by_priority' => 'By Priority',
+            'by_template' => 'By Template',
+            'by_section' => 'By Section',
+            'by_type' => 'By Type',
+            'total' => 'Total',
+        ],
         'types' => [
             'activity_summary' => [
                 'name' => 'Activity Summary',
@@ -598,17 +621,17 @@ return [
                 'name' => 'Result Coverage',
                 'desc' => 'Pass, fail, and untested breakdown for the latest runs.',
             ],
-            'defect_summary' => [
-                'name' => 'Defect Summary',
-                'desc' => 'Overview of defects raised during testing.',
+            'case_distribution' => [
+                'name' => 'Case Distribution',
+                'desc' => 'Distribution of test cases by priority, template, and section.',
             ],
             'milestone_progress' => [
                 'name' => 'Milestone Progress',
                 'desc' => 'Completion progress across milestones.',
             ],
-            'case_distribution' => [
-                'name' => 'Case Distribution',
-                'desc' => 'Distribution of test cases by priority.',
+            'workload' => [
+                'name' => 'Workload',
+                'desc' => 'Per-member assignment and result contribution breakdown.',
             ],
         ],
     ],
