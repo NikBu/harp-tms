@@ -5,160 +5,222 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTrans } from '@/hooks/use-trans';
 import { index as projectsIndex } from '@/routes/projects';
 
-interface ReportType {
-    key: string;
-    name: string;
-    desc: string;
+// ── Shared colour maps ────────────────────────────────────────────────────────
+const STATUS_COLORS: Record<string, string> = {
+    passed: 'text-green-600', failed: 'text-red-600', blocked: 'text-orange-500',
+    retest: 'text-yellow-600', skipped: 'text-gray-500', untested: 'text-slate-400',
+};
+const PRIORITY_COLORS: Record<string, string> = {
+    critical: 'text-red-600', high: 'text-orange-500', medium: 'text-yellow-600', low: 'text-sky-600',
+};
+
+const STATUS_KEYS   = ['passed', 'failed', 'blocked', 'retest', 'skipped', 'untested'] as const;
+const PRIORITY_KEYS = ['critical', 'high', 'medium', 'low'] as const;
+
+// ── Per-type table renderers ──────────────────────────────────────────────────
+
+function ActivityTable({ rows }: { rows: [string, any][] }) {
+    const t = useTrans();
+    return (
+        <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground">
+                <tr className="border-b border-border">
+                    <th className="px-3 py-2 text-left">{t('app.navigation.projects')}</th>
+                    <th className="px-3 py-2 text-right">{t('app.reports.activity.new_cases')}</th>
+                    <th className="px-3 py-2 text-right">{t('app.reports.activity.updated_cases')}</th>
+                    <th className="px-3 py-2 text-right">{t('app.reports.activity.new_results')}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows.map(([name, data]) => (
+                    <tr key={name} className="border-b border-border last:border-0">
+                        <td className="px-3 py-2 font-medium">{name}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{data?.totals?.new_cases ?? 0}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{data?.totals?.updated_cases ?? 0}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{data?.totals?.new_results ?? 0}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );
 }
 
-interface CoverageData {
-    passed: number;
-    failed: number;
-    blocked: number;
-    retest: number;
-    skipped: number;
-    untested: number;
-    run_count: number;
+function CoverageTable({ rows }: { rows: [string, any][] }) {
+    const t = useTrans();
+    return (
+        <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground">
+                <tr className="border-b border-border">
+                    <th className="px-3 py-2 text-left">{t('app.navigation.projects')}</th>
+                    {STATUS_KEYS.map((k) => (
+                        <th key={k} className={`px-3 py-2 text-right capitalize ${STATUS_COLORS[k]}`}>
+                            {t(`app.runs.statuses.${k}`)}
+                        </th>
+                    ))}
+                    <th className="px-3 py-2 text-right">{t('app.reports.dashboard.coverage_pct')}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows.map(([name, data]) => (
+                    <tr key={name} className="border-b border-border last:border-0">
+                        <td className="px-3 py-2 font-medium">{name}</td>
+                        {STATUS_KEYS.map((k) => (
+                            <td key={k} className="px-3 py-2 text-right tabular-nums">{data?.[k] ?? 0}</td>
+                        ))}
+                        <td className="px-3 py-2 text-right tabular-nums">{data?.coverage?.pct ?? 0}%</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );
 }
 
-interface DistributionData {
-    critical: number;
-    high: number;
-    medium: number;
-    low: number;
-    total: number;
+function DistributionTable({ rows }: { rows: [string, any][] }) {
+    const t = useTrans();
+    return (
+        <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground">
+                <tr className="border-b border-border">
+                    <th className="px-3 py-2 text-left">{t('app.navigation.projects')}</th>
+                    {PRIORITY_KEYS.map((k) => (
+                        <th key={k} className={`px-3 py-2 text-right ${PRIORITY_COLORS[k]}`}>
+                            {t(`app.requirements.priorities.${k}`)}
+                        </th>
+                    ))}
+                    <th className="px-3 py-2 text-right">{t('app.projects.stats.test_cases')}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows.map(([name, data]) => (
+                    <tr key={name} className="border-b border-border last:border-0">
+                        <td className="px-3 py-2 font-medium">{name}</td>
+                        {PRIORITY_KEYS.map((k) => (
+                            <td key={k} className="px-3 py-2 text-right tabular-nums">{data?.byPriority?.[k] ?? 0}</td>
+                        ))}
+                        <td className="px-3 py-2 text-right tabular-nums font-medium">{data?.byPriority?.total ?? 0}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );
 }
 
-type ReportData = CoverageData | DistributionData | null;
+function MilestoneTable({ rows }: { rows: [string, any][] }) {
+    const t = useTrans();
+    return (
+        <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground">
+                <tr className="border-b border-border">
+                    <th className="px-3 py-2 text-left">{t('app.navigation.projects')}</th>
+                    <th className="px-3 py-2 text-right">{t('app.reports.milestone.total')}</th>
+                    <th className="px-3 py-2 text-right">{t('app.reports.milestone.completed')}</th>
+                    <th className="px-3 py-2 text-right">{t('app.reports.milestone.active')}</th>
+                    <th className="px-3 py-2 text-right">{t('app.reports.dashboard.pct_done')}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows.map(([name, data]) => (
+                    <tr key={name} className="border-b border-border last:border-0">
+                        <td className="px-3 py-2 font-medium">{name}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{data?.totals?.total ?? 0}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{data?.totals?.completed ?? 0}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{data?.totals?.active ?? 0}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{data?.totals?.pct_done ?? 0}%</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );
+}
 
-const COVERAGE_KEYS = [
-    'passed',
-    'failed',
-    'blocked',
-    'retest',
-    'skipped',
-    'untested',
-] as const;
+function WorkloadTable({ rows }: { rows: [string, any][] }) {
+    const t = useTrans();
+    return (
+        <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground">
+                <tr className="border-b border-border">
+                    <th className="px-3 py-2 text-left">{t('app.navigation.projects')}</th>
+                    <th className="px-3 py-2 text-right">{t('app.reports.workload.members')}</th>
+                    <th className="px-3 py-2 text-right">{t('app.reports.dashboard.assigned_cases')}</th>
+                    <th className="px-3 py-2 text-right">{t('app.reports.dashboard.results_logged')}</th>
+                    <th className="px-3 py-2 text-right">{t('app.reports.workload.avg_pass_rate')}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows.map(([name, data]) => {
+                    const members = (data?.members ?? []) as any[];
+                    const avgPass = members.length > 0
+                        ? Math.round(members.reduce((s: number, m: any) => s + m.pass_rate, 0) / members.length)
+                        : 0;
+                    return (
+                        <tr key={name} className="border-b border-border last:border-0">
+                            <td className="px-3 py-2 font-medium">{name}</td>
+                            <td className="px-3 py-2 text-right tabular-nums">{members.length}</td>
+                            <td className="px-3 py-2 text-right tabular-nums">{members.reduce((s: number, m: any) => s + m.assigned_cases, 0)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums">{members.reduce((s: number, m: any) => s + m.results_logged, 0)}</td>
+                            <td className="px-3 py-2 text-right tabular-nums">{avgPass}%</td>
+                        </tr>
+                    );
+                })}
+            </tbody>
+        </table>
+    );
+}
 
-const DISTRIBUTION_KEYS = ['critical', 'high', 'medium', 'low'] as const;
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ReportsCrossProject({
     results,
-    report,
     type,
 }: {
-    results: Record<string, ReportData>;
-    report: ReportType;
+    results: Record<string, any>;
     type: string;
     projects: { id: number; name: string }[];
 }) {
     const t = useTrans();
-
-    const isCoverage = type === 'result_coverage';
-    const isDistribution = type === 'case_distribution';
     const rows = Object.entries(results);
+
+    function renderTable() {
+        if (rows.length === 0) {
+            return (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                    {t('app.projects.empty_title')}
+                </p>
+            );
+        }
+        switch (type) {
+            case 'activity_summary':  return <ActivityTable rows={rows} />;
+            case 'result_coverage':   return <CoverageTable rows={rows} />;
+            case 'case_distribution': return <DistributionTable rows={rows} />;
+            case 'milestone_progress':return <MilestoneTable rows={rows} />;
+            case 'workload':          return <WorkloadTable rows={rows} />;
+            default:
+                return (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                        {t('app.reports.coming_soon')}
+                    </p>
+                );
+        }
+    }
 
     return (
         <>
             <Head title={t('app.reports.cross.title')} />
-
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="grid gap-1">
-                    <h1 className="text-2xl font-semibold">
-                        {t('app.reports.cross.title')}
-                    </h1>
+                    <h1 className="text-2xl font-semibold">{t('app.reports.cross.title')}</h1>
                     <p className="text-sm text-muted-foreground">
-                        {t(`app.reports.types.${report.key}.name`)}
+                        {t(`app.reports.types.${type}.name`)}
                     </p>
                 </div>
-
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">
-                            {t('app.reports.summary')}
-                        </CardTitle>
+                        <CardTitle className="text-base">{t('app.reports.summary')}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {!isCoverage && !isDistribution ? (
-                            <p className="py-6 text-center text-sm text-muted-foreground">
-                                {t('app.reports.coming_soon')}
-                            </p>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="text-left text-xs text-muted-foreground">
-                                        <tr className="border-b border-border">
-                                            <th className="px-3 py-2">
-                                                {t('app.navigation.projects')}
-                                            </th>
-                                            {isCoverage &&
-                                                COVERAGE_KEYS.map((k) => (
-                                                    <th
-                                                        key={k}
-                                                        className="px-3 py-2 text-right capitalize"
-                                                    >
-                                                        {t(
-                                                            `app.runs.statuses.${k}`,
-                                                        )}
-                                                    </th>
-                                                ))}
-                                            {isDistribution &&
-                                                DISTRIBUTION_KEYS.map((k) => (
-                                                    <th
-                                                        key={k}
-                                                        className="px-3 py-2 text-right"
-                                                    >
-                                                        {t(
-                                                            `app.requirements.priorities.${k}`,
-                                                        )}
-                                                    </th>
-                                                ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {rows.map(([name, data]) => (
-                                            <tr
-                                                key={name}
-                                                className="border-b border-border last:border-0"
-                                            >
-                                                <td className="px-3 py-2 font-medium">
-                                                    {name}
-                                                </td>
-                                                {isCoverage &&
-                                                    COVERAGE_KEYS.map((k) => (
-                                                        <td
-                                                            key={k}
-                                                            className="px-3 py-2 text-right tabular-nums"
-                                                        >
-                                                            {data
-                                                                ? (
-                                                                      data as CoverageData
-                                                                  )[k]
-                                                                : 0}
-                                                        </td>
-                                                    ))}
-                                                {isDistribution &&
-                                                    DISTRIBUTION_KEYS.map((k) => (
-                                                        <td
-                                                            key={k}
-                                                            className="px-3 py-2 text-right tabular-nums"
-                                                        >
-                                                            {data
-                                                                ? (
-                                                                      data as DistributionData
-                                                                  )[k]
-                                                                : 0}
-                                                        </td>
-                                                    ))}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+                        <div className="overflow-x-auto">{renderTable()}</div>
                     </CardContent>
                 </Card>
-
                 <div>
                     <Button variant="outline" size="sm" asChild>
                         <Link href="/reports">
