@@ -30,6 +30,7 @@ class CaseDistributionSegment
         $byPriorityRaw = TestCase::query()
             ->join('suites', 'test_cases.suite_id', '=', 'suites.id')
             ->whereIn('suites.project_id', $projectIds)
+            ->whereNull('test_cases.deleted_at')
             ->selectRaw('priority, count(*) as cnt')
             ->groupBy('priority')
             ->pluck('cnt', 'priority');
@@ -42,15 +43,16 @@ class CaseDistributionSegment
             'total'    => (int) $byPriorityRaw->sum(),
         ];
 
-        // By type
+        // By case_type (the actual column name in the DB)
         $byTypeRaw = TestCase::query()
             ->join('suites', 'test_cases.suite_id', '=', 'suites.id')
             ->whereIn('suites.project_id', $projectIds)
-            ->whereNotNull('test_cases.type')
-            ->selectRaw('test_cases.type, count(*) as cnt')
-            ->groupBy('test_cases.type')
+            ->whereNotNull('test_cases.case_type')
+            ->whereNull('test_cases.deleted_at')
+            ->selectRaw('test_cases.case_type as type, count(*) as cnt')
+            ->groupBy('test_cases.case_type')
             ->orderByDesc('cnt')
-            ->get(['type', 'cnt']);
+            ->get();
 
         $byType = $byTypeRaw->map(fn ($r) => [
             'type'  => (string) $r->type,
@@ -62,6 +64,7 @@ class CaseDistributionSegment
             ->join('suites', 'test_cases.suite_id', '=', 'suites.id')
             ->leftJoin('sections', 'test_cases.section_id', '=', 'sections.id')
             ->whereIn('suites.project_id', $projectIds)
+            ->whereNull('test_cases.deleted_at')
             ->selectRaw('COALESCE(sections.name, ?) as section_name, count(*) as cnt', [__('app.sections.default_name')])
             ->groupBy('section_name')
             ->orderByDesc('cnt')
@@ -77,6 +80,7 @@ class CaseDistributionSegment
         $byTemplateRaw = TestCase::query()
             ->join('suites', 'test_cases.suite_id', '=', 'suites.id')
             ->whereIn('suites.project_id', $projectIds)
+            ->whereNull('test_cases.deleted_at')
             ->selectRaw('template, count(*) as cnt')
             ->groupBy('template')
             ->pluck('cnt', 'template');
