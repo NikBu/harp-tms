@@ -1,4 +1,5 @@
 import { Monitor, Moon, Sun } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -10,12 +11,18 @@ import { useAppearance } from '@/hooks/use-appearance';
 
 export function ThemeToggle() {
     const { resolvedAppearance, updateAppearance } = useAppearance();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => setMounted(true), []);
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Toggle theme">
-                    {resolvedAppearance === 'dark' ? (
+                    {!mounted ? (
+                        // Neutral placeholder — matches server render, no hydration mismatch
+                        <Monitor className="h-4 w-4" />
+                    ) : resolvedAppearance === 'dark' ? (
                         <Moon className="h-4 w-4" />
                     ) : (
                         <Sun className="h-4 w-4" />

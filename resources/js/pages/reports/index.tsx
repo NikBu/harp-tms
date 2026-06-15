@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { BarChart2 } from 'lucide-react';
+import { BarChart2, Download } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,17 +19,51 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
     ReportDashboard,
     type DashboardData,
 } from '@/components/reports/report-dashboard';
 import { useTrans } from '@/hooks/use-trans';
-import { index as projectsIndex } from '@/routes/projects';
 
 interface ReportType {
     key: string;
 }
 
 type ProjectOption = { id: number; name: string };
+
+function DashboardExportButton({ projectId }: { projectId?: number }) {
+    const base = projectId
+        ? `/projects/${projectId}/reports/dashboard/export`
+        : '/reports/dashboard/export';
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1.5 px-3 text-xs">
+                    <Download className="h-3.5 w-3.5" />
+                    Export
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                    <a href={`${base}?format=xlsx`} download>
+                        Excel (.xlsx)
+                    </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <a href={`${base}?format=pdf`} download>
+                        Print / PDF (.html)
+                    </a>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
 
 export default function ReportsIndex({
     project,
@@ -95,8 +129,6 @@ export default function ReportsIndex({
         </div>
     );
 
-    // Always pass the full projects list; the controller now populates it on
-    // both project-specific and global pages.
     const crossProjects = projects ?? [];
 
     const crossPanel = (
@@ -164,6 +196,15 @@ export default function ReportsIndex({
         </Card>
     );
 
+    const dashboardTab = (
+        <div className="grid gap-4">
+            <div className="flex justify-end">
+                <DashboardExportButton projectId={project?.id} />
+            </div>
+            <ReportDashboard data={dashboard} />
+        </div>
+    );
+
     return (
         <>
             <Head title={t('app.reports.title')} />
@@ -187,9 +228,7 @@ export default function ReportsIndex({
                                 {t('app.reports.tabs.cross')}
                             </TabsTrigger>
                         </TabsList>
-                        <TabsContent value="dashboard">
-                            <ReportDashboard data={dashboard} />
-                        </TabsContent>
+                        <TabsContent value="dashboard">{dashboardTab}</TabsContent>
                         <TabsContent value="cross">{crossPanel}</TabsContent>
                     </Tabs>
                 ) : (
@@ -205,9 +244,7 @@ export default function ReportsIndex({
                                 {t('app.reports.tabs.cross')}
                             </TabsTrigger>
                         </TabsList>
-                        <TabsContent value="dashboard">
-                            <ReportDashboard data={dashboard} />
-                        </TabsContent>
+                        <TabsContent value="dashboard">{dashboardTab}</TabsContent>
                         <TabsContent value="project">
                             {projectCards}
                         </TabsContent>

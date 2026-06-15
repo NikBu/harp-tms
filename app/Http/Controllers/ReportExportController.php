@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Services\Reports\ActivitySummarySegment;
 use App\Services\Reports\CaseDistributionSegment;
+use App\Services\Reports\DashboardSegment;
 use App\Services\Reports\MilestoneProgressSegment;
 use App\Services\Reports\ResultCoverageSegment;
 use App\Services\Reports\WorkloadSegment;
@@ -15,7 +16,7 @@ use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Handles CSV / XLSX / PDF export of per-project reports.
+ * Handles CSV / XLSX / PDF export of per-project reports and the dashboard.
  */
 class ReportExportController extends Controller
 {
@@ -33,11 +34,13 @@ class ReportExportController extends Controller
         private readonly CaseDistributionSegment  $distribution,
         private readonly MilestoneProgressSegment $milestones,
         private readonly WorkloadSegment          $workload,
+        private readonly DashboardSegment         $dashboard,
     ) {}
+
+    // ── Per-report export ─────────────────────────────────────────────────
 
     public function export(Request $request, Project $project, string $type): StreamedResponse|Response
     {
-        // Auth
         $user = $request->user();
         if (! $user->hasRole('admin')) {
             abort_unless($project->members()->whereKey($user->getKey())->exists(), 403);
@@ -58,6 +61,38 @@ class ReportExportController extends Controller
             'csv'  => $this->csv($rows, $title, $name),
             'xlsx' => $this->xlsx($rows, $title, $name),
             'pdf'  => $this->pdf($rows, $title, $project->name, $name),
+        };
+    }
+
+    // ── Dashboard export (XLSX multi-sheet or PDF) ────────────────────────
+
+    public function exportDashboard(Request $request, ?Project $project = null): StreamedResponse|Response
+    {
+        $user = $request->user();
+
+        if ($project) {
+            if (! $user->hasRole('admin')) {
+                abort_unless($project->members()->whereKey($user->getKey())->exists(), 403);
+            }
+            $projects = collect([$project]);
+            $scope    = $project->name;
+        } else {
+            $projects = $user->hasRole('admin')
+                ? \App\Models\Project::orderBy('name')->get()
+                : $user->projects()->orderBy('name')->get();
+            $scope = 'Global';
+        }
+
+        $format = strtolower($request->query('format', 'xlsx'));
+        abort_unless(in_array($format, ['xlsx', 'pdf'], true), 422);
+
+        $data  = $this->dashboard->compute($projects);
+        $stamp = Carbon::now()->format('Ymd_His');
+        $name  = "{$scope}_dashboard_{$stamp}";
+
+        return match ($format) {
+            'xlsx' => $this->dashboardXlsx($data, $scope, $name),
+            'pdf'  => $this->dashboardPdf($data, $scope, $name),
         };
     }
 
@@ -183,6 +218,160 @@ class ReportExportController extends Controller
         return $rows;
     }
 
+    // ── Dashboard flatten helpers ─────────────────────────────────────────
+
+    private function dashboardSheets(array $d): array
+    {
+        $sheets = [];
+
+        // 1. Run Summary
+        $rows = [['Run Name', 'Passed', 'Failed', 'Blocked', 'Retest', 'Skipped', 'Untested', 'Total', '% Passed', 'Completed', 'Created']];
+        foreach ($d['runs'] as $r) {
+            $b = $r['breakdown'];
+            $rows[] = [
+                $r['name'],
+                $b['passed'], $b['failed'], $b['blocked'],
+                $b['retest'], $b['skipped'], $b['untested'],
+                $r['total'], $r['pct_passed'] . '%',
+                $r['is_completed'] ? 'Yes' : 'No',
+                $r['created_at'] ? Carbon::parse($r['created_at'])->format('Y-m-d') : '',
+            ];
+        }
+        $totals = $d['statusTotals'];
+        $rows[] = [];
+        $rows[] = ['TOTALS', $totals['passed'], $totals['failed'], $totals['blocked'], $totals['retest'], $totals['skipped'], $totals['untested'], '', '', '', ''];
+        $sheets['Run Summary'] = $rows;
+
+        // 2. Activity (last 30 days)
+        $rows = [['Date', 'Passed', 'Failed', 'Blocked', 'Retest', 'Skipped', 'Untested']];
+        foreach ($d['activity'] as $day) {
+            $rows[] = [$day['date'], $day['passed'], $day['failed'], $day['blocked'], $day['retest'], $day['skipped'], $day['untested']];
+        }
+        $sheets['Activity (30d)'] = $rows;
+
+        // 3. Coverage
+        $rows = [
+            ['Metric', 'Value'],
+            ['Total Cases',   $d['coverage']['total']],
+            ['Cases Run',     $d['coverage']['run']],
+            ['Never Run',     $d['coverage']['untested']],
+            ['Coverage %',    $d['coverage']['pct'] . '%'],
+            [],
+            ['Section', 'Tested', 'Untested'],
+        ];
+        foreach ($d['sectionCoverage'] as $s) {
+            $rows[] = [$s['section'], $s['tested'], $s['untested']];
+        }
+        $sheets['Coverage'] = $rows;
+
+        // 4. Milestones
+        $rows = [['Milestone', 'Due Date', 'Run Count', '% Done', 'Completed']];
+        foreach ($d['milestones'] as $m) {
+            $rows[] = [
+                $m['name'],
+                $m['due_on'] ?? '',
+                $m['run_count'],
+                $m['pct_done'] . '%',
+                $m['is_completed'] ? 'Yes' : 'No',
+            ];
+        }
+        $sheets['Milestones'] = $rows;
+
+        // 5. Workload
+        $rows = [['Member', 'Assigned Cases', 'Results Logged']];
+        foreach ($d['workload'] as $w) {
+            $rows[] = [$w['name'], $w['assigned_cases'], $w['results_logged']];
+        }
+        $sheets['Workload'] = $rows;
+
+        return $sheets;
+    }
+
+    private function dashboardXlsx(array $data, string $scope, string $name): StreamedResponse
+    {
+        $sheets = $this->dashboardSheets($data);
+        $xml    = $this->buildMultiSheetXlsx($sheets);
+
+        return response()->streamDownload(function () use ($xml) {
+            echo $xml;
+        }, "{$name}.xlsx", [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$name}.xlsx\"",
+        ]);
+    }
+
+    private function dashboardPdf(array $data, string $scope, string $name): StreamedResponse
+    {
+        $sheets = $this->dashboardSheets($data);
+        $date   = Carbon::now()->format('d M Y, H:i');
+
+        $sections = '';
+        foreach ($sheets as $title => $rows) {
+            if (empty($rows)) continue;
+            $thead = '';
+            $tbody = '';
+            foreach ($rows as $i => $row) {
+                if ($row === []) {
+                    $tbody .= '<tr class="spacer"><td colspan="99"></td></tr>';
+                    continue;
+                }
+                $cells = array_map(fn($v) => '<td>' . htmlspecialchars((string)$v, ENT_HTML5) . '</td>', $row);
+                if ($i === 0) {
+                    $hcells = array_map(fn($v) => '<th>' . htmlspecialchars((string)$v, ENT_HTML5) . '</th>', $row);
+                    $thead  = '<thead><tr>' . implode('', $hcells) . '</tr></thead>';
+                } else {
+                    $tbody .= '<tr>' . implode('', $cells) . '</tr>';
+                }
+            }
+            $sections .= "<h2>{$title}</h2><table>{$thead}<tbody>{$tbody}</tbody></table>";
+        }
+
+        $html = <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard — {$scope}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; font-size: 12px; color: #111; padding: 2cm; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  h2 { font-size: 14px; margin: 24px 0 8px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  .meta { color: #666; font-size: 11px; margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  th { background: #f3f3f3; font-weight: 600; text-align: left; padding: 6px 8px; border-bottom: 2px solid #ddd; }
+  td { padding: 5px 8px; border-bottom: 1px solid #eee; }
+  tr.spacer td { padding: 8px 0; border: none; }
+  @media print {
+    @page { margin: 1.5cm; }
+    body { padding: 0; }
+    h2 { page-break-before: auto; }
+    .no-print { display: none; }
+  }
+  .print-btn { margin-bottom: 16px; }
+  button { padding: 6px 14px; font-size: 13px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="print-btn no-print">
+  <button onclick="window.print()">🖨 Print / Save as PDF</button>
+</div>
+<h1>Dashboard Report</h1>
+<p class="meta">{$scope} &nbsp;·&nbsp; Generated {$date}</p>
+{$sections}
+</body>
+</html>
+HTML;
+
+        return response()->streamDownload(function () use ($html) {
+            echo $html;
+        }, "{$name}.html", [
+            'Content-Type'        => 'text/html; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$name}.html\"",
+            'X-Export-Note'       => 'Open in browser and use Print > Save as PDF',
+        ]);
+    }
+
     private function reportTitle(string $type): string
     {
         return match ($type) {
@@ -201,7 +390,6 @@ class ReportExportController extends Controller
     {
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
-            // UTF-8 BOM so Excel opens it correctly
             fwrite($out, "\xEF\xBB\xBF");
             foreach ($rows as $row) {
                 fputcsv($out, array_map('strval', $row));
@@ -215,7 +403,6 @@ class ReportExportController extends Controller
 
     private function xlsx(array $rows, string $title, string $name): StreamedResponse
     {
-        // Pure-PHP XLSX writer — no external dependency required.
         $xml = $this->buildXlsx($rows, $title);
 
         return response()->streamDownload(function () use ($xml) {
@@ -233,56 +420,76 @@ class ReportExportController extends Controller
         return response()->streamDownload(function () use ($html) {
             echo $html;
         }, "{$name}.html", [
-            // Deliver as an HTML file the browser can print-to-PDF.
-            // This avoids any server-side PDF library dependency.
             'Content-Type'        => 'text/html; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$name}.html\"",
             'X-Export-Note'       => 'Open in browser and use Print > Save as PDF',
         ]);
     }
 
-    // ── XLSX builder (no external lib) ───────────────────────────────────────
+    // ── XLSX builder (single sheet) ──────────────────────────────────────────
 
     private function buildXlsx(array $rows, string $sheetName): string
     {
-        // Collect unique shared strings
-        $strings = [];
-        $strIndex = [];
-        $cellRows = [];
+        return $this->buildMultiSheetXlsx([$sheetName => $rows]);
+    }
 
-        foreach ($rows as $ri => $row) {
-            $cellRow = [];
-            foreach ($row as $ci => $val) {
-                $col = $this->xlsxColLetter($ci);
-                $ref = $col . ($ri + 1);
-                if ($val === '' || $val === null) {
-                    $cellRow[] = "<c r=\"{$ref}\"/>"; continue;
-                }
-                if (is_numeric($val) && !str_starts_with((string)$val, '0')) {
-                    $cellRow[] = "<c r=\"{$ref}\" t=\"n\"><v>{$val}</v></c>";
-                } else {
-                    $s = (string)$val;
-                    if (!isset($strIndex[$s])) {
-                        $strIndex[$s] = count($strings);
-                        $strings[] = htmlspecialchars($s, ENT_XML1);
+    // ── XLSX builder (multi-sheet) ───────────────────────────────────────────
+
+    private function buildMultiSheetXlsx(array $sheets): string
+    {
+        $strings   = [];
+        $strIndex  = [];
+        $sheetXmls = [];
+        $sheetNames = array_keys($sheets);
+
+        foreach ($sheets as $sheetName => $rows) {
+            $cellRows = [];
+            foreach ($rows as $ri => $row) {
+                $cellRow = [];
+                foreach ($row as $ci => $val) {
+                    $col = $this->xlsxColLetter($ci);
+                    $ref = $col . ($ri + 1);
+                    if ($val === '' || $val === null) {
+                        $cellRow[] = "<c r=\"{$ref}\"/>"; continue;
                     }
-                    $idx = $strIndex[$s];
-                    $cellRow[] = "<c r=\"{$ref}\" t=\"s\"><v>{$idx}</v></c>";
+                    if (is_numeric($val) && !str_starts_with((string)$val, '0')) {
+                        $cellRow[] = "<c r=\"{$ref}\" t=\"n\"><v>{$val}</v></c>";
+                    } else {
+                        $s = (string)$val;
+                        if (!isset($strIndex[$s])) {
+                            $strIndex[$s] = count($strings);
+                            $strings[] = htmlspecialchars($s, ENT_XML1);
+                        }
+                        $idx = $strIndex[$s];
+                        $cellRow[] = "<c r=\"{$ref}\" t=\"s\"><v>{$idx}</v></c>";
+                    }
                 }
+                $rNum = $ri + 1;
+                $cellRows[] = '<row r="' . $rNum . '">' . implode('', $cellRow) . '</row>';
             }
-            $rNum = $ri + 1;
-            $cellRows[] = '<row r="' . $rNum . '">' . implode('', $cellRow) . '</row>';
+            $sheetXmls[$sheetName] = implode('', $cellRows);
         }
 
         $sharedStrings = implode('', array_map(fn($s) => "<si><t>{$s}</t></si>", $strings));
         $ssCount = count($strings);
-        $sheetData = implode('', $cellRows);
-        $safeSheet = htmlspecialchars($sheetName, ENT_XML1);
 
-        // Build ZIP in-memory
         $tmp = tempnam(sys_get_temp_dir(), 'xlsx');
         $zip = new \ZipArchive();
         $zip->open($tmp, \ZipArchive::OVERWRITE);
+
+        // Build sheet entries
+        $sheetEntries  = '';
+        $sheetRels     = '';
+        $overrides     = '';
+        $i = 1;
+        foreach ($sheetNames as $name) {
+            $safe = htmlspecialchars($name, ENT_XML1);
+            $sheetEntries .= "<sheet name=\"{$safe}\" sheetId=\"{$i}\" r:id=\"rId{$i}\"/>";
+            $sheetRels    .= "<Relationship Id=\"rId{$i}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet{$i}.xml\"/>";
+            $overrides    .= "<Override PartName=\"/xl/worksheets/sheet{$i}.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>";
+            $i++;
+        }
+        $ssRel = "<Relationship Id=\"rId{$i}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings\" Target=\"sharedStrings.xml\"/>";
 
         $zip->addFromString('[Content_Types].xml',
             '<?xml version="1.0" encoding="UTF-8"?>' .
@@ -290,8 +497,8 @@ class ReportExportController extends Controller
             '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' .
             '<Default Extension="xml" ContentType="application/xml"/>' .
             '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' .
-            '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' .
             '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>' .
+            $overrides .
             '</Types>');
 
         $zip->addFromString('_rels/.rels',
@@ -303,25 +510,28 @@ class ReportExportController extends Controller
         $zip->addFromString('xl/_rels/workbook.xml.rels',
             '<?xml version="1.0" encoding="UTF-8"?>' .
             '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' .
-            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' .
-            '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>' .
+            $sheetRels . $ssRel .
             '</Relationships>');
 
         $zip->addFromString('xl/workbook.xml',
             '<?xml version="1.0" encoding="UTF-8"?>' .
             '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' .
-            '<sheets><sheet name="' . $safeSheet . '" sheetId="1" r:id="rId1"/></sheets>' .
+            "<sheets>{$sheetEntries}</sheets>" .
             '</workbook>');
 
         $zip->addFromString('xl/sharedStrings.xml',
             '<?xml version="1.0" encoding="UTF-8"?>' .
             "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"{$ssCount}\" uniqueCount=\"{$ssCount}\">{$sharedStrings}</sst>");
 
-        $zip->addFromString('xl/worksheets/sheet1.xml',
-            '<?xml version="1.0" encoding="UTF-8"?>' .
-            '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' .
-            "<sheetData>{$sheetData}</sheetData>" .
-            '</worksheet>');
+        $sheetIdx = 1;
+        foreach ($sheetXmls as $sheetData) {
+            $zip->addFromString("xl/worksheets/sheet{$sheetIdx}.xml",
+                '<?xml version="1.0" encoding="UTF-8"?>' .
+                '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' .
+                "<sheetData>{$sheetData}</sheetData>" .
+                '</worksheet>');
+            $sheetIdx++;
+        }
 
         $zip->close();
         $content = file_get_contents($tmp);

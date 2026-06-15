@@ -40,12 +40,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('reports', [ReportController::class, 'globalIndex'])->name('reports.global');
     Route::post('reports/cross-project', [ReportController::class, 'cross'])
         ->name('reports.cross');
+
+    // Global dashboard export (no project context)
+    Route::get('reports/dashboard/export', [ReportExportController::class, 'exportDashboard'])
+        ->name('reports.dashboard.export');
+
     Route::get('projects/{project}/reports', [ReportController::class, 'index'])
         ->name('projects.reports.index');
     Route::get('projects/{project}/reports/{type}', [ReportController::class, 'show'])
         ->name('projects.reports.show');
     Route::get('projects/{project}/reports/{type}/export', [ReportExportController::class, 'export'])
         ->name('projects.reports.export');
+
+    // Per-project dashboard export
+    Route::get('projects/{project}/reports/dashboard/export', [ReportExportController::class, 'exportDashboard'])
+        ->name('projects.reports.dashboard.export');
 
     // Project Settings (separate controller, scoped under a project)
     Route::get('projects/{project}/settings', [ProjectSettingsController::class, 'show'])
