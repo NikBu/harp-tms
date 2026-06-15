@@ -1,9 +1,15 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useTrans } from '@/hooks/use-trans';
-import { index as projectsIndex } from '@/routes/projects';
 
 // ── Type definitions ───────────────────────────────────────────────────────────
 
@@ -400,6 +406,39 @@ function WorkloadReport({ data }: { data: WorkloadData }) {
     );
 }
 
+// ── Export dropdown ───────────────────────────────────────────────────────────
+
+function ExportMenu({ projectId, type }: { projectId: number; type: string }) {
+    const t = useTrans();
+    const base = `/projects/${projectId}/reports/${type}/export`;
+
+    const formats = [
+        { fmt: 'csv',  label: t('app.reports.export.csv') },
+        { fmt: 'xlsx', label: t('app.reports.export.xlsx') },
+        { fmt: 'pdf',  label: t('app.reports.export.pdf') },
+    ];
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                    <Download className="mr-1.5 size-4" />
+                    {t('app.reports.export.button')}
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                {formats.map(({ fmt, label }) => (
+                    <DropdownMenuItem key={fmt} asChild>
+                        <a href={`${base}?format=${fmt}`} download>
+                            {label}
+                        </a>
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ReportsShow({
@@ -440,20 +479,26 @@ export default function ReportsShow({
         <>
             <Head title={t(`app.reports.types.${type}.name`)} />
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
-                <div className="grid gap-1">
-                    <h1 className="text-2xl font-semibold">
-                        {t(`app.reports.types.${type}.name`)}
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                        {project.name} · {t(`app.reports.types.${type}.desc`)}
-                    </p>
+                {/* Header row: title + export */}
+                <div className="flex items-start justify-between gap-4">
+                    <div className="grid gap-1">
+                        <h1 className="text-2xl font-semibold">
+                            {t(`app.reports.types.${type}.name`)}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            {project.name} · {t(`app.reports.types.${type}.desc`)}
+                        </p>
+                    </div>
+                    {data && <ExportMenu projectId={project.id} type={type} />}
                 </div>
+
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">{t('app.reports.summary')}</CardTitle>
                     </CardHeader>
                     <CardContent>{renderReport()}</CardContent>
                 </Card>
+
                 <div>
                     <Button variant="outline" size="sm" asChild>
                         <Link href={`/projects/${project.id}/reports`}>
@@ -467,6 +512,14 @@ export default function ReportsShow({
     );
 }
 
-ReportsShow.layout = {
-    breadcrumbs: [{ title: 'Projects', href: projectsIndex() }],
+ReportsShow.layout = (page: React.ReactNode & { props: { project: { id: number; name: string }; type: string } }) => {
+    const { project, type } = page.props;
+    return {
+        breadcrumbs: [
+            { title: 'Projects',                href: '/projects' },
+            { title: project.name,              href: `/projects/${project.id}` },
+            { title: 'Reports',                 href: `/projects/${project.id}/reports` },
+            { title: type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) },
+        ],
+    };
 };

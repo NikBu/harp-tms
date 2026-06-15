@@ -23,7 +23,6 @@ import {
     type DashboardData,
 } from '@/components/reports/report-dashboard';
 import { useTrans } from '@/hooks/use-trans';
-import { index as projectsIndex } from '@/routes/projects';
 
 interface ReportType {
     key: string;
@@ -95,8 +94,9 @@ export default function ReportsIndex({
         </div>
     );
 
-    // For cross-project tab, show all projects (global) or all accessible (project context)
-    const crossProjects = isGlobal ? (projects ?? []) : (projects ?? []);
+    // Always use the projects prop for the cross-project panel —
+    // the controller now passes projects in both global and per-project context.
+    const crossProjects = projects ?? [];
 
     const crossPanel = (
         <Card>
@@ -218,6 +218,16 @@ export default function ReportsIndex({
     );
 }
 
-ReportsIndex.layout = {
-    breadcrumbs: [{ title: 'Projects', href: projectsIndex() }],
+ReportsIndex.layout = (page: React.ReactNode & { props: { project: { id: number; name: string } | null; isGlobal: boolean } }) => {
+    const { project, isGlobal } = page.props;
+    if (isGlobal || !project) {
+        return { breadcrumbs: [{ title: 'Reports' }] };
+    }
+    return {
+        breadcrumbs: [
+            { title: 'Projects', href: '/projects' },
+            { title: project.name, href: `/projects/${project.id}` },
+            { title: 'Reports' },
+        ],
+    };
 };

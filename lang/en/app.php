@@ -258,16 +258,12 @@ return [
             'add_section' => 'Add Section',
             'add_subsection' => 'Add Subsection',
             'assign_to' => 'Assign To',
-            // 'edit_selected' => 'Edit',
-            // 'delete_selected' => 'Delete',
             'columns' => 'Columns',
             'visible_columns' => 'Visible Columns',
             'select_cases_first' => 'Select one or more cases first.',
             'bulk_edit_not_implemented' => 'Bulk edit is not yet implemented.',
             'assign_not_implemented' => 'Assign is not yet implemented.',
             'delete_confirm' => 'Delete :count selected case(s)?',
-
-
             'export' => 'Export',
             'edit_selected' => 'Edit Selected',
             'delete_selected' => 'Delete Selected',
@@ -337,8 +333,6 @@ return [
             'elapsed' => 'Elapsed',
             'version' => 'Version',
             'submit' => 'Submit Result',
-
-
             'defect_url' => 'Defect URL',
             'defect' => 'Defect',
         ],
@@ -377,8 +371,6 @@ return [
             'select_untested' => 'Select untested',
             'submit' => 'Save :count results',
         ],
-
-
     ],
     'plans' => [
         'title' => 'Test Plans',
@@ -562,6 +554,12 @@ return [
             'report_type' => 'Report Type',
             'run' => 'Run Report',
         ],
+        'export' => [
+            'button' => 'Export',
+            'csv'  => 'Export as CSV',
+            'xlsx' => 'Export as XLSX',
+            'pdf'  => 'Export as PDF',
+        ],
         'dashboard' => [
             'run_summary' => 'Test Run Summary',
             'status_distribution' => 'Status Distribution',
@@ -593,7 +591,7 @@ return [
             'results_logged' => 'Results Logged',
             'no_workload' => 'No assignments or results yet.',
         ],
-          'activity' => [
+        'activity' => [
             'new_cases' => 'New Cases',
             'updated_cases' => 'Updated Cases',
             'new_results' => 'Results Logged',
@@ -630,10 +628,10 @@ return [
                 'name' => 'Result Coverage',
                 'desc' => 'Pass, fail, and untested breakdown for the latest runs.',
             ],
-                 'case_distribution' => [
+            'case_distribution' => [
                 'name' => 'Case Distribution',
                 'desc' => 'Distribution of test cases by priority, template, and section.',
-                 ],
+            ],
             'defect_summary' => [
                 'name' => 'Defect Summary',
                 'desc' => 'Overview of defects raised during testing.',
@@ -642,10 +640,10 @@ return [
                 'name' => 'Milestone Progress',
                 'desc' => 'Completion progress across milestones.',
             ],
-                 'workload' => [
+            'workload' => [
                 'name' => 'Workload',
                 'desc' => 'Per-member assignment and result contribution breakdown.',
-                 ],
+            ],
         ],
     ],
     'todo' => [
@@ -738,4 +736,3 @@ return [
         'author' => 'Burkov Nikita',
     ],
 ];
-
