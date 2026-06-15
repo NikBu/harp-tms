@@ -474,12 +474,6 @@ export default function ReportsShow({
         }
     }
 
-    // Human-readable report name derived from the type slug
-    const reportName = type
-        .split('_')
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
-
     return (
         <>
             <Head title={t(`app.reports.types.${type}.name`)} />
@@ -517,19 +511,9 @@ export default function ReportsShow({
     );
 }
 
-ReportsShow.layout = (page: React.ReactElement & { props: { project: { id: number; name: string }; type: string } }) => {
-    const { project, type } = page.props;
-    // Build a readable label from the snake_case type slug
-    const typeLabel = type
-        .split('_')
-        .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
-    return {
-        breadcrumbs: [
-            { title: 'Projects',   href: '/projects' },
-            { title: project.name, href: `/projects/${project.id}` },
-            { title: 'Reports',    href: `/projects/${project.id}/reports` },
-            { title: typeLabel },
-        ],
-    };
+ReportsShow.layout = {
+    breadcrumbs: [
+        { title: 'Projects', href: '/projects' },
+        { title: 'Reports' },
+    ],
 };

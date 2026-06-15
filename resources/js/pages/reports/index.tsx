@@ -164,15 +164,6 @@ export default function ReportsIndex({
         </Card>
     );
 
-    // Breadcrumbs
-    const breadcrumbs = project
-        ? [
-              { title: t('app.navigation.projects'), href: projectsIndex() },
-              { title: project.name, href: `/projects/${project.id}` },
-              { title: t('app.navigation.reports') },
-          ]
-        : [{ title: t('app.navigation.reports') }];
-
     return (
         <>
             <Head title={t('app.reports.title')} />
@@ -228,15 +219,8 @@ export default function ReportsIndex({
     );
 }
 
-ReportsIndex.layout = (page: React.ReactElement & { props: { project: { id: number; name: string } | null } }) => {
-    const { project } = page.props;
-    return {
-        breadcrumbs: project
-            ? [
-                  { title: 'Projects', href: '/projects' },
-                  { title: project.name, href: `/projects/${project.id}` },
-                  { title: 'Reports' },
-              ]
-            : [{ title: 'Reports' }],
-    };
+ReportsIndex.layout = {
+    breadcrumbs: [
+        { title: 'Reports', href: '/reports' },
+    ],
 };
