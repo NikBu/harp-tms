@@ -9,6 +9,7 @@ use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectSettingsController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\RequirementController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\SuiteController;
@@ -43,7 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('projects.reports.index');
     Route::get('projects/{project}/reports/{type}', [ReportController::class, 'show'])
         ->name('projects.reports.show');
-    Route::get('projects/{project}/reports/{type}/export', [ReportController::class, 'export'])
+    Route::get('projects/{project}/reports/{type}/export', [ReportExportController::class, 'export'])
         ->name('projects.reports.export');
 
     // Project Settings (separate controller, scoped under a project)

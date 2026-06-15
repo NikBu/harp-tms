@@ -23,6 +23,7 @@ import {
     type DashboardData,
 } from '@/components/reports/report-dashboard';
 import { useTrans } from '@/hooks/use-trans';
+import { index as projectsIndex } from '@/routes/projects';
 
 interface ReportType {
     key: string;
@@ -94,8 +95,8 @@ export default function ReportsIndex({
         </div>
     );
 
-    // Always use the projects prop for the cross-project panel —
-    // the controller now passes projects in both global and per-project context.
+    // Always pass the full projects list; the controller now populates it on
+    // both project-specific and global pages.
     const crossProjects = projects ?? [];
 
     const crossPanel = (
@@ -163,6 +164,15 @@ export default function ReportsIndex({
         </Card>
     );
 
+    // Breadcrumbs
+    const breadcrumbs = project
+        ? [
+              { title: t('app.navigation.projects'), href: projectsIndex() },
+              { title: project.name, href: `/projects/${project.id}` },
+              { title: t('app.navigation.reports') },
+          ]
+        : [{ title: t('app.navigation.reports') }];
+
     return (
         <>
             <Head title={t('app.reports.title')} />
@@ -218,16 +228,15 @@ export default function ReportsIndex({
     );
 }
 
-ReportsIndex.layout = (page: React.ReactNode & { props: { project: { id: number; name: string } | null; isGlobal: boolean } }) => {
-    const { project, isGlobal } = page.props;
-    if (isGlobal || !project) {
-        return { breadcrumbs: [{ title: 'Reports' }] };
-    }
+ReportsIndex.layout = (page: React.ReactElement & { props: { project: { id: number; name: string } | null } }) => {
+    const { project } = page.props;
     return {
-        breadcrumbs: [
-            { title: 'Projects', href: '/projects' },
-            { title: project.name, href: `/projects/${project.id}` },
-            { title: 'Reports' },
-        ],
+        breadcrumbs: project
+            ? [
+                  { title: 'Projects', href: '/projects' },
+                  { title: project.name, href: `/projects/${project.id}` },
+                  { title: 'Reports' },
+              ]
+            : [{ title: 'Reports' }],
     };
 };

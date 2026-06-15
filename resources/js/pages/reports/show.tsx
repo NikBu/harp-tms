@@ -1,6 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Download } from 'lucide-react';
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -475,6 +474,12 @@ export default function ReportsShow({
         }
     }
 
+    // Human-readable report name derived from the type slug
+    const reportName = type
+        .split('_')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+
     return (
         <>
             <Head title={t(`app.reports.types.${type}.name`)} />
@@ -512,14 +517,19 @@ export default function ReportsShow({
     );
 }
 
-ReportsShow.layout = (page: React.ReactNode & { props: { project: { id: number; name: string }; type: string } }) => {
+ReportsShow.layout = (page: React.ReactElement & { props: { project: { id: number; name: string }; type: string } }) => {
     const { project, type } = page.props;
+    // Build a readable label from the snake_case type slug
+    const typeLabel = type
+        .split('_')
+        .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
     return {
         breadcrumbs: [
-            { title: 'Projects',                href: '/projects' },
-            { title: project.name,              href: `/projects/${project.id}` },
-            { title: 'Reports',                 href: `/projects/${project.id}/reports` },
-            { title: type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) },
+            { title: 'Projects',   href: '/projects' },
+            { title: project.name, href: `/projects/${project.id}` },
+            { title: 'Reports',    href: `/projects/${project.id}/reports` },
+            { title: typeLabel },
         ],
     };
 };

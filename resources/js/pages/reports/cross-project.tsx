@@ -84,10 +84,10 @@ function DistributionTable({ rows }: { rows: [string, any][] }) {
                     <th className="px-3 py-2 text-left">{t('app.navigation.projects')}</th>
                     {PRIORITY_KEYS.map((k) => (
                         <th key={k} className={`px-3 py-2 text-right ${PRIORITY_COLORS[k]}`}>
-                            {t(`app.requirements.priorities.${k}`)}
+                            {t(`app.test_cases.priorities.${k}`)}
                         </th>
                     ))}
-                    <th className="px-3 py-2 text-right">{t('app.projects.stats.test_cases')}</th>
+                    <th className="px-3 py-2 text-right">{t('app.reports.distribution.total')}</th>
                 </tr>
             </thead>
             <tbody>
@@ -148,17 +148,21 @@ function WorkloadTable({ rows }: { rows: [string, any][] }) {
             </thead>
             <tbody>
                 {rows.map(([name, data]) => {
-                    const members = (data?.members ?? []) as any[];
-                    const avgPass = members.length > 0
-                        ? Math.round(members.reduce((s: number, m: any) => s + m.pass_rate, 0) / members.length)
+                    const members: any[] = data?.members ?? [];
+                    const avgPassRate = members.length > 0
+                        ? Math.round(members.reduce((s: number, m: any) => s + (m.pass_rate ?? 0), 0) / members.length)
                         : 0;
                     return (
                         <tr key={name} className="border-b border-border last:border-0">
                             <td className="px-3 py-2 font-medium">{name}</td>
                             <td className="px-3 py-2 text-right tabular-nums">{members.length}</td>
-                            <td className="px-3 py-2 text-right tabular-nums">{members.reduce((s: number, m: any) => s + m.assigned_cases, 0)}</td>
-                            <td className="px-3 py-2 text-right tabular-nums">{members.reduce((s: number, m: any) => s + m.results_logged, 0)}</td>
-                            <td className="px-3 py-2 text-right tabular-nums">{avgPass}%</td>
+                            <td className="px-3 py-2 text-right tabular-nums">
+                                {members.reduce((s: number, m: any) => s + (m.assigned_cases ?? 0), 0)}
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums">
+                                {members.reduce((s: number, m: any) => s + (m.results_logged ?? 0), 0)}
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums">{avgPassRate}%</td>
                         </tr>
                     );
                 })}
@@ -167,60 +171,61 @@ function WorkloadTable({ rows }: { rows: [string, any][] }) {
     );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Page ─────────────────────────────────────────────────────────────────────
 
-export default function ReportsCrossProject({
+export default function CrossProjectReport({
     results,
     type,
+    projects,
 }: {
     results: Record<string, any>;
     type: string;
     projects: { id: number; name: string }[];
 }) {
     const t = useTrans();
-    const rows = Object.entries(results);
+    const rows = Object.entries(results) as [string, any][];
 
     function renderTable() {
-        if (rows.length === 0) {
-            return (
-                <p className="py-6 text-center text-sm text-muted-foreground">
-                    {t('app.projects.empty_title')}
-                </p>
-            );
-        }
         switch (type) {
             case 'activity_summary':   return <ActivityTable rows={rows} />;
             case 'result_coverage':    return <CoverageTable rows={rows} />;
             case 'case_distribution':  return <DistributionTable rows={rows} />;
             case 'milestone_progress': return <MilestoneTable rows={rows} />;
             case 'workload':           return <WorkloadTable rows={rows} />;
-            default:
-                return (
-                    <p className="py-6 text-center text-sm text-muted-foreground">
-                        {t('app.reports.coming_soon')}
-                    </p>
-                );
+            default: return <p className="text-sm text-muted-foreground">{t('app.reports.coming_soon')}</p>;
         }
     }
+
+    const typeLabel = type
+        .split('_')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
 
     return (
         <>
             <Head title={t('app.reports.cross.title')} />
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="grid gap-1">
-                    <h1 className="text-2xl font-semibold">{t('app.reports.cross.title')}</h1>
+                    <h1 className="text-2xl font-semibold">
+                        {t('app.reports.cross.title')}
+                    </h1>
                     <p className="text-sm text-muted-foreground">
-                        {t(`app.reports.types.${type}.name`)}
+                        {typeLabel} · {projects.map((p) => p.name).join(', ')}
                     </p>
                 </div>
+
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">{t('app.reports.summary')}</CardTitle>
+                        <CardTitle className="text-base">{typeLabel}</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="overflow-x-auto">{renderTable()}</div>
+                    <CardContent className="overflow-x-auto">
+                        {rows.length === 0
+                            ? <p className="py-6 text-center text-sm text-muted-foreground">{t('app.projects.empty_title')}</p>
+                            : renderTable()
+                        }
                     </CardContent>
                 </Card>
+
                 <div>
                     <Button variant="outline" size="sm" asChild>
                         <Link href="/reports">
@@ -234,6 +239,9 @@ export default function ReportsCrossProject({
     );
 }
 
-ReportsCrossProject.layout = {
-    breadcrumbs: [{ title: 'Projects', href: projectsIndex() }],
+CrossProjectReport.layout = {
+    breadcrumbs: [
+        { title: 'Reports', href: '/reports' },
+        { title: 'Cross-Project' },
+    ],
 };
