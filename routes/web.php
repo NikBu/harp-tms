@@ -41,20 +41,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('reports/cross-project', [ReportController::class, 'cross'])
         ->name('reports.cross');
 
-    // Global dashboard export (no project context)
+    // Global dashboard export — must be before any wildcard report routes
     Route::get('reports/dashboard/export', [ReportExportController::class, 'exportDashboard'])
         ->name('reports.dashboard.export');
 
+    // Per-project routes — specific routes BEFORE the {type} wildcard
     Route::get('projects/{project}/reports', [ReportController::class, 'index'])
         ->name('projects.reports.index');
-    Route::get('projects/{project}/reports/{type}', [ReportController::class, 'show'])
-        ->name('projects.reports.show');
+
+    // Dashboard export — registered before {type} wildcard to avoid capture
+    Route::get('projects/{project}/reports/dashboard/export', [ReportExportController::class, 'exportDashboard'])
+        ->name('projects.reports.dashboard.export');
+
+    // Per-report type export — also before the show wildcard
     Route::get('projects/{project}/reports/{type}/export', [ReportExportController::class, 'export'])
         ->name('projects.reports.export');
 
-    // Per-project dashboard export
-    Route::get('projects/{project}/reports/dashboard/export', [ReportExportController::class, 'exportDashboard'])
-        ->name('projects.reports.dashboard.export');
+    // Wildcard show — last among report routes
+    Route::get('projects/{project}/reports/{type}', [ReportController::class, 'show'])
+        ->name('projects.reports.show');
 
     // Project Settings (separate controller, scoped under a project)
     Route::get('projects/{project}/settings', [ProjectSettingsController::class, 'show'])
