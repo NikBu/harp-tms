@@ -37,7 +37,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('todo', [TodoController::class, 'globalIndex'])->name('todo.global');
 
     Route::get('reports', [ReportController::class, 'globalIndex'])->name('reports.global');
-    Route::post('reports/cross-project', [ReportController::class, 'crossProject'])
+    Route::post('reports/cross-project', [ReportController::class, 'cross'])
         ->name('reports.cross');
     Route::get('projects/{project}/reports', [ReportController::class, 'index'])
         ->name('projects.reports.index');
