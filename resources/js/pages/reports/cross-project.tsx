@@ -189,11 +189,11 @@ export default function ReportsCrossProject({
             );
         }
         switch (type) {
-            case 'activity_summary':  return <ActivityTable rows={rows} />;
-            case 'result_coverage':   return <CoverageTable rows={rows} />;
-            case 'case_distribution': return <DistributionTable rows={rows} />;
-            case 'milestone_progress':return <MilestoneTable rows={rows} />;
-            case 'workload':          return <WorkloadTable rows={rows} />;
+            case 'activity_summary':   return <ActivityTable rows={rows} />;
+            case 'result_coverage':    return <CoverageTable rows={rows} />;
+            case 'case_distribution':  return <DistributionTable rows={rows} />;
+            case 'milestone_progress': return <MilestoneTable rows={rows} />;
+            case 'workload':           return <WorkloadTable rows={rows} />;
             default:
                 return (
                     <p className="py-6 text-center text-sm text-muted-foreground">
