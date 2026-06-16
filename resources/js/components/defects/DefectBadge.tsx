@@ -1,135 +1,157 @@
 import React, { useState } from 'react';
-import { router } from '@inertiajs/react';
-import { ExternalLink, RefreshCw, AlertCircle } from 'lucide-react';
+import axios from 'axios';
+import { ExternalLink, RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export interface DefectLink {
+export interface DefectLinkData {
     id: number;
     tracker_type: string;
     external_id: string;
     external_url: string;
-    title: string;
-    status: string;
-    cached_metadata?: Record<string, unknown>;
-    cache_refreshed_at?: string | null;
-}
-
-interface Props {
-    defect: DefectLink;
-    resultId: number;
-    readonly?: boolean;
-    onRefreshed?: (updated: DefectLink) => void;
-    onUnlinked?: (id: number) => void;
-    staleThresholdMinutes?: number;
+    title: string | null;
+    status: string | null;
+    cached_metadata: {
+        assignee?: string | null;
+        priority?: string | null;
+        labels?: string[] | null;
+    } | null;
+    cache_refreshed_at: string | null;
 }
 
 const TRACKER_LABELS: Record<string, string> = {
-    github: 'GH',
-    jira: 'Jira',
-    gitlab: 'GL',
-    youtrack: 'YT',
-    azure_devops: 'ADO',
-    bugzilla: 'BZ',
-    linear: 'Lin',
+    github:    'GH',
+    jira:      'J',
+    gitlab:    'GL',
+    youtrack:  'YT',
+    azure:     'ADO',
+    bugzilla:  'BZ',
 };
 
-function isStale(refreshedAt: string | null | undefined, thresholdMinutes: number): boolean {
+const STALE_MINUTES = 5;
+
+function isStale(refreshedAt: string | null): boolean {
     if (!refreshedAt) return true;
     const diff = (Date.now() - new Date(refreshedAt).getTime()) / 60_000;
-    return diff > thresholdMinutes;
+    return diff > STALE_MINUTES;
+}
+
+interface Props {
+    defect: DefectLinkData;
+    resultId: number;
+    onUnlinked?: (defectId: number) => void;
+    onRefreshed?: (defect: DefectLinkData) => void;
+    disabled?: boolean;
+    className?: string;
 }
 
 export function DefectBadge({
     defect,
     resultId,
-    readonly = false,
-    onRefreshed,
     onUnlinked,
-    staleThresholdMinutes = 5,
+    onRefreshed,
+    disabled = false,
+    className,
 }: Props) {
+    const [data, setData]         = useState<DefectLinkData>(defect);
     const [refreshing, setRefreshing] = useState(false);
-    const [unlinking, setUnlinking] = useState(false);
-    const stale = isStale(defect.cache_refreshed_at, staleThresholdMinutes);
-    const label = TRACKER_LABELS[defect.tracker_type] ?? defect.tracker_type;
+    const [unlinking, setUnlinking]   = useState(false);
 
-    function handleRefresh(e: React.MouseEvent) {
-        e.preventDefault();
+    const stale = isStale(data.cache_refreshed_at);
+    const label = TRACKER_LABELS[data.tracker_type] ?? data.tracker_type.toUpperCase();
+
+    async function handleRefresh(e: React.MouseEvent) {
+        e.stopPropagation();
+        if (refreshing) return;
         setRefreshing(true);
-        router.post(
-            route('defects.refresh', { result: resultId, defect: defect.id }),
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: (page) => {
-                    const updated = (page.props as Record<string, unknown>)['defect'] as DefectLink;
-                    if (updated) onRefreshed?.(updated);
-                },
-                onFinish: () => setRefreshing(false),
-            },
-        );
+        try {
+            const res = await axios.post(
+                route('defects.refresh', { result: resultId, defect: data.id }),
+            );
+            const updated = res.data as DefectLinkData;
+            setData(updated);
+            onRefreshed?.(updated);
+        } catch {
+            // silently fail — badge stays as-is
+        } finally {
+            setRefreshing(false);
+        }
     }
 
-    function handleUnlink(e: React.MouseEvent) {
-        e.preventDefault();
-        if (!confirm('Unlink this defect?')) return;
+    async function handleUnlink(e: React.MouseEvent) {
+        e.stopPropagation();
+        if (unlinking) return;
         setUnlinking(true);
-        router.delete(route('defects.destroy', { result: resultId, defect: defect.id }), {
-            preserveScroll: true,
-            onSuccess: () => onUnlinked?.(defect.id),
-            onFinish: () => setUnlinking(false),
-        });
+        try {
+            await axios.delete(
+                route('defects.destroy', { result: resultId, defect: data.id }),
+            );
+            onUnlinked?.(data.id);
+        } catch {
+            setUnlinking(false);
+        }
     }
 
     return (
         <span
             className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
-                'bg-surface border-border text-text transition-colors',
-                stale && 'border-warning/40 bg-warning-highlight/30',
+                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium',
+                'bg-destructive/10 border-destructive/20 text-destructive',
+                className,
             )}
         >
-            <span className="font-semibold text-text-muted">{label}</span>
+            {/* Tracker tag */}
+            <span className="font-bold opacity-70">{label}</span>
+
+            {/* Issue link */}
             <a
-                href={defect.external_url}
+                href={data.external_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:text-primary-hover flex items-center gap-1"
+                className="inline-flex items-center gap-0.5 hover:underline"
+                onClick={e => e.stopPropagation()}
+                title={data.title ?? data.external_id}
             >
-                {defect.external_id}
-                <ExternalLink className="h-3 w-3" />
+                {data.external_id}
+                <ExternalLink className="size-2.5 opacity-60" />
             </a>
-            <span className="text-text-muted">·</span>
-            <span className="text-text-muted">{defect.status}</span>
 
-            {stale && (
-                <span title="Metadata may be outdated">
-                    <AlertCircle className="h-3 w-3 text-warning" />
-                </span>
+            {/* Status */}
+            {data.status && (
+                <span className="opacity-60">· {data.status}</span>
             )}
 
-            {!readonly && (
-                <>
-                    <button
-                        type="button"
-                        onClick={handleRefresh}
-                        disabled={refreshing}
-                        className="text-text-faint hover:text-text ml-0.5 disabled:opacity-50"
-                        aria-label="Refresh defect status"
-                        title="Refresh status"
-                    >
-                        <RefreshCw className={cn('h-3 w-3', refreshing && 'animate-spin')} />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={handleUnlink}
-                        disabled={unlinking}
-                        className="text-text-faint hover:text-error ml-0.5 disabled:opacity-50"
-                        aria-label="Unlink defect"
-                        title="Unlink"
-                    >
-                        ×
-                    </button>
-                </>
+            {/* Stale indicator */}
+            {stale && !refreshing && (
+                <span
+                    className="size-1.5 rounded-full bg-yellow-400"
+                    title="Metadata may be outdated"
+                />
+            )}
+
+            {/* Refresh */}
+            {!disabled && (
+                <button
+                    type="button"
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    className="ml-0.5 opacity-50 hover:opacity-100 disabled:cursor-not-allowed"
+                    title="Refresh status"
+                >
+                    <RefreshCw className={cn('size-2.5', refreshing && 'animate-spin')} />
+                </button>
+            )}
+
+            {/* Unlink */}
+            {!disabled && (
+                <button
+                    type="button"
+                    onClick={handleUnlink}
+                    disabled={unlinking}
+                    className="opacity-50 hover:opacity-100 disabled:cursor-not-allowed"
+                    title="Unlink defect"
+                >
+                    <X className="size-2.5" />
+                </button>
             )}
         </span>
     );
