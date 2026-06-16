@@ -2,27 +2,23 @@
 
 namespace App\Services\Integrations;
 
-/**
- * Linear tracker driver — stub (Phase 1 UI only).
- *
- * Required credentials:  api_key  (Linear Personal API key)
- * Required config:       team_id
- */
 class LinearClient implements TrackerClient
 {
-    public function __construct(
-        private readonly string $apiKey = '',
-        private readonly string $teamId = '',
-    ) {}
+    public function __construct(array $credentials, array $config) {}
 
     public function testConnection(): array
     {
-        return ['ok' => false, 'message' => 'Linear integration is not yet implemented.'];
+        return ['ok' => false, 'message' => 'Linear integration coming soon.'];
     }
 
     public function findIssue(string $issueId): ?array
     {
         return null;
+    }
+
+    public function createIssue(array $data): array
+    {
+        throw new \RuntimeException('Linear integration coming soon.');
     }
 
     public function getProjectsList(): array

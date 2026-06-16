@@ -2,28 +2,23 @@
 
 namespace App\Services\Integrations;
 
-/**
- * Bugzilla tracker driver — stub (Phase 1 UI only).
- *
- * Required credentials:  api_key
- * Required config:       base_url, product
- */
 class BugzillaClient implements TrackerClient
 {
-    public function __construct(
-        private readonly string $baseUrl = '',
-        private readonly string $apiKey  = '',
-        private readonly string $product = '',
-    ) {}
+    public function __construct(array $credentials, array $config) {}
 
     public function testConnection(): array
     {
-        return ['ok' => false, 'message' => 'Bugzilla integration is not yet implemented.'];
+        return ['ok' => false, 'message' => 'Bugzilla integration coming soon.'];
     }
 
     public function findIssue(string $issueId): ?array
     {
         return null;
+    }
+
+    public function createIssue(array $data): array
+    {
+        throw new \RuntimeException('Bugzilla integration coming soon.');
     }
 
     public function getProjectsList(): array

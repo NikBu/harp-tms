@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AiController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DefectLinkController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MilestoneController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\TestCaseController;
 use App\Http\Controllers\TestPlanController;
 use App\Http\Controllers\TestRunController;
 use App\Http\Controllers\TodoController;
+use App\Models\Integration;
 use App\Models\Section;
 use App\Models\Suite;
 use App\Models\TestCase;
@@ -146,6 +148,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return $tree;
     })->name('api.suites.sections-with-cases');
 
+    // Defect lookup — live issue preview without persisting (used by DefectLinkInput)
+    Route::get('api/integrations/{integration}/issues/{issueId}', [DefectLinkController::class, 'lookup'])
+        ->name('api.defects.lookup')
+        ->whereString('issueId');
+
     // Test Runs
     Route::resource('projects.runs', TestRunController::class)
         ->shallow()
@@ -156,6 +163,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('runs.tests.results.store');
     Route::post('runs/{testRun}/bulk-results', [TestRunController::class, 'addResults'])
         ->name('runs.results.bulk');
+
+    // Defect links — nested under results
+    Route::post('results/{result}/defects', [DefectLinkController::class, 'store'])
+        ->name('defects.store');
+    Route::post('results/{result}/defects/create-in-tracker', [DefectLinkController::class, 'createInTracker'])
+        ->name('defects.create-in-tracker');
+    Route::delete('results/{result}/defects/{defect}', [DefectLinkController::class, 'destroy'])
+        ->name('defects.destroy');
+    Route::post('results/{result}/defects/{defect}/refresh', [DefectLinkController::class, 'refresh'])
+        ->name('defects.refresh');
 
     // Milestones
     Route::resource('projects.milestones', MilestoneController::class)

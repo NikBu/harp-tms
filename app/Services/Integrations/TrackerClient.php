@@ -9,7 +9,6 @@ interface TrackerClient
 {
     /**
      * Verify that the stored credentials are valid and the tracker is reachable.
-     * Returns an array with at minimum a 'ok' bool key.
      *
      * @return array{ok: bool, message?: string}
      */
@@ -22,6 +21,15 @@ interface TrackerClient
      * @return array{id: string, title: string, status: string, url: string, assignee?: string|null, priority?: string|null}|null
      */
     public function findIssue(string $issueId): ?array;
+
+    /**
+     * Create a new issue in the tracker.
+     * Returns the same shape as findIssue() so the result can be immediately cached.
+     *
+     * @param  array{title: string, description?: string, priority?: string|null}  $data
+     * @return array{id: string, title: string, status: string, url: string, assignee?: string|null, priority?: string|null}
+     */
+    public function createIssue(array $data): array;
 
     /**
      * Return a list of projects/repositories that the credential can access.

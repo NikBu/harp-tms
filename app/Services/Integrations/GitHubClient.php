@@ -2,56 +2,47 @@
 
 namespace App\Services\Integrations;
 
-use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
-/**
- * GitHub Issues tracker driver.
- *
- * Required credentials:  token  (Personal Access Token or fine-grained PAT)
- * Required config:       owner  (org or user login)
- *                        repo   (repository slug)   — optional for testConnection
- */
 class GitHubClient implements TrackerClient
 {
-    private const BASE = 'https://api.github.com';
+    private string $token;
+    private string $owner;
+    private string $repo;
 
-    public function __construct(
-        private readonly string $token,
-        private readonly string $owner = '',
-        private readonly string $repo  = '',
-    ) {}
+    public function __construct(array $credentials, array $config)
+    {
+        $this->token = $credentials['token'] ?? '';
 
-    // ── TrackerClient ─────────────────────────────────────────────────────────
+        // project_key is expected as "owner/repo"
+        $parts       = explode('/', $config['project_key'] ?? '/');
+        $this->owner = $parts[0] ?? '';
+        $this->repo  = $parts[1] ?? '';
+    }
 
     public function testConnection(): array
     {
         try {
-            $response = $this->http()->get('/user');
+            $response = $this->http()->get('user');
 
             if ($response->successful()) {
-                return ['ok' => true, 'message' => 'Connected as ' . ($response->json('login') ?? '(unknown)')];
+                return ['ok' => true, 'message' => $response->json('login')];
             }
 
-            return ['ok' => false, 'message' => $response->json('message') ?? 'Authentication failed'];
-        } catch (ConnectionException $e) {
-            return ['ok' => false, 'message' => 'Could not reach GitHub: ' . $e->getMessage()];
+            return ['ok' => false, 'message' => $response->json('message', 'Unauthorized')];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'message' => $e->getMessage()];
         }
     }
 
     public function findIssue(string $issueId): ?array
     {
-        if (! $this->owner || ! $this->repo) {
-            return null;
-        }
-
-        // GitHub issue IDs are numeric; strip any leading # if present
-        $number = ltrim($issueId, '#');
-
         try {
-            $response = $this->http()->get("/repos/{$this->owner}/{$this->repo}/issues/{$number}");
+            $number   = ltrim($issueId, '#');
+            $response = $this->http()->get("repos/{$this->owner}/{$this->repo}/issues/{$number}");
 
-            if (! $response->successful()) {
+            if ($response->status() === 404) {
                 return null;
             }
 
@@ -59,49 +50,75 @@ class GitHubClient implements TrackerClient
 
             return [
                 'id'       => (string) $data['number'],
-                'title'    => $data['title'] ?? '',
-                'status'   => $data['state'] ?? 'unknown',
-                'url'      => $data['html_url'] ?? '',
+                'title'    => $data['title'],
+                'status'   => $data['state'],
+                'url'      => $data['html_url'],
                 'assignee' => $data['assignee']['login'] ?? null,
-                'priority' => null, // GitHub has no native priority field
+                'priority' => $this->labelPriority($data['labels'] ?? []),
             ];
-        } catch (ConnectionException) {
+        } catch (\Throwable) {
             return null;
         }
+    }
+
+    public function createIssue(array $data): array
+    {
+        $response = $this->http()->post("repos/{$this->owner}/{$this->repo}/issues", [
+            'title' => $data['title'],
+            'body'  => $data['description'] ?? '',
+            'labels' => array_filter([$data['priority'] ?? null]),
+        ]);
+
+        $response->throw();
+        $issue = $response->json();
+
+        return [
+            'id'       => (string) $issue['number'],
+            'title'    => $issue['title'],
+            'status'   => $issue['state'],
+            'url'      => $issue['html_url'],
+            'assignee' => $issue['assignee']['login'] ?? null,
+            'priority' => $data['priority'] ?? null,
+        ];
     }
 
     public function getProjectsList(): array
     {
         try {
-            // Return repos accessible by the token (first page, 50 items)
-            $response = $this->http()->get('/user/repos', [
-                'per_page' => 50,
+            $response = $this->http()->get('user/repos', [
+                'per_page' => 100,
                 'sort'     => 'updated',
             ]);
 
-            if (! $response->successful()) {
-                return [];
-            }
-
-            return collect($response->json())
-                ->map(fn (array $r) => [
-                    'id'   => (string) $r['id'],
-                    'key'  => $r['full_name'],
-                    'name' => $r['full_name'],
-                ])
-                ->values()
-                ->all();
-        } catch (ConnectionException) {
+            return collect($response->json())->map(fn ($r) => [
+                'id'   => (string) $r['id'],
+                'key'  => $r['full_name'],
+                'name' => $r['full_name'],
+            ])->values()->all();
+        } catch (\Throwable) {
             return [];
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private function http(): \Illuminate\Http\Client\PendingRequest
+    private function http(): PendingRequest
     {
         return Http::withToken($this->token)
-            ->withHeaders(['Accept' => 'application/vnd.github+json', 'X-GitHub-Api-Version' => '2022-11-28'])
-            ->baseUrl(self::BASE);
+            ->baseUrl('https://api.github.com/')
+            ->withHeaders(['Accept' => 'application/vnd.github+json', 'X-GitHub-Api-Version' => '2022-11-28']);
+    }
+
+    /** @param list<array{name: string}> $labels */
+    private function labelPriority(array $labels): ?string
+    {
+        $map = ['critical', 'high', 'medium', 'low', 'priority: critical', 'priority: high', 'priority: medium', 'priority: low'];
+        foreach ($labels as $label) {
+            $name = strtolower($label['name'] ?? '');
+            foreach ($map as $p) {
+                if (str_contains($name, $p)) {
+                    return $name;
+                }
+            }
+        }
+        return null;
     }
 }
