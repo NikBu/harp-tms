@@ -154,7 +154,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('runs/{testRun}/reopen', [TestRunController::class, 'reopen'])->name('runs.reopen');
     Route::post('runs/{testRun}/tests/{test}/results', [TestRunController::class, 'addResult'])
         ->name('runs.tests.results.store');
-    Route::post('bulk-results', [TestRunController::class, 'addResults'])->name('runs.results.bulk');
+    Route::post('runs/{testRun}/bulk-results', [TestRunController::class, 'addResults'])
+        ->name('runs.results.bulk');
 
     // Milestones
     Route::resource('projects.milestones', MilestoneController::class)
@@ -193,6 +194,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Integrations
     Route::get('projects/{project}/integrations', [IntegrationController::class, 'index'])
         ->name('integrations.index');
+    Route::post('projects/{project}/integrations', [IntegrationController::class, 'store'])
+        ->name('integrations.store');
+    Route::patch('projects/{project}/integrations/{integration}', [IntegrationController::class, 'update'])
+        ->name('integrations.update');
+    Route::delete('projects/{project}/integrations/{integration}', [IntegrationController::class, 'destroy'])
+        ->name('integrations.destroy');
+    Route::post('projects/{project}/integrations/{integration}/test', [IntegrationController::class, 'testConnection'])
+        ->name('integrations.test');
 
     // To-Do
     Route::get('projects/{project}/todo', [TodoController::class, 'index'])->name('todo.index');
