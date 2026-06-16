@@ -112,6 +112,7 @@ type ResultForm = {
 function ResultDialog({
     test,
     runId,
+    runIsCompleted,
     open,
     onClose,
     statuses,
@@ -119,6 +120,7 @@ function ResultDialog({
 }: {
     test: TestInstance;
     runId: number;
+    runIsCompleted: boolean;
     open: boolean;
     onClose: () => void;
     statuses: TestStatus[];
@@ -229,7 +231,7 @@ function ResultDialog({
                                         key={d.id}
                                         defect={d}
                                         resultId={test.latest_result!.id}
-                                        disabled={run_is_completed_placeholder}
+                                        disabled={runIsCompleted}
                                     />
                                 ))}
                             </div>
@@ -637,6 +639,7 @@ export default function RunsShow({
                 <ResultDialog
                     test={activeTest}
                     runId={run.id}
+                    runIsCompleted={run.is_completed}
                     open={activeTest !== null}
                     onClose={() => setActiveTest(null)}
                     statuses={statuses}
