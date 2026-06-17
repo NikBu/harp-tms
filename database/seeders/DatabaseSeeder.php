@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             // Uncomment to seed demo data for presentations
             // DemoSeeder::class,
             BetaGammaSeeder::class,
+            DefectSeeder::class,
         ]);
     }
 }
