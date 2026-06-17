@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\DefectLink;
 use App\Models\Project;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,6 +14,11 @@ class ProjectDefectsController extends Controller
      * Display all defect links for a project, aggregated across all test runs.
      *
      * GET /projects/{project}/defects
+     *
+     * Schema reality:
+     *   defect_links  → test_result_id → test_results.id
+     *   test_results  → run_id         → test_runs.id
+     *   test_results  → case_id        → test_cases.id   (direct FK, no need to go through tests)
      */
     public function index(Request $request, Project $project): Response
     {
@@ -35,17 +39,17 @@ class ProjectDefectsController extends Controller
                 'defect_links.status',
                 'defect_links.cache_refreshed_at',
                 'defect_links.test_result_id',
-            ])
-            ->join('test_results', 'test_results.id', '=', 'defect_links.test_result_id')
-            ->join('tests', 'tests.id', '=', 'test_results.test_id')
-            ->join('test_runs', 'test_runs.id', '=', 'test_results.run_id')
-            ->join('test_cases', 'test_cases.id', '=', 'tests.test_case_id')
-            ->where('test_runs.project_id', $project->id)
-            ->addSelect([
-                'test_runs.id as run_id',
+                // From test_results
+                'test_results.run_id',
+                // From test_runs
                 'test_runs.title as run_title',
+                // From test_cases (joined directly via test_results.case_id)
                 'test_cases.title as test_title',
             ])
+            ->join('test_results', 'test_results.id', '=', 'defect_links.test_result_id')
+            ->join('test_runs',    'test_runs.id',    '=', 'test_results.run_id')
+            ->join('test_cases',   'test_cases.id',   '=', 'test_results.case_id')
+            ->where('test_runs.project_id', $project->id)
             ->orderByDesc('defect_links.created_at')
             ->get()
             ->map(fn ($row) => [
