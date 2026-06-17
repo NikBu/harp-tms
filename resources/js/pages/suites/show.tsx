@@ -289,7 +289,7 @@ function DraggableCaseRow({
                     <button
                         type="button"
                         className="cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
-                        title={t('app.test_cases.toolbar.drag_hint')}
+                        title={t('test_cases.toolbar.drag_hint')}
                         {...attributes}
                         {...listeners}
                     >
@@ -317,7 +317,7 @@ function DraggableCaseRow({
                             className={`text-xs capitalize ${PRIORITY_COLORS[c.priority_id] ?? ''}`}
                         >
                             {t(
-                                `app.requirements.priorities.${PRIORITY_KEYS[c.priority_id]}`,
+                                `requirements.priorities.${PRIORITY_KEYS[c.priority_id]}`,
                             )}
                         </span>
                     ) : (
@@ -328,7 +328,7 @@ function DraggableCaseRow({
             {visibleCols.template && (
                 <td className="w-28 px-3 py-2 text-xs text-muted-foreground capitalize">
                     {t(
-                        `app.test_cases.templates.${TEMPLATE_KEYS[c.template] ?? 'steps'}`,
+                        `test_cases.templates.${TEMPLATE_KEYS[c.template] ?? 'steps'}`,
                     )}
                 </td>
             )}
@@ -343,7 +343,7 @@ function DraggableCaseRow({
                 </td>
             )}
             {visibleCols.references && (
-                <td className="w-32 max-w-[8rem] truncate px-3 py-2 text-xs text-muted-foreground">
+                <td className="w-32 max-w-32 truncate px-3 py-2 text-xs text-muted-foreground">
                     {c.references ?? '—'}
                 </td>
             )}
@@ -359,7 +359,7 @@ function DraggableCaseRow({
                         size="icon"
                         className="size-7"
                         asChild
-                        title={t('app.common.edit')}
+                        title={t('common.edit')}
                     >
                         <Link href={editCase.url(c.id)}>
                             <Pencil className="size-4" />
@@ -371,7 +371,7 @@ function DraggableCaseRow({
                         className="size-7"
                         disabled={copyingId === c.id}
                         onClick={() => onCopy(c.id)}
-                        title={t('app.test_cases.toolbar.copy')}
+                        title={t('test_cases.toolbar.copy')}
                     >
                         <Copy className="size-4" />
                     </Button>
@@ -465,7 +465,7 @@ function SectionRow({
                             variant="ghost"
                             size="icon"
                             onClick={() => onAddChild(section.id)}
-                            title={t('app.sections.add_subsection')}
+                            title={t('sections.add_subsection')}
                         >
                             <Plus className="size-4" />
                         </Button>
@@ -473,7 +473,7 @@ function SectionRow({
                             variant="ghost"
                             size="icon"
                             onClick={() => onEdit(section)}
-                            title={t('app.sections.edit')}
+                            title={t('sections.edit')}
                         >
                             <Pencil className="size-4" />
                         </Button>
@@ -481,7 +481,7 @@ function SectionRow({
                             variant="ghost"
                             size="icon"
                             onClick={() => onDelete(section)}
-                            title={t('app.common.delete')}
+                            title={t('common.delete')}
                         >
                             <Trash2 className="size-4" />
                         </Button>
@@ -502,45 +502,45 @@ function SectionRow({
                                 <tr className="border-b border-border bg-muted/50 text-left text-xs text-muted-foreground">
                                     <th className="w-10 px-3 py-2" />
                                     <th className="px-3 py-2 font-medium">
-                                        {t('app.test_cases.fields.title')}
+                                        {t('test_cases.fields.title')}
                                     </th>
                                     {visibleCols.priority && (
                                         <th className="w-28 px-3 py-2 font-medium">
                                             {t(
-                                                'app.test_cases.fields.priority',
+                                                'test_cases.fields.priority',
                                             )}
                                         </th>
                                     )}
                                     {visibleCols.template && (
                                         <th className="w-28 px-3 py-2 font-medium">
                                             {t(
-                                                'app.test_cases.fields.template',
+                                                'test_cases.fields.template',
                                             )}
                                         </th>
                                     )}
                                     {visibleCols.type && (
                                         <th className="w-32 px-3 py-2 font-medium">
-                                            {t('app.test_cases.fields.type')}
+                                            {t('test_cases.fields.type')}
                                         </th>
                                     )}
                                     {visibleCols.estimate && (
                                         <th className="w-24 px-3 py-2 font-medium">
                                             {t(
-                                                'app.test_cases.fields.estimate',
+                                                'test_cases.fields.estimate',
                                             )}
                                         </th>
                                     )}
                                     {visibleCols.references && (
                                         <th className="w-32 px-3 py-2 font-medium">
                                             {t(
-                                                'app.test_cases.fields.references',
+                                                'test_cases.fields.references',
                                             )}
                                         </th>
                                     )}
                                     {visibleCols.assigned_to && (
                                         <th className="w-32 px-3 py-2 font-medium">
                                             {t(
-                                                'app.test_cases.fields.assigned_to',
+                                                'test_cases.fields.assigned_to',
                                             )}
                                         </th>
                                     )}
@@ -563,7 +563,7 @@ function SectionRow({
                         </table>
                     ) : (
                         <p className="px-3 py-3 text-xs text-muted-foreground">
-                            {t('app.test_cases.empty_section')}
+                            {t('test_cases.empty_section')}
                         </p>
                     )}
                 </div>
@@ -765,7 +765,7 @@ export default function SuitesShow({
     }
 
     function deleteSection(section: Section) {
-        if (!window.confirm(t('app.common.confirm_delete'))) return;
+        if (!window.confirm(t('common.confirm_delete'))) return;
         router.delete(destroySection.url(section.id), { preserveScroll: true });
     }
 
@@ -845,7 +845,7 @@ export default function SuitesShow({
     function deleteSelected() {
         if (
             selectedIds.size === 0 ||
-            !window.confirm(t('app.common.confirm_delete'))
+            !window.confirm(t('common.confirm_delete'))
         )
             return;
         router.delete(bulkDestroy.url(), {
@@ -914,7 +914,7 @@ export default function SuitesShow({
                     <Button variant="outline" size="sm" asChild>
                         <Link href={`/suites/${suite.id}/edit`}>
                             <Pencil className="mr-1 size-4" />
-                            {t('app.common.edit')}
+                            {t('common.edit')}
                         </Link>
                     </Button>
                 </div>
@@ -926,7 +926,7 @@ export default function SuitesShow({
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm">
                                 <ArrowDownUp className="mr-1 size-4" />
-                                {t('app.test_cases.toolbar.sort_by')}
+                                {t('test_cases.toolbar.sort_by')}
                                 <ChevronDown className="ml-1 size-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -945,7 +945,7 @@ export default function SuitesShow({
                                     checked={sortField === field}
                                     onCheckedChange={() => setSortField(field)}
                                 >
-                                    {t(`app.test_cases.toolbar.sort_${field}`)}
+                                    {t(`test_cases.toolbar.sort_${field}`)}
                                 </DropdownMenuCheckboxItem>
                             ))}
                             <DropdownMenuSeparator />
@@ -967,7 +967,7 @@ export default function SuitesShow({
                     {/* Filter */}
                     <Button variant="outline" size="sm" onClick={openFilters}>
                         <Filter className="mr-1 size-4" />
-                        {t('app.test_cases.toolbar.filter')}
+                        {t('test_cases.toolbar.filter')}
                         {activeFilterCount > 0 && (
                             <Badge className="ml-1">{activeFilterCount}</Badge>
                         )}
@@ -981,8 +981,8 @@ export default function SuitesShow({
                     >
                         <User className="mr-1 size-4" />
                         {hideUnassigned
-                            ? t('app.test_cases.toolbar.show_all')
-                            : t('app.test_cases.toolbar.hide_unassigned')}
+                            ? t('test_cases.toolbar.show_all')
+                            : t('test_cases.toolbar.hide_unassigned')}
                     </Button>
 
                     {/* Collapse/expand */}
@@ -992,8 +992,8 @@ export default function SuitesShow({
                         onClick={toggleCollapseAll}
                     >
                         {allCollapsed
-                            ? t('app.test_cases.toolbar.expand_all')
-                            : t('app.test_cases.toolbar.collapse_all')}
+                            ? t('test_cases.toolbar.expand_all')
+                            : t('test_cases.toolbar.collapse_all')}
                     </Button>
 
                     <div className="ml-auto flex flex-wrap items-center gap-1">
@@ -1002,7 +1002,7 @@ export default function SuitesShow({
                             <DropdownMenuTrigger asChild>
                                 <Button variant="default" size="sm">
                                     <Plus className="mr-1 size-4" />
-                                    {t('app.test_cases.toolbar.add_case')}
+                                    {t('test_cases.toolbar.add_case')}
                                     <ChevronDown className="ml-1 size-4" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -1011,14 +1011,14 @@ export default function SuitesShow({
                                     <Link
                                         href={`/suites/${suite.id}/cases/create`}
                                     >
-                                        {t('app.test_cases.toolbar.add_case')}
+                                        {t('test_cases.toolbar.add_case')}
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     onSelect={() => openCreate(null)}
                                 >
-                                    {t('app.test_cases.toolbar.add_section')}
+                                    {t('test_cases.toolbar.add_section')}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -1032,7 +1032,7 @@ export default function SuitesShow({
                                     onClick={() => setBulkOpen(true)}
                                 >
                                     <Pencil className="mr-1 size-4" />
-                                    {t('app.test_cases.toolbar.edit_selected')}
+                                    {t('test_cases.toolbar.edit_selected')}
                                     <Badge variant="secondary" className="ml-1">
                                         {selectedIds.size}
                                     </Badge>
@@ -1045,9 +1045,9 @@ export default function SuitesShow({
                                 >
                                     <Copy className="mr-1 size-4" />
                                     {bulkCopying
-                                        ? t('app.test_cases.toolbar.copying')
+                                        ? t('test_cases.toolbar.copying')
                                         : t(
-                                              'app.test_cases.toolbar.copy_selected',
+                                              'test_cases.toolbar.copy_selected',
                                           )}
                                 </Button>
                                 <DropdownMenu>
@@ -1055,7 +1055,7 @@ export default function SuitesShow({
                                         <Button variant="outline" size="sm">
                                             <User className="mr-1 size-4" />
                                             {t(
-                                                'app.test_cases.toolbar.assign_to',
+                                                'test_cases.toolbar.assign_to',
                                             )}
                                             <ChevronDown className="ml-1 size-4" />
                                         </Button>
@@ -1066,14 +1066,14 @@ export default function SuitesShow({
                                     >
                                         <DropdownMenuLabel>
                                             {t(
-                                                'app.test_cases.toolbar.assign_to',
+                                                'test_cases.toolbar.assign_to',
                                             )}
                                         </DropdownMenuLabel>
                                         <DropdownMenuSeparator />
                                         {members.length === 0 ? (
                                             <DropdownMenuItem disabled>
                                                 {t(
-                                                    'app.test_cases.toolbar.no_members',
+                                                    'test_cases.toolbar.no_members',
                                                 )}
                                             </DropdownMenuItem>
                                         ) : (
@@ -1095,7 +1095,7 @@ export default function SuitesShow({
                                             }
                                         >
                                             {t(
-                                                'app.test_cases.toolbar.unassign',
+                                                'test_cases.toolbar.unassign',
                                             )}
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -1107,7 +1107,7 @@ export default function SuitesShow({
                                 >
                                     <Trash2 className="mr-1 size-4" />
                                     {t(
-                                        'app.test_cases.toolbar.delete_selected',
+                                        'test_cases.toolbar.delete_selected',
                                     )}
                                 </Button>
                             </>
@@ -1118,7 +1118,7 @@ export default function SuitesShow({
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
                                     <Download className="mr-1 size-4" />
-                                    {t('app.test_cases.toolbar.export')}
+                                    {t('test_cases.toolbar.export')}
                                     <ChevronDown className="ml-1 size-4" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -1137,14 +1137,14 @@ export default function SuitesShow({
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
                                     <Columns3 className="mr-1 size-4" />
-                                    {t('app.test_cases.toolbar.columns')}
+                                    {t('test_cases.toolbar.columns')}
                                     <ChevronDown className="ml-1 size-4" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>
                                     {t(
-                                        'app.test_cases.toolbar.visible_columns',
+                                        'test_cases.toolbar.visible_columns',
                                     )}
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
@@ -1159,7 +1159,7 @@ export default function SuitesShow({
                                             }))
                                         }
                                     >
-                                        {t(`app.test_cases.fields.${key}`)}
+                                        {t(`test_cases.fields.${key}`)}
                                     </DropdownMenuCheckboxItem>
                                 ))}
                             </DropdownMenuContent>
@@ -1177,11 +1177,11 @@ export default function SuitesShow({
                                     toggleSelectAll(checked === true)
                                 }
                                 disabled={allCases.length === 0}
-                                aria-label={t('app.common.select_all')}
+                                aria-label={t('common.select_all')}
                                 className="size-5 border-2 border-gray-400 dark:border-gray-500"
                             />
                             <h2 className="text-lg font-medium">
-                                {t('app.sections.title')}
+                                {t('sections.title')}
                             </h2>
                             <span className="text-sm text-muted-foreground">
                                 ({allCases.length})
@@ -1190,7 +1190,7 @@ export default function SuitesShow({
 
                         {sections.length === 0 ? (
                             <p className="py-4 text-sm text-muted-foreground">
-                                {t('app.sections.empty')}
+                                {t('sections.empty')}
                             </p>
                         ) : (
                             <DndContext
@@ -1230,7 +1230,7 @@ export default function SuitesShow({
                                 onClick={() => openCreate(null)}
                             >
                                 <Plus className="size-4" />
-                                {t('app.sections.add')}
+                                {t('sections.add')}
                             </Button>
                         </div>
                     </CardContent>
@@ -1249,13 +1249,13 @@ export default function SuitesShow({
                         <DialogHeader>
                             <DialogTitle>
                                 {dialog?.mode === 'edit'
-                                    ? t('app.sections.edit')
-                                    : t('app.sections.add')}
+                                    ? t('sections.edit')
+                                    : t('sections.add')}
                             </DialogTitle>
                         </DialogHeader>
                         <div className="grid gap-2">
                             <Label htmlFor="section-name">
-                                {t('app.sections.name')}
+                                {t('sections.name')}
                             </Label>
                             <Input
                                 id="section-name"
@@ -1270,10 +1270,10 @@ export default function SuitesShow({
                                 variant="outline"
                                 onClick={closeDialog}
                             >
-                                {t('app.common.cancel')}
+                                {t('common.cancel')}
                             </Button>
                             <Button type="submit">
-                                {t('app.common.save')}
+                                {t('common.save')}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1285,13 +1285,13 @@ export default function SuitesShow({
                 <SheetContent className="flex flex-col">
                     <SheetHeader>
                         <SheetTitle>
-                            {t('app.test_cases.filters.title')}
+                            {t('test_cases.filters.title')}
                         </SheetTitle>
                     </SheetHeader>
                     <div className="flex-1 space-y-6 overflow-y-auto px-4">
                         <div className="grid gap-2">
                             <Label>
-                                {t('app.test_cases.filters.priority')}
+                                {t('test_cases.filters.priority')}
                             </Label>
                             {PRIORITY_OPTIONS.map((p) => (
                                 <label
@@ -1307,14 +1307,14 @@ export default function SuitesShow({
                                         }
                                     />
                                     {t(
-                                        `app.requirements.priorities.${PRIORITY_KEYS[p]}`,
+                                        `requirements.priorities.${PRIORITY_KEYS[p]}`,
                                     )}
                                 </label>
                             ))}
                         </div>
                         <div className="grid gap-2">
                             <Label>
-                                {t('app.test_cases.filters.template')}
+                                {t('test_cases.filters.template')}
                             </Label>
                             {TEMPLATE_OPTIONS.map((tpl) => (
                                 <label
@@ -1330,13 +1330,13 @@ export default function SuitesShow({
                                         }
                                     />
                                     {t(
-                                        `app.test_cases.templates.${TEMPLATE_KEYS[tpl]}`,
+                                        `test_cases.templates.${TEMPLATE_KEYS[tpl]}`,
                                     )}
                                 </label>
                             ))}
                         </div>
                         <div className="grid gap-2">
-                            <Label>{t('app.test_cases.filters.section')}</Label>
+                            <Label>{t('test_cases.filters.section')}</Label>
                             <Select
                                 value={
                                     draftFilters.sectionId === null
@@ -1356,7 +1356,7 @@ export default function SuitesShow({
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">
-                                        {t('app.test_cases.filters.all')}
+                                        {t('test_cases.filters.all')}
                                     </SelectItem>
                                     {flatSections.map((s) => (
                                         <SelectItem
@@ -1371,7 +1371,7 @@ export default function SuitesShow({
                         </div>
                         <div className="grid gap-2">
                             <Label>
-                                {t('app.test_cases.filters.has_requirements')}
+                                {t('test_cases.filters.has_requirements')}
                             </Label>
                             <Select
                                 value={
@@ -1394,13 +1394,13 @@ export default function SuitesShow({
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">
-                                        {t('app.test_cases.filters.all')}
+                                        {t('test_cases.filters.all')}
                                     </SelectItem>
                                     <SelectItem value="yes">
-                                        {t('app.test_cases.filters.yes')}
+                                        {t('test_cases.filters.yes')}
                                     </SelectItem>
                                     <SelectItem value="no">
-                                        {t('app.test_cases.filters.no')}
+                                        {t('test_cases.filters.no')}
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
@@ -1412,10 +1412,10 @@ export default function SuitesShow({
                             className="flex-1"
                             onClick={clearFilters}
                         >
-                            {t('app.test_cases.filters.clear')}
+                            {t('test_cases.filters.clear')}
                         </Button>
                         <Button className="flex-1" onClick={applyFilters}>
-                            {t('app.test_cases.filters.apply')}
+                            {t('test_cases.filters.apply')}
                         </Button>
                     </SheetFooter>
                 </SheetContent>
@@ -1426,14 +1426,14 @@ export default function SuitesShow({
                 <SheetContent className="flex flex-col">
                     <SheetHeader>
                         <SheetTitle>
-                            {t('app.test_cases.bulk.title', {
+                            {t('test_cases.bulk.title', {
                                 count: String(selectedIds.size),
                             })}
                         </SheetTitle>
                     </SheetHeader>
                     <div className="flex-1 space-y-4 overflow-y-auto px-4">
                         <div className="grid gap-2">
-                            <Label>{t('app.test_cases.fields.priority')}</Label>
+                            <Label>{t('test_cases.fields.priority')}</Label>
                             <Select
                                 value={bulkPriority || 'keep'}
                                 onValueChange={(v) =>
@@ -1451,7 +1451,7 @@ export default function SuitesShow({
                                             value={PRIORITY_KEYS[p]}
                                         >
                                             {t(
-                                                `app.requirements.priorities.${PRIORITY_KEYS[p]}`,
+                                                `requirements.priorities.${PRIORITY_KEYS[p]}`,
                                             )}
                                         </SelectItem>
                                     ))}
@@ -1459,7 +1459,7 @@ export default function SuitesShow({
                             </Select>
                         </div>
                         <div className="grid gap-2">
-                            <Label>{t('app.test_cases.fields.section')}</Label>
+                            <Label>{t('test_cases.fields.section')}</Label>
                             <Select
                                 value={bulkSection || 'keep'}
                                 onValueChange={(v) =>
@@ -1483,14 +1483,14 @@ export default function SuitesShow({
                             </Select>
                         </div>
                         <div className="grid gap-2">
-                            <Label>{t('app.test_cases.fields.type')}</Label>
+                            <Label>{t('test_cases.fields.type')}</Label>
                             <Input
                                 value={bulkType}
                                 onChange={(e) => setBulkType(e.target.value)}
                             />
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {t('app.test_cases.bulk.note')}
+                            {t('test_cases.bulk.note')}
                         </p>
                     </div>
                     <SheetFooter className="flex-row gap-2">
@@ -1499,10 +1499,10 @@ export default function SuitesShow({
                             className="flex-1"
                             onClick={() => setBulkOpen(false)}
                         >
-                            {t('app.common.cancel')}
+                            {t('common.cancel')}
                         </Button>
                         <Button className="flex-1" onClick={submitBulkEdit}>
-                            {t('app.test_cases.bulk.apply', {
+                            {t('test_cases.bulk.apply', {
                                 count: String(selectedIds.size),
                             })}
                         </Button>

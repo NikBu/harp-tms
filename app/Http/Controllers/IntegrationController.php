@@ -105,7 +105,7 @@ class IntegrationController extends Controller
 
         $integration->save();
 
-        return back()->with('success', __('app.integrations.saved'));
+        return back()->with('success', __('integrations.saved'));
     }
 
     // ── Update ────────────────────────────────────────────────────────────────
@@ -131,7 +131,7 @@ class IntegrationController extends Controller
 
         $integration->save();
 
-        return back()->with('success', __('app.integrations.saved'));
+        return back()->with('success', __('integrations.saved'));
     }
 
     // ── Destroy ───────────────────────────────────────────────────────────────
@@ -143,7 +143,7 @@ class IntegrationController extends Controller
 
         $integration->delete();
 
-        return back()->with('success', __('app.integrations.deleted'));
+        return back()->with('success', __('integrations.deleted'));
     }
 
     // ── Test connection ───────────────────────────────────────────────────────

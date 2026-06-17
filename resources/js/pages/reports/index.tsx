@@ -111,16 +111,16 @@ export default function ReportsIndex({
                             <BarChart2 className="size-5 text-muted-foreground" />
                         </div>
                         <CardTitle className="text-base">
-                            {t(`app.reports.types.${report.key}.name`)}
+                            {t(`reports.types.${report.key}.name`)}
                         </CardTitle>
                         <CardDescription>
-                            {t(`app.reports.types.${report.key}.desc`)}
+                            {t(`reports.types.${report.key}.desc`)}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="mt-auto">
                         <Button variant="outline" size="sm" asChild>
                             <Link href={`/projects/${project.id}/reports/${report.key}`}>
-                                {t('app.reports.view')}
+                                {t('reports.view')}
                             </Link>
                         </Button>
                     </CardContent>
@@ -135,19 +135,19 @@ export default function ReportsIndex({
         <Card>
             <CardHeader>
                 <CardTitle className="text-base">
-                    {t('app.reports.cross.title')}
+                    {t('reports.cross.title')}
                 </CardTitle>
                 <CardDescription>
-                    {t('app.reports.cross.intro')}
+                    {t('reports.cross.intro')}
                 </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
                 <div className="grid gap-2">
-                    <Label>{t('app.reports.cross.projects')}</Label>
+                    <Label>{t('reports.cross.projects')}</Label>
                     <div className="grid max-h-56 gap-1 overflow-y-auto rounded-md border p-2">
                         {crossProjects.length === 0 ? (
                             <p className="px-1 py-2 text-sm text-muted-foreground">
-                                {t('app.projects.empty_title')}
+                                {t('projects.empty_title')}
                             </p>
                         ) : (
                             crossProjects.map((p) => (
@@ -169,7 +169,7 @@ export default function ReportsIndex({
                 </div>
 
                 <div className="grid gap-2 sm:max-w-xs">
-                    <Label>{t('app.reports.cross.report_type')}</Label>
+                    <Label>{t('reports.cross.report_type')}</Label>
                     <Select value={crossType} onValueChange={setCrossType}>
                         <SelectTrigger>
                             <SelectValue />
@@ -177,7 +177,7 @@ export default function ReportsIndex({
                         <SelectContent>
                             {reportTypes.map((report) => (
                                 <SelectItem key={report.key} value={report.key}>
-                                    {t(`app.reports.types.${report.key}.name`)}
+                                    {t(`reports.types.${report.key}.name`)}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -189,7 +189,7 @@ export default function ReportsIndex({
                         onClick={runCrossReport}
                         disabled={running || selectedProjects.length === 0}
                     >
-                        {t('app.reports.cross.run')}
+                        {t('reports.cross.run')}
                     </Button>
                 </div>
             </CardContent>
@@ -207,14 +207,14 @@ export default function ReportsIndex({
 
     return (
         <>
-            <Head title={t('app.reports.title')} />
+            <Head title={t('reports.title')} />
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="grid gap-1">
                     <h1 className="text-2xl font-semibold">
-                        {t('app.reports.title')}
+                        {t('reports.title')}
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        {t('app.reports.intro')}
+                        {t('reports.intro')}
                     </p>
                 </div>
 
@@ -222,10 +222,10 @@ export default function ReportsIndex({
                     <Tabs defaultValue="dashboard">
                         <TabsList>
                             <TabsTrigger value="dashboard">
-                                {t('app.reports.tabs.dashboard')}
+                                {t('reports.tabs.dashboard')}
                             </TabsTrigger>
                             <TabsTrigger value="cross">
-                                {t('app.reports.tabs.cross')}
+                                {t('reports.tabs.cross')}
                             </TabsTrigger>
                         </TabsList>
                         <TabsContent value="dashboard">{dashboardTab}</TabsContent>
@@ -235,13 +235,13 @@ export default function ReportsIndex({
                     <Tabs defaultValue="dashboard">
                         <TabsList>
                             <TabsTrigger value="dashboard">
-                                {t('app.reports.tabs.dashboard')}
+                                {t('reports.tabs.dashboard')}
                             </TabsTrigger>
                             <TabsTrigger value="project">
-                                {t('app.reports.tabs.types')}
+                                {t('reports.tabs.types')}
                             </TabsTrigger>
                             <TabsTrigger value="cross">
-                                {t('app.reports.tabs.cross')}
+                                {t('reports.tabs.cross')}
                             </TabsTrigger>
                         </TabsList>
                         <TabsContent value="dashboard">{dashboardTab}</TabsContent>

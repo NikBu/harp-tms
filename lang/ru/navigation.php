@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'main' => 'Navigation',
+    'system' => 'System',
+    'settings' => 'Settings',
+    'dashboard' => 'Dashboard',
+    'projects' => 'Projects',
+    'suites' => 'Test Suites',
+    'test_cases' => 'Test Cases',
+    'test_plans' => 'Test Plans',
+    'test_runs' => 'Test Runs',
+    'defects' => 'Defects',
+    'releases' => 'Releases',
+    'reports' => 'Reports',
+    'admin' => 'Administration',
+    'requirements' => 'Requirements',
+    'overview' => 'Overview',
+    'todo' => 'To-Do',
+    'cases' => 'Test Cases',
+    'runs' => 'Test Runs',
+    'plans' => 'Test Plans',
+    'milestones' => 'Milestones',
+    'integrations' => 'Integrations',
+    'ai' => 'AI',
+    'all_projects' => 'All projects',
+    'select_project' => 'Select Project',
+];

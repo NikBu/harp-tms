@@ -137,7 +137,7 @@ function ConfigureDialog({
                     </p>
                     <DialogFooter>
                         <Button variant="outline" onClick={onClose}>
-                            {t('app.common.cancel')}
+                            {t('common.cancel')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -167,7 +167,7 @@ function ConfigureDialog({
 
     function handleDelete() {
         if (!existing) return;
-        if (!window.confirm(t('app.common.confirm_delete'))) return;
+        if (!window.confirm(t('common.confirm_delete'))) return;
         router.delete(`/admin/integration/defect-plugins/${existing.id}`, {
             onSuccess: () => onClose(),
         });
@@ -192,7 +192,7 @@ function ConfigureDialog({
             const json = await res.json() as { ok: boolean; message: string };
             setTestResult(json);
         } catch {
-            setTestResult({ ok: false, message: t('app.integrations.test_failed') });
+            setTestResult({ ok: false, message: t('integrations.test_failed') });
         } finally {
             setTesting(false);
         }
@@ -204,7 +204,7 @@ function ConfigureDialog({
                 <form onSubmit={handleSubmit} className="grid gap-5">
                     <DialogHeader>
                         <DialogTitle>
-                            {t('app.integrations.configure_title', { name: plugin.name })}
+                            {t('integrations.configure_title', { name: plugin.name })}
                         </DialogTitle>
                     </DialogHeader>
 
@@ -212,7 +212,7 @@ function ConfigureDialog({
                     {credFields.length > 0 && (
                         <div className="grid gap-3">
                             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                {t('app.integrations.credentials')}
+                                {t('integrations.credentials')}
                             </p>
                             {credFields.map(f => (
                                 <div key={f.key} className="grid gap-1.5">
@@ -235,7 +235,7 @@ function ConfigureDialog({
                     {configFields.length > 0 && (
                         <div className="grid gap-3">
                             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                {t('app.integrations.configuration')}
+                                {t('integrations.configuration')}
                             </p>
                             {configFields.map(f => (
                                 <div key={f.key} className="grid gap-1.5">
@@ -261,7 +261,7 @@ function ConfigureDialog({
                             onChange={e => setData('is_active', e.target.checked)}
                             className="size-4 rounded border-input accent-primary"
                         />
-                        <span className="text-sm">{t('app.integrations.enable')}</span>
+                        <span className="text-sm">{t('integrations.enable')}</span>
                     </label>
 
                     {/* Test result */}
@@ -288,7 +288,7 @@ function ConfigureDialog({
                                 onClick={handleDelete}
                             >
                                 <Trash2 className="size-3.5" />
-                                {t('app.common.delete')}
+                                {t('common.delete')}
                             </Button>
                         )}
                         {existing && (
@@ -299,14 +299,14 @@ function ConfigureDialog({
                                 disabled={testing}
                                 onClick={handleTest}
                             >
-                                {testing ? t('app.common.loading') : t('app.integrations.test_connection')}
+                                {testing ? t('common.loading') : t('integrations.test_connection')}
                             </Button>
                         )}
                         <Button type="button" variant="outline" onClick={onClose}>
-                            {t('app.common.cancel')}
+                            {t('common.cancel')}
                         </Button>
                         <Button type="submit" disabled={processing}>
-                            {t('app.common.save')}
+                            {t('common.save')}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -363,18 +363,18 @@ export default function AdminDefectPlugins({ plugins, saved }: Props) {
                                                 variant={existing.is_active ? 'default' : 'secondary'}
                                                 className="text-xs"
                                             >
-                                                {existing.is_active ? t('app.status.active') : t('app.status.inactive')}
+                                                {existing.is_active ? t('status.active') : t('status.inactive')}
                                             </Badge>
                                         ) : (
                                             <Badge variant="outline" className="text-xs">
-                                                {t('app.integrations.not_configured')}
+                                                {t('integrations.not_configured')}
                                             </Badge>
                                         )}
                                     </div>
                                     <CardTitle className="text-base">{plugin.name}</CardTitle>
                                     <CardDescription className="text-xs">
                                         {plugin.live
-                                            ? t(`app.integrations.providers.${plugin.key}`, undefined, `Connect ${plugin.name} as a defect tracker`)
+                                            ? t(`integrations.providers.${plugin.key}`, undefined, `Connect ${plugin.name} as a defect tracker`)
                                             : `${plugin.name} integration is planned for a future release.`}
                                     </CardDescription>
                                 </CardHeader>
@@ -386,7 +386,7 @@ export default function AdminDefectPlugins({ plugins, saved }: Props) {
                                         onClick={(e) => { e.stopPropagation(); setConfiguring(plugin); }}
                                     >
                                         {plugin.live
-                                            ? (existing ? t('app.integrations.edit') : t('app.integrations.configure'))
+                                            ? (existing ? t('integrations.edit') : t('integrations.configure'))
                                             : 'Learn more'}
                                         <ChevronRight className="size-3.5" />
                                     </Button>

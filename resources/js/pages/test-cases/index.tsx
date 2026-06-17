@@ -58,7 +58,7 @@ export default function TestCasesIndex({
     const t = useTrans();
 
     function deleteCase(testCase: TestCase) {
-        if (!window.confirm(t('app.common.confirm_delete'))) return;
+        if (!window.confirm(t('common.confirm_delete'))) return;
         router.delete(destroy.url(testCase.id), { preserveScroll: true });
     }
 
@@ -72,14 +72,14 @@ export default function TestCasesIndex({
 
     return (
         <>
-            <Head title={t('app.test_cases.title')} />
+            <Head title={t('test_cases.title')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-6">
 
                 {/* Page header */}
                 <div className="flex items-center justify-between gap-2">
                     <div>
-                        <h1 className="text-xl font-semibold">{t('app.test_cases.title')}</h1>
+                        <h1 className="text-xl font-semibold">{t('test_cases.title')}</h1>
                         <p className="mt-0.5 text-sm text-muted-foreground">
                             {cases.total} {cases.total === 1 ? 'test case' : 'test cases'}
                         </p>
@@ -87,7 +87,7 @@ export default function TestCasesIndex({
                     <Button asChild size="sm">
                         <Link href={create.url(suite.id)}>
                             <Plus className="size-4" />
-                            {t('app.test_cases.create')}
+                            {t('test_cases.create')}
                         </Link>
                     </Button>
                 </div>
@@ -100,7 +100,7 @@ export default function TestCasesIndex({
                             onValueChange={filterBySection}
                         >
                             <SelectTrigger className="h-8 text-sm">
-                                <SelectValue placeholder={t('app.test_cases.fields.section')} />
+                                <SelectValue placeholder={t('test_cases.fields.section')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All sections</SelectItem>
@@ -118,11 +118,11 @@ export default function TestCasesIndex({
                 {cases.data.length === 0 ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-12 text-center">
                         <ClipboardList className="size-10 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">{t('app.test_cases.empty')}</p>
+                        <p className="text-sm text-muted-foreground">{t('test_cases.empty')}</p>
                         <Button asChild size="sm" className="mt-2">
                             <Link href={create.url(suite.id)}>
                                 <Plus className="size-4" />
-                                {t('app.test_cases.create')}
+                                {t('test_cases.create')}
                             </Link>
                         </Button>
                     </div>
@@ -132,16 +132,16 @@ export default function TestCasesIndex({
                             <thead>
                                 <tr className="border-b border-border bg-muted/40">
                                     <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                        {t('app.test_cases.fields.title')}
+                                        {t('test_cases.fields.title')}
                                     </th>
                                     <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                        {t('app.test_cases.fields.section')}
+                                        {t('test_cases.fields.section')}
                                     </th>
                                     <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                        {t('app.test_cases.fields.template')}
+                                        {t('test_cases.fields.template')}
                                     </th>
                                     <th className="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                        {t('app.test_cases.fields.priority')}
+                                        {t('test_cases.fields.priority')}
                                     </th>
                                     <th className="px-4 py-2.5" />
                                 </tr>
@@ -162,7 +162,7 @@ export default function TestCasesIndex({
                                         </td>
                                         <td className="px-4 py-3">
                                             <Badge variant="secondary" className="text-xs font-normal">
-                                                {t(`app.test_cases.templates.${TEMPLATE_KEYS[testCase.template] ?? 'steps'}`)}
+                                                {t(`test_cases.templates.${TEMPLATE_KEYS[testCase.template] ?? 'steps'}`)}
                                             </Badge>
                                         </td>
                                         <td className="px-4 py-3">
@@ -179,7 +179,7 @@ export default function TestCasesIndex({
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                                                <Button variant="ghost" size="icon" className="h-7 w-7" asChild title={t('app.common.edit')}>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7" asChild title={t('common.edit')}>
                                                     <Link href={edit.url(testCase.id)}>
                                                         <Pencil className="h-3.5 w-3.5" />
                                                     </Link>
@@ -189,7 +189,7 @@ export default function TestCasesIndex({
                                                     size="icon"
                                                     className="h-7 w-7 text-destructive hover:text-destructive"
                                                     onClick={() => deleteCase(testCase)}
-                                                    title={t('app.common.delete')}
+                                                    title={t('common.delete')}
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5" />
                                                 </Button>

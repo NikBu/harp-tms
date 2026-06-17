@@ -48,55 +48,55 @@ export function ProjectSidebar({ project }: Props) {
     const navItems = [
         {
             key: 'overview',
-            label: t('app.navigation.overview'),
+            label: t('navigation.overview'),
             icon: LayoutDashboard,
             href: base,
         },
         {
             key: 'todo',
-            label: t('app.navigation.todo'),
+            label: t('navigation.todo'),
             icon: ListChecks,
             href: '/todo',
         },
         {
             key: 'suites',
-            label: t('app.navigation.cases'),
+            label: t('navigation.cases'),
             icon: ClipboardList,
             href: `${base}/suites`,
         },
         {
             key: 'requirements',
-            label: t('app.navigation.requirements'),
+            label: t('navigation.requirements'),
             icon: ScrollText,
             href: `${base}/requirements`,
         },
         {
             key: 'runs',
-            label: t('app.navigation.runs'),
+            label: t('navigation.runs'),
             icon: PlayCircle,
             href: `${base}/runs`,
         },
         {
             key: 'plans',
-            label: t('app.navigation.plans'),
+            label: t('navigation.plans'),
             icon: BookOpen,
             href: `${base}/plans`,
         },
         {
             key: 'milestones',
-            label: t('app.navigation.milestones'),
+            label: t('navigation.milestones'),
             icon: MapPin,
             href: `${base}/milestones`,
         },
         {
             key: 'defects',
-            label: t('app.navigation.defects'),
+            label: t('navigation.defects'),
             icon: Bug,
             href: `${base}/defects`,
         },
         {
             key: 'reports',
-            label: t('app.navigation.reports'),
+            label: t('navigation.reports'),
             icon: BarChart2,
             href: `${base}/reports`,
         },
@@ -142,7 +142,7 @@ export function ProjectSidebar({ project }: Props) {
                                 href="/projects"
                                 className="flex w-full items-center gap-2 text-muted-foreground"
                             >
-                                {t('app.navigation.all_projects')}…
+                                {t('navigation.all_projects')}…
                             </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>

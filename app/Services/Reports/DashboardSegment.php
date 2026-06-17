@@ -134,7 +134,7 @@ class DashboardSegment
             ->get(['test_cases.id as case_id', 'sections.name as section_name']);
 
         $sectionCoverage = [];
-        $defaultSection  = __('app.sections.default_name');
+        $defaultSection  = __('sections.default_name');
         foreach ($sectionRaw as $r) {
             $name = $r->section_name ?? $defaultSection;
             if (! isset($sectionCoverage[$name])) {

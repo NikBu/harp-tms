@@ -81,7 +81,7 @@ class AdminController extends Controller
 
         $user->syncRoles([$validated['role']]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.admin.role_updated')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('admin.role_updated')]);
 
         return back();
     }
@@ -93,11 +93,11 @@ class AdminController extends Controller
     {
         $this->authorizeAdmin($request);
 
-        abort_if($user->is($request->user()), 422, __('app.admin.cannot_delete_self'));
+        abort_if($user->is($request->user()), 422, __('admin.cannot_delete_self'));
 
         $user->delete();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.admin.user_deleted')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('admin.user_deleted')]);
 
         return back();
     }
@@ -135,7 +135,7 @@ class AdminController extends Controller
             InstanceSetting::set($key, (string) $value);
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.admin.settings_saved')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('admin.settings_saved')]);
 
         return back();
     }

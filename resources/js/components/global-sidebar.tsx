@@ -72,7 +72,7 @@ export function GlobalSidebar() {
                             <span className="flex items-center gap-2 truncate">
                                 <FolderOpen className="h-4 w-4 shrink-0" />
                                 <span className="truncate">
-                                    {currentProject?.name ?? t('app.navigation.select_project')}
+                                    {currentProject?.name ?? t('navigation.select_project')}
                                 </span>
                             </span>
                             <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
@@ -98,7 +98,7 @@ export function GlobalSidebar() {
                         ))}
                         <DropdownMenuItem asChild>
                             <Link href="/projects" className="flex w-full items-center gap-2 text-muted-foreground">
-                                {t('app.navigation.all_projects')}
+                                {t('navigation.all_projects')}
                             </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -107,18 +107,18 @@ export function GlobalSidebar() {
 
             <SidebarContent>
                 <SidebarGroup>
-                    <SidebarGroupLabel>{t('app.navigation.main')}</SidebarGroupLabel>
+                    <SidebarGroupLabel>{t('navigation.main')}</SidebarGroupLabel>
                     <SidebarMenu>
                         {mainItems.map(({ key, href, icon: Icon }) => (
                             <SidebarMenuItem key={key}>
                                 <SidebarMenuButton
                                     asChild
                                     isActive={currentUrl.startsWith(href)}
-                                    tooltip={t(`app.navigation.${key}`)}
+                                    tooltip={t(`navigation.${key}`)}
                                 >
                                     <Link href={href}>
                                         <Icon />
-                                        <span>{t(`app.navigation.${key}`)}</span>
+                                        <span>{t(`navigation.${key}`)}</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -127,18 +127,18 @@ export function GlobalSidebar() {
                 </SidebarGroup>
 
                 <SidebarGroup>
-                    <SidebarGroupLabel>{t('app.navigation.system')}</SidebarGroupLabel>
+                    <SidebarGroupLabel>{t('navigation.system')}</SidebarGroupLabel>
                     <SidebarMenu>
                         {systemItems.map(({ key, href, icon: Icon }) => (
                             <SidebarMenuItem key={key}>
                                 <SidebarMenuButton
                                     asChild
                                     isActive={currentUrl.startsWith(href)}
-                                    tooltip={t(`app.navigation.${key}`)}
+                                    tooltip={t(`navigation.${key}`)}
                                 >
                                     <Link href={href}>
                                         <Icon />
-                                        <span>{t(`app.navigation.${key}`)}</span>
+                                        <span>{t(`navigation.${key}`)}</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>

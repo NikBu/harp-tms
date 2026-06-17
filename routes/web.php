@@ -139,7 +139,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         if ($unsectioned->isNotEmpty()) {
             $tree->prepend([
                 'id' => 0,
-                'name' => __('app.sections.default_name'),
+                'name' => __('sections.default_name'),
                 'suite_id' => $suite->id,
                 'parent_id' => null,
                 'test_cases' => $unsectioned->map($mapCase)->values(),

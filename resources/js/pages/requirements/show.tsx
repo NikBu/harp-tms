@@ -38,7 +38,7 @@ export default function RequirementShow({ requirement }: { requirement: Requirem
     const t = useTrans();
 
     function deleteReq() {
-        if (!window.confirm(t('app.requirements.actions.delete'))) return;
+        if (!window.confirm(t('requirements.actions.delete'))) return;
         router.delete(`/requirements/${requirement.id}`);
     }
 
@@ -59,17 +59,17 @@ export default function RequirementShow({ requirement }: { requirement: Requirem
                         <div className="flex flex-wrap gap-1.5">
                             {requirement.type && (
                                 <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${TYPE_BADGE[requirement.type]}`}>
-                                    {t(`app.requirements.types.${requirement.type}`)}
+                                    {t(`requirements.types.${requirement.type}`)}
                                 </span>
                             )}
                             {requirement.priority && (
                                 <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${PRIORITY_BADGE[requirement.priority]}`}>
-                                    {t(`app.requirements.priorities.${requirement.priority}`)}
+                                    {t(`requirements.priorities.${requirement.priority}`)}
                                 </span>
                             )}
                             {requirement.status && (
                                 <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[requirement.status]}`}>
-                                    {t(`app.requirements.statuses.${requirement.status}`)}
+                                    {t(`requirements.statuses.${requirement.status}`)}
                                 </span>
                             )}
                         </div>
@@ -78,7 +78,7 @@ export default function RequirementShow({ requirement }: { requirement: Requirem
                         <Button variant="outline" size="sm" asChild>
                             <Link href={`/requirements/${requirement.id}/edit`}>
                                 <Pencil className="size-4" />
-                                {t('app.common.edit')}
+                                {t('common.edit')}
                             </Link>
                         </Button>
                         <Button variant="destructive" size="sm" onClick={deleteReq}>
@@ -90,19 +90,19 @@ export default function RequirementShow({ requirement }: { requirement: Requirem
                 <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
                     {requirement.folder && (
                         <span>
-                            {t('app.requirements.fields.folder')}:{' '}
+                            {t('requirements.fields.folder')}:{' '}
                             <strong className="text-foreground">{requirement.folder.name}</strong>
                         </span>
                     )}
                     {requirement.assignedTo && (
                         <span>
-                            {t('app.requirements.fields.assigned_to')}:{' '}
+                            {t('requirements.fields.assigned_to')}:{' '}
                             <strong className="text-foreground">{requirement.assignedTo.name}</strong>
                         </span>
                     )}
                     {requirement.external_ref && (
                         <span>
-                            {t('app.requirements.fields.external_ref')}:{' '}
+                            {t('requirements.fields.external_ref')}:{' '}
                             <strong className="text-foreground">{requirement.external_ref}</strong>
                         </span>
                     )}
@@ -120,7 +120,7 @@ export default function RequirementShow({ requirement }: { requirement: Requirem
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">
-                                {t('app.requirements.fields.description')}
+                                {t('requirements.fields.description')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -133,7 +133,7 @@ export default function RequirementShow({ requirement }: { requirement: Requirem
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">
-                                {t('app.requirements.linked_cases')} ({requirement.test_cases.length})
+                                {t('requirements.linked_cases')} ({requirement.test_cases.length})
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-2">

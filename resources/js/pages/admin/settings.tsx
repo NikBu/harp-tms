@@ -35,19 +35,19 @@ export default function AdminSettings({ settings }: { settings: SiteSettings }) 
 
     return (
         <>
-            <Head title={t('app.admin.settings')} />
+            <Head title={t('admin.settings')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
-                <h1 className="text-2xl font-semibold">{t('app.admin.settings')}</h1>
+                <h1 className="text-2xl font-semibold">{t('admin.settings')}</h1>
 
                 <Card className="max-w-xl">
                     <CardHeader>
-                        <CardTitle className="text-base">{t('app.admin.settings')}</CardTitle>
+                        <CardTitle className="text-base">{t('admin.settings')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit} className="grid gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="site_name">{t('app.admin.site_name')}</Label>
+                                <Label htmlFor="site_name">{t('admin.site_name')}</Label>
                                 <Input
                                     id="site_name"
                                     value={data.site_name}
@@ -59,7 +59,7 @@ export default function AdminSettings({ settings }: { settings: SiteSettings }) 
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="default_locale">{t('app.admin.default_language')}</Label>
+                                <Label htmlFor="default_locale">{t('admin.default_language')}</Label>
                                 <Select
                                     value={data.default_locale}
                                     onValueChange={(v) => setData('default_locale', v)}
@@ -76,7 +76,7 @@ export default function AdminSettings({ settings }: { settings: SiteSettings }) 
 
                             <div className="grid gap-2">
                                 <Label htmlFor="max_projects_per_user">
-                                    {t('app.admin.max_projects')}
+                                    {t('admin.max_projects')}
                                 </Label>
                                 <Input
                                     id="max_projects_per_user"
@@ -96,7 +96,7 @@ export default function AdminSettings({ settings }: { settings: SiteSettings }) 
 
                             <div>
                                 <Button type="submit" disabled={processing}>
-                                    {t('app.common.save')}
+                                    {t('common.save')}
                                 </Button>
                             </div>
                         </form>

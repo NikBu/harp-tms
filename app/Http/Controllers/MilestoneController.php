@@ -65,7 +65,7 @@ class MilestoneController extends Controller
             'created_by' => Auth::id(),
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.milestones.created')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('milestones.created')]);
 
         return to_route('milestones.show', $milestone);
     }
@@ -117,7 +117,7 @@ class MilestoneController extends Controller
 
         $milestone->update($validated);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.milestones.updated')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('milestones.updated')]);
 
         return to_route('milestones.show', $milestone);
     }
@@ -138,7 +138,7 @@ class MilestoneController extends Controller
 
         $milestone->delete();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.milestones.deleted')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('milestones.deleted')]);
 
         return to_route('projects.milestones.index', $projectId);
     }
@@ -159,7 +159,7 @@ class MilestoneController extends Controller
             'status' => 'completed',
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.milestones.completed')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('milestones.completed')]);
 
         return back();
     }
@@ -176,7 +176,7 @@ class MilestoneController extends Controller
             'status' => 'active',
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.milestones.reopened')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('milestones.reopened')]);
 
         return back();
     }

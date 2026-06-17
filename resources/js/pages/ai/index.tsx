@@ -9,19 +9,19 @@ export default function AiIndex() {
 
     return (
         <>
-            <Head title={t('app.ai.title')} />
+            <Head title={t('ai.title')} />
 
             <div className="flex h-full flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
                 <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
                     <Sparkles className="size-8 text-primary" />
                 </div>
-                <h1 className="text-2xl font-semibold">{t('app.ai.title')}</h1>
-                <p className="text-base text-muted-foreground">{t('app.ai.coming_soon')}</p>
+                <h1 className="text-2xl font-semibold">{t('ai.title')}</h1>
+                <p className="text-base text-muted-foreground">{t('ai.coming_soon')}</p>
                 <p className="max-w-md text-sm text-muted-foreground">
-                    {t('app.ai.description')}
+                    {t('ai.description')}
                 </p>
                 <Button variant="outline" asChild>
-                    <a href="#">{t('app.ai.learn_more')}</a>
+                    <a href="#">{t('ai.learn_more')}</a>
                 </Button>
             </div>
         </>

@@ -59,7 +59,7 @@ class ProjectController extends Controller
 
         $project->members()->attach(Auth::id(), ['role' => 'project_admin']);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.projects.created')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('projects.created')]);
 
         return to_route('projects.show', $project);
     }
@@ -182,7 +182,7 @@ class ProjectController extends Controller
 
         $project->update($validated);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.projects.updated')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('projects.updated')]);
 
         return back();
     }
@@ -203,7 +203,7 @@ class ProjectController extends Controller
 
         $project->delete();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.projects.deleted')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('projects.deleted')]);
 
         return to_route('projects.index');
     }

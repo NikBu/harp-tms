@@ -46,7 +46,7 @@ interface AdminNavGroup {
 const ADMIN_GROUPS: AdminNavGroup[] = [
     {
         heading: 'Site Settings',
-        headingKey: 'app.admin.nav.site_settings',
+        headingKey: 'admin.nav.site_settings',
         items: [
             { label: 'General',         href: '/admin/settings/general',        icon: Settings    },
             { label: 'Authentication',  href: '/admin/settings/authentication', icon: Lock        },

@@ -15,16 +15,16 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     const t = useTrans();
 
     const sidebarNavItems = [
-        { title: t('app.settings_pages.profile'),    href: edit() },
-        { title: t('app.settings_pages.security'),   href: editSecurity() },
-        { title: t('app.settings_pages.appearance'), href: editAppearance() },
+        { title: t('settings_pages.profile'),    href: edit() },
+        { title: t('settings_pages.security'),   href: editSecurity() },
+        { title: t('settings_pages.appearance'), href: editAppearance() },
     ];
 
     return (
         <div className="px-4 py-6">
             <Heading
-                title={t('app.settings_pages.title')}
-                description={t('app.settings_pages.description')}
+                title={t('settings_pages.title')}
+                description={t('settings_pages.description')}
             />
 
             <div className="flex flex-col lg:flex-row lg:space-x-12">

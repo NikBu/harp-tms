@@ -215,7 +215,7 @@ export default function TestCasesEdit({
             data.estimate.trim() !== '' &&
             !ESTIMATE_PATTERN.test(data.estimate.trim())
         ) {
-            setError('estimate', t('app.test_cases.errors.estimate_format'));
+            setError('estimate', t('test_cases.errors.estimate_format'));
 
             return;
         }
@@ -252,11 +252,11 @@ export default function TestCasesEdit({
 
     return (
         <>
-            <Head title={t('app.test_cases.edit')} />
+            <Head title={t('test_cases.edit')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <h1 className="text-2xl font-semibold">
-                    {t('app.test_cases.edit')}
+                    {t('test_cases.edit')}
                 </h1>
 
                 <Card className="max-w-3xl">
@@ -268,7 +268,7 @@ export default function TestCasesEdit({
                             {/* Title */}
                             <div className="grid gap-2">
                                 <Label htmlFor="title">
-                                    {t('app.test_cases.fields.title')}
+                                    {t('test_cases.fields.title')}
                                 </Label>
                                 <Input
                                     id="title"
@@ -288,7 +288,7 @@ export default function TestCasesEdit({
                             {/* Template */}
                             <div className="grid gap-2">
                                 <Label htmlFor="template">
-                                    {t('app.test_cases.fields.template')}
+                                    {t('test_cases.fields.template')}
                                 </Label>
                                 <Select
                                     value={String(data.template)}
@@ -306,7 +306,7 @@ export default function TestCasesEdit({
                                                 value={String(opt.value)}
                                             >
                                                 {t(
-                                                    `app.test_cases.templates.${opt.key}`,
+                                                    `test_cases.templates.${opt.key}`,
                                                 )}
                                             </SelectItem>
                                         ))}
@@ -318,7 +318,7 @@ export default function TestCasesEdit({
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="grid gap-2">
                                     <Label htmlFor="section">
-                                        {t('app.test_cases.fields.section')}
+                                        {t('test_cases.fields.section')}
                                     </Label>
                                     <Select
                                         value={data.section_id || 'none'}
@@ -332,7 +332,7 @@ export default function TestCasesEdit({
                                         <SelectTrigger id="section">
                                             <SelectValue
                                                 placeholder={t(
-                                                    'app.test_cases.fields.section',
+                                                    'test_cases.fields.section',
                                                 )}
                                             />
                                         </SelectTrigger>
@@ -354,7 +354,7 @@ export default function TestCasesEdit({
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="priority">
-                                        {t('app.test_cases.fields.priority')}
+                                        {t('test_cases.fields.priority')}
                                     </Label>
                                     <Select
                                         value={data.priority_id || 'none'}
@@ -368,7 +368,7 @@ export default function TestCasesEdit({
                                         <SelectTrigger id="priority">
                                             <SelectValue
                                                 placeholder={t(
-                                                    'app.test_cases.fields.priority',
+                                                    'test_cases.fields.priority',
                                                 )}
                                             />
                                         </SelectTrigger>
@@ -390,7 +390,7 @@ export default function TestCasesEdit({
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="type">
-                                        {t('app.test_cases.fields.type')}
+                                        {t('test_cases.fields.type')}
                                     </Label>
                                     <Select
                                         value={data.type_id || 'none'}
@@ -404,7 +404,7 @@ export default function TestCasesEdit({
                                         <SelectTrigger id="type">
                                             <SelectValue
                                                 placeholder={t(
-                                                    'app.test_cases.fields.type_placeholder',
+                                                    'test_cases.fields.type_placeholder',
                                                 )}
                                             />
                                         </SelectTrigger>
@@ -427,7 +427,7 @@ export default function TestCasesEdit({
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="estimate">
-                                        {t('app.test_cases.fields.estimate')}
+                                        {t('test_cases.fields.estimate')}
                                     </Label>
                                     <Input
                                         id="estimate"
@@ -448,7 +448,7 @@ export default function TestCasesEdit({
                             {/* References */}
                             <div className="grid gap-2">
                                 <Label htmlFor="references">
-                                    {t('app.test_cases.fields.references')}
+                                    {t('test_cases.fields.references')}
                                 </Label>
                                 <Input
                                     id="references"
@@ -462,7 +462,7 @@ export default function TestCasesEdit({
                             {/* Preconditions */}
                             <div className="grid gap-2">
                                 <Label htmlFor="preconditions">
-                                    {t('app.test_cases.fields.preconditions')}
+                                    {t('test_cases.fields.preconditions')}
                                 </Label>
                                 <RichTextEditor
                                     value={data.preconditions}
@@ -478,9 +478,9 @@ export default function TestCasesEdit({
                                     <Label htmlFor="body">
                                         {data.template === TEMPLATE_EXPLORATORY
                                             ? t(
-                                                  'app.test_cases.fields.scenario',
+                                                  'test_cases.fields.scenario',
                                               )
-                                            : t('app.test_cases.fields.body')}
+                                            : t('test_cases.fields.body')}
                                     </Label>
                                     <RichTextEditor
                                         value={data.body}
@@ -494,7 +494,7 @@ export default function TestCasesEdit({
                                 <div className="grid gap-2">
                                     <Label htmlFor="bdd_scenario">
                                         {t(
-                                            'app.test_cases.fields.bdd_scenario',
+                                            'test_cases.fields.bdd_scenario',
                                         )}
                                     </Label>
                                     <textarea
@@ -519,7 +519,7 @@ export default function TestCasesEdit({
                             {usesSteps && (
                                 <div className="grid gap-3">
                                     <Label>
-                                        {t('app.test_cases.fields.steps')}
+                                        {t('test_cases.fields.steps')}
                                     </Label>
                                     {data.steps.map((step, index) => (
                                         <div
@@ -569,7 +569,7 @@ export default function TestCasesEdit({
                                                     setStep(index, 'action', v)
                                                 }
                                                 placeholder={t(
-                                                    'app.test_cases.fields.action',
+                                                    'test_cases.fields.action',
                                                 )}
                                             />
                                             <RichTextEditor
@@ -582,7 +582,7 @@ export default function TestCasesEdit({
                                                     )
                                                 }
                                                 placeholder={t(
-                                                    'app.test_cases.fields.expected',
+                                                    'test_cases.fields.expected',
                                                 )}
                                             />
                                         </div>
@@ -593,7 +593,7 @@ export default function TestCasesEdit({
                                         onClick={addStep}
                                     >
                                         <Plus className="size-4" />
-                                        {t('app.test_cases.fields.steps')}
+                                        {t('test_cases.fields.steps')}
                                     </Button>
                                 </div>
                             )}
@@ -602,7 +602,7 @@ export default function TestCasesEdit({
                             {usesChecklist && (
                                 <div className="grid gap-3">
                                     <Label>
-                                        {t('app.test_cases.fields.checklist')}
+                                        {t('test_cases.fields.checklist')}
                                     </Label>
                                     {data.checklist_items.map((item, index) => (
                                         <div
@@ -621,7 +621,7 @@ export default function TestCasesEdit({
                                                     )
                                                 }
                                                 placeholder={t(
-                                                    'app.test_cases.fields.checklist_item',
+                                                    'test_cases.fields.checklist_item',
                                                 )}
                                                 className="flex-1"
                                             />
@@ -644,7 +644,7 @@ export default function TestCasesEdit({
                                     >
                                         <Plus className="size-4" />
                                         {t(
-                                            'app.test_cases.fields.checklist_item',
+                                            'test_cases.fields.checklist_item',
                                         )}
                                     </Button>
                                 </div>
@@ -653,7 +653,7 @@ export default function TestCasesEdit({
                             {/* Requirements */}
                             {requirements.length > 0 && (
                                 <div className="grid gap-2">
-                                    <Label>{t('app.requirements.label')}</Label>
+                                    <Label>{t('requirements.label')}</Label>
                                     <div className="max-h-56 divide-y overflow-y-auto rounded-md border">
                                         {requirements.map((req) => {
                                             const checked =
@@ -704,17 +704,17 @@ export default function TestCasesEdit({
                             {/* Actions */}
                             <div className="flex gap-2">
                                 <Button type="submit" disabled={processing}>
-                                    {t('app.common.save')}
+                                    {t('common.save')}
                                 </Button>
                                 <Button variant="outline" asChild>
                                     <Link href={showCase.url(testCase.id)}>
                                         <Eye className="size-4" />
-                                        {t('app.test_cases.view')}
+                                        {t('test_cases.view')}
                                     </Link>
                                 </Button>
                                 <Button variant="outline" asChild>
                                     <Link href={casesIndex.url(suite.id)}>
-                                        {t('app.common.cancel')}
+                                        {t('common.cancel')}
                                     </Link>
                                 </Button>
                             </div>

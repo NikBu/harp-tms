@@ -194,7 +194,7 @@ function ConfigureDialog({
 
     function handleDelete() {
         if (!existing) return;
-        if (!window.confirm(t('app.common.confirm_delete'))) return;
+        if (!window.confirm(t('common.confirm_delete'))) return;
         router.delete(`/projects/${project.id}/integrations/${existing.id}`, {
             onSuccess: () => onClose(),
         });
@@ -219,7 +219,7 @@ function ConfigureDialog({
             const json = await res.json() as { ok: boolean; message: string };
             setTestResult(json);
         } catch {
-            setTestResult({ ok: false, message: t('app.integrations.test_failed') });
+            setTestResult({ ok: false, message: t('integrations.test_failed') });
         } finally {
             setTesting(false);
         }
@@ -234,10 +234,10 @@ function ConfigureDialog({
                         <DialogTitle>{providerName}</DialogTitle>
                     </DialogHeader>
                     <p className="text-sm text-muted-foreground">
-                        {t('app.integrations.coming_soon_body')}
+                        {t('integrations.coming_soon_body')}
                     </p>
                     <DialogFooter>
-                        <Button variant="outline" onClick={onClose}>{t('app.common.cancel')}</Button>
+                        <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -250,7 +250,7 @@ function ConfigureDialog({
                 <form onSubmit={handleSubmit} className="grid gap-5">
                     <DialogHeader>
                         <DialogTitle>
-                            {t('app.integrations.configure_title', { name: providerName })}
+                            {t('integrations.configure_title', { name: providerName })}
                         </DialogTitle>
                     </DialogHeader>
 
@@ -258,7 +258,7 @@ function ConfigureDialog({
                     {credFields.length > 0 && (
                         <div className="grid gap-3">
                             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                {t('app.integrations.credentials')}
+                                {t('integrations.credentials')}
                             </p>
                             {credFields.map(f => (
                                 <div key={f.key} className="grid gap-1.5">
@@ -281,7 +281,7 @@ function ConfigureDialog({
                     {configFields.length > 0 && (
                         <div className="grid gap-3">
                             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                {t('app.integrations.configuration')}
+                                {t('integrations.configuration')}
                             </p>
                             {configFields.map(f => (
                                 <div key={f.key} className="grid gap-1.5">
@@ -307,7 +307,7 @@ function ConfigureDialog({
                             onChange={e => setData('is_active', e.target.checked)}
                             className="size-4 rounded border-input accent-primary"
                         />
-                        <span className="text-sm">{t('app.integrations.enable')}</span>
+                        <span className="text-sm">{t('integrations.enable')}</span>
                     </label>
 
                     {/* Test result */}
@@ -335,7 +335,7 @@ function ConfigureDialog({
                                 onClick={handleDelete}
                             >
                                 <Trash2 className="size-3.5" />
-                                {t('app.common.delete')}
+                                {t('common.delete')}
                             </Button>
                         )}
 
@@ -348,15 +348,15 @@ function ConfigureDialog({
                                 disabled={testing}
                                 onClick={handleTest}
                             >
-                                {testing ? t('app.common.loading') : t('app.integrations.test_connection')}
+                                {testing ? t('common.loading') : t('integrations.test_connection')}
                             </Button>
                         )}
 
                         <Button type="button" variant="outline" onClick={onClose}>
-                            {t('app.common.cancel')}
+                            {t('common.cancel')}
                         </Button>
                         <Button type="submit" disabled={processing}>
-                            {t('app.common.save')}
+                            {t('common.save')}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -376,13 +376,13 @@ export default function IntegrationsIndex({ project, catalogue, saved, trackerTy
 
     return (
         <>
-            <Head title={t('app.integrations.title')} />
+            <Head title={t('integrations.title')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="grid gap-1">
-                    <h1 className="text-2xl font-semibold">{t('app.integrations.title')}</h1>
+                    <h1 className="text-2xl font-semibold">{t('integrations.title')}</h1>
                     <p className="text-sm text-muted-foreground">
-                        {t('app.integrations.description')}
+                        {t('integrations.description')}
                     </p>
                 </div>
 
@@ -409,20 +409,20 @@ export default function IntegrationsIndex({ project, catalogue, saved, trackerTy
                                                 className="text-xs"
                                             >
                                                 {existing.is_active
-                                                    ? t('app.status.active')
-                                                    : t('app.status.inactive')}
+                                                    ? t('status.active')
+                                                    : t('status.inactive')}
                                             </Badge>
                                         ) : (
                                             <Badge variant="outline" className="text-xs">
                                                 {isTracker
-                                                    ? t('app.integrations.not_configured')
-                                                    : t('app.integrations.coming_soon_badge')}
+                                                    ? t('integrations.not_configured')
+                                                    : t('integrations.coming_soon_badge')}
                                             </Badge>
                                         )}
                                     </div>
                                     <CardTitle className="text-base">{item.name}</CardTitle>
                                     <CardDescription className="text-xs">
-                                        {t(`app.integrations.providers.${item.key}`)}
+                                        {t(`integrations.providers.${item.key}`)}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="mt-auto pt-0">
@@ -433,8 +433,8 @@ export default function IntegrationsIndex({ project, catalogue, saved, trackerTy
                                         onClick={(e) => { e.stopPropagation(); setConfiguring(item); }}
                                     >
                                         {existing
-                                            ? t('app.integrations.edit')
-                                            : t('app.integrations.configure')}
+                                            ? t('integrations.edit')
+                                            : t('integrations.configure')}
                                         <ChevronRight className="size-3.5" />
                                     </Button>
                                 </CardContent>

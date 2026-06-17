@@ -122,7 +122,7 @@ class TestPlanController extends Controller
             return $plan;
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.plans.created')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('plans.created')]);
 
         return to_route('plans.show', $plan);
     }
@@ -195,7 +195,7 @@ class TestPlanController extends Controller
 
         $testPlan->update($this->validatePlan($request));
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.plans.updated')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('plans.updated')]);
 
         return to_route('plans.show', $testPlan);
     }
@@ -215,7 +215,7 @@ class TestPlanController extends Controller
         $projectId = $project->id;
         $testPlan->delete();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.plans.deleted')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('plans.deleted')]);
 
         return to_route('projects.plans.index', $projectId);
     }
@@ -235,7 +235,7 @@ class TestPlanController extends Controller
             'completed_at' => now(),
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.plans.closed')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('plans.closed')]);
 
         return back();
     }
@@ -251,7 +251,7 @@ class TestPlanController extends Controller
             'completed_at' => null,
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.plans.reopened')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('plans.reopened')]);
 
         return back();
     }
@@ -268,7 +268,7 @@ class TestPlanController extends Controller
     {
         $this->authorizeProjectAccess($request, $testPlan->project);
 
-        abort_if($testPlan->is_completed, 422, __('app.plans.closed_error'));
+        abort_if($testPlan->is_completed, 422, __('plans.closed_error'));
 
         $validated = $request->validate([
             'run_id' => ['required', 'integer', 'exists:test_runs,id'],
@@ -281,12 +281,12 @@ class TestPlanController extends Controller
         abort_if(
             $testPlan->entries()->where('run_id', $validated['run_id'])->exists(),
             422,
-            __('app.plans.entry_duplicate')
+            __('plans.entry_duplicate')
         );
 
         // Ensure the run belongs to the same project
         $run = TestRun::findOrFail($validated['run_id']);
-        abort_unless($run->project_id === $testPlan->project_id, 422, __('app.plans.entry_wrong_project'));
+        abort_unless($run->project_id === $testPlan->project_id, 422, __('plans.entry_wrong_project'));
 
         DB::transaction(function () use ($testPlan, $validated, $run): void {
             $entry = $testPlan->entries()->create([

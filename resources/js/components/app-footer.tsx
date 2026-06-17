@@ -6,9 +6,9 @@ export function AppFooter() {
     return (
         <footer className="mt-auto border-t border-sidebar-border/50 bg-background px-6 py-3">
             <p className="text-center text-xs text-muted-foreground">
-                {t('app.footer.diploma_note')}
+                {t('footer.diploma_note')}
                 {' · '}
-                <span className="font-medium">{t('app.footer.author')}</span>
+                <span className="font-medium">{t('footer.author')}</span>
             </p>
         </footer>
     );

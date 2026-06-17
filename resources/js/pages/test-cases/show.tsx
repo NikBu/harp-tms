@@ -117,7 +117,7 @@ export default function TestCasesShow({
     const usesChecklist = testCase.template === TEMPLATE_CHECKLIST;
 
     function deleteCase() {
-        if (!window.confirm(t('app.common.confirm_delete'))) {
+        if (!window.confirm(t('common.confirm_delete'))) {
             return;
         }
 
@@ -192,7 +192,7 @@ export default function TestCasesShow({
                     className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                 >
                     <ArrowLeft className="size-4" />
-                    {t('app.test_cases.back_to_suite')}
+                    {t('test_cases.back_to_suite')}
                 </Link>
 
                 {/* Header */}
@@ -202,7 +202,7 @@ export default function TestCasesShow({
                         <Button variant="outline" asChild>
                             <Link href={edit.url(testCase.id)}>
                                 <Pencil className="size-4" />
-                                {t('app.common.edit')}
+                                {t('common.edit')}
                             </Link>
                         </Button>
                         <Button
@@ -210,11 +210,11 @@ export default function TestCasesShow({
                             onClick={() => setCopyOpen(true)}
                         >
                             <Copy className="size-4" />
-                            {t('app.common.copy')}
+                            {t('common.copy')}
                         </Button>
                         <Button variant="destructive" onClick={deleteCase}>
                             <Trash2 className="size-4" />
-                            {t('app.common.delete')}
+                            {t('common.delete')}
                         </Button>
                     </div>
                 </div>
@@ -223,19 +223,19 @@ export default function TestCasesShow({
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">
-                            {t('app.test_cases.fields.template')}
+                            {t('test_cases.fields.template')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <dl>
                             <MetaRow
-                                label={t('app.test_cases.fields.template')}
+                                label={t('test_cases.fields.template')}
                                 value={t(
-                                    `app.test_cases.templates.${TEMPLATE_KEYS[testCase.template] ?? 'steps'}`,
+                                    `test_cases.templates.${TEMPLATE_KEYS[testCase.template] ?? 'steps'}`,
                                 )}
                             />
                             <MetaRow
-                                label={t('app.test_cases.fields.priority')}
+                                label={t('test_cases.fields.priority')}
                                 value={
                                     testCase.priority_id
                                         ? PRIORITY_KEYS[testCase.priority_id]
@@ -243,7 +243,7 @@ export default function TestCasesShow({
                                 }
                             />
                             <MetaRow
-                                label={t('app.test_cases.fields.type')}
+                                label={t('test_cases.fields.type')}
                                 value={
                                     testCase.type_id !== null
                                         ? String(testCase.type_id)
@@ -251,15 +251,15 @@ export default function TestCasesShow({
                                 }
                             />
                             <MetaRow
-                                label={t('app.test_cases.fields.estimate')}
+                                label={t('test_cases.fields.estimate')}
                                 value={testCase.estimate ?? '—'}
                             />
                             <MetaRow
-                                label={t('app.test_cases.fields.references')}
+                                label={t('test_cases.fields.references')}
                                 value={testCase.references ?? '—'}
                             />
                             <MetaRow
-                                label={t('app.test_cases.fields.section')}
+                                label={t('test_cases.fields.section')}
                                 value={testCase.section?.name ?? '—'}
                             />
                         </dl>
@@ -271,7 +271,7 @@ export default function TestCasesShow({
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">
-                                {t('app.test_cases.fields.preconditions')}
+                                {t('test_cases.fields.preconditions')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -285,7 +285,7 @@ export default function TestCasesShow({
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">
-                                {t('app.test_cases.fields.steps')}
+                                {t('test_cases.fields.steps')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
@@ -296,11 +296,11 @@ export default function TestCasesShow({
                                             #
                                         </th>
                                         <th className="px-4 py-2 font-medium">
-                                            {t('app.test_cases.fields.action')}
+                                            {t('test_cases.fields.action')}
                                         </th>
                                         <th className="px-4 py-2 font-medium">
                                             {t(
-                                                'app.test_cases.fields.expected',
+                                                'test_cases.fields.expected',
                                             )}
                                         </th>
                                     </tr>
@@ -338,7 +338,7 @@ export default function TestCasesShow({
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">
-                                {t('app.test_cases.fields.checklist')}
+                                {t('test_cases.fields.checklist')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -354,7 +354,7 @@ export default function TestCasesShow({
                                         <span>{item.label}</span>
                                         {item.is_optional && (
                                             <span className="ml-1 text-xs text-muted-foreground">
-                                                ({t('app.common.optional')})
+                                                ({t('common.optional')})
                                             </span>
                                         )}
                                     </li>
@@ -366,7 +366,7 @@ export default function TestCasesShow({
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">
-                                {t('app.test_cases.fields.body')}
+                                {t('test_cases.fields.body')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -380,7 +380,7 @@ export default function TestCasesShow({
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">
-                                {t('app.test_cases.fields.bdd_scenario')}
+                                {t('test_cases.fields.bdd_scenario')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -396,7 +396,7 @@ export default function TestCasesShow({
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">
-                                {t('app.requirements.label')}
+                                {t('requirements.label')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
@@ -415,12 +415,12 @@ export default function TestCasesShow({
                 <DialogContent>
                     <form onSubmit={submitCopy} className="grid gap-4">
                         <DialogHeader>
-                            <DialogTitle>{t('app.common.copy')}</DialogTitle>
+                            <DialogTitle>{t('common.copy')}</DialogTitle>
                         </DialogHeader>
 
                         <div className="grid gap-2">
                             <Label htmlFor="copy-suite">
-                                {t('app.navigation.suites')}
+                                {t('navigation.suites')}
                             </Label>
                             <Select
                                 value={targetSuite}
@@ -428,7 +428,7 @@ export default function TestCasesShow({
                             >
                                 <SelectTrigger id="copy-suite">
                                     <SelectValue
-                                        placeholder={t('app.navigation.suites')}
+                                        placeholder={t('navigation.suites')}
                                     />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -450,10 +450,10 @@ export default function TestCasesShow({
                                 variant="outline"
                                 onClick={() => setCopyOpen(false)}
                             >
-                                {t('app.common.cancel')}
+                                {t('common.cancel')}
                             </Button>
                             <Button type="submit" disabled={!targetSuite || copying}>
-                                {copying ? t('app.common.saving') : t('app.common.copy')}
+                                {copying ? t('common.saving') : t('common.copy')}
                             </Button>
                         </DialogFooter>
                     </form>

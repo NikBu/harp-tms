@@ -65,7 +65,7 @@ class CaseDistributionSegment
             ->leftJoin('sections', 'test_cases.section_id', '=', 'sections.id')
             ->whereIn('suites.project_id', $projectIds)
             ->whereNull('test_cases.deleted_at')
-            ->selectRaw('COALESCE(sections.name, ?) as section_name, count(*) as cnt', [__('app.sections.default_name')])
+            ->selectRaw('COALESCE(sections.name, ?) as section_name, count(*) as cnt', [__('sections.default_name')])
             ->groupBy('section_name')
             ->orderByDesc('cnt')
             ->limit(15)

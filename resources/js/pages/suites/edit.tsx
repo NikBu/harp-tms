@@ -46,22 +46,22 @@ export default function SuitesEdit({ suite }: { suite: Suite }) {
 
     return (
         <>
-            <Head title={t('app.suites.edit')} />
+            <Head title={t('suites.edit')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <h1 className="text-2xl font-semibold">
-                    {t('app.suites.edit')}
+                    {t('suites.edit')}
                 </h1>
 
                 <Card className="max-w-2xl">
                     <CardHeader>
-                        <CardTitle>{t('app.suites.edit')}</CardTitle>
+                        <CardTitle>{t('suites.edit')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit} className="flex flex-col gap-6">
                             <div className="grid gap-2">
                                 <Label htmlFor="name">
-                                    {t('app.projects.name')}
+                                    {t('projects.name')}
                                 </Label>
                                 <Input
                                     id="name"
@@ -80,7 +80,7 @@ export default function SuitesEdit({ suite }: { suite: Suite }) {
 
                             <div className="grid gap-2">
                                 <Label htmlFor="description">
-                                    {t('app.projects.description')}
+                                    {t('projects.description')}
                                 </Label>
                                 <RichTextEditor
                                     value={data.description}
@@ -95,11 +95,11 @@ export default function SuitesEdit({ suite }: { suite: Suite }) {
 
                             <div className="flex gap-2">
                                 <Button type="submit" disabled={processing}>
-                                    {t('app.common.save')}
+                                    {t('common.save')}
                                 </Button>
                                 <Button variant="outline" asChild>
                                     <Link href={show.url(suite.id)}>
-                                        {t('app.common.cancel')}
+                                        {t('common.cancel')}
                                     </Link>
                                 </Button>
                                 <Button
@@ -108,7 +108,7 @@ export default function SuitesEdit({ suite }: { suite: Suite }) {
                                     className="ml-auto"
                                     onClick={() => setConfirmOpen(true)}
                                 >
-                                    {t('app.common.delete')}
+                                    {t('common.delete')}
                                 </Button>
                             </div>
                         </form>
@@ -120,7 +120,7 @@ export default function SuitesEdit({ suite }: { suite: Suite }) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>
-                            {t('app.common.confirm_delete')}
+                            {t('common.confirm_delete')}
                         </DialogTitle>
                     </DialogHeader>
                     <DialogFooter>
@@ -128,10 +128,10 @@ export default function SuitesEdit({ suite }: { suite: Suite }) {
                             variant="outline"
                             onClick={() => setConfirmOpen(false)}
                         >
-                            {t('app.common.cancel')}
+                            {t('common.cancel')}
                         </Button>
                         <Button variant="destructive" onClick={deleteSuite}>
-                            {t('app.common.delete')}
+                            {t('common.delete')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

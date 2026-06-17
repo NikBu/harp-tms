@@ -126,21 +126,21 @@ export default function Dashboard({
     const name = auth?.user?.name ?? '';
 
     const cards: { icon: LucideIcon; label: string; value: number; href: string }[] = [
-        { icon: FolderKanban, label: t('app.dashboard.stats.projects'), value: stats.projects, href: '/projects' },
-        { icon: ClipboardList, label: t('app.dashboard.stats.test_cases'), value: stats.test_cases, href: '/projects' },
-        { icon: PlayCircle, label: t('app.dashboard.stats.active_runs'), value: stats.active_runs, href: '/projects' },
-        { icon: Flag, label: t('app.dashboard.stats.milestones'), value: stats.milestones, href: '/projects' },
+        { icon: FolderKanban, label: t('dashboard.stats.projects'), value: stats.projects, href: '/projects' },
+        { icon: ClipboardList, label: t('dashboard.stats.test_cases'), value: stats.test_cases, href: '/projects' },
+        { icon: PlayCircle, label: t('dashboard.stats.active_runs'), value: stats.active_runs, href: '/projects' },
+        { icon: Flag, label: t('dashboard.stats.milestones'), value: stats.milestones, href: '/projects' },
     ];
 
     return (
         <>
-            <Head title={t('app.dashboard.title')} />
+            <Head title={t('dashboard.title')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="grid gap-1">
-                    <h1 className="text-2xl font-semibold">{t('app.dashboard.title')}</h1>
+                    <h1 className="text-2xl font-semibold">{t('dashboard.title')}</h1>
                     <p className="text-sm text-muted-foreground">
-                        {t('app.dashboard.welcome', { name })}
+                        {t('dashboard.welcome', { name })}
                     </p>
                 </div>
 
@@ -160,13 +160,13 @@ export default function Dashboard({
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base">
-                                {t('app.dashboard.recent_runs')}
+                                {t('dashboard.recent_runs')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-3">
                             {recentRuns.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
-                                    {t('app.dashboard.no_runs')}
+                                    {t('dashboard.no_runs')}
                                 </p>
                             ) : (
                                 recentRuns.map((run) => (
@@ -194,13 +194,13 @@ export default function Dashboard({
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base">
-                                {t('app.dashboard.my_projects')}
+                                {t('dashboard.my_projects')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-2">
                             {myProjects.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
-                                    {t('app.dashboard.no_projects')}
+                                    {t('dashboard.no_projects')}
                                 </p>
                             ) : (
                                 myProjects.map((project) => (
@@ -213,14 +213,14 @@ export default function Dashboard({
                                             {project.name}
                                             {project.is_completed && (
                                                 <Badge variant="outline" className="text-xs">
-                                                    {t('app.projects.completed')}
+                                                    {t('projects.completed')}
                                                 </Badge>
                                             )}
                                         </span>
                                         <span className="shrink-0 text-xs text-muted-foreground">
-                                            {project.test_cases_count} {t('app.projects.stats.test_cases').toLowerCase()}
+                                            {project.test_cases_count} {t('projects.stats.test_cases').toLowerCase()}
                                             {' · '}
-                                            {project.test_runs_count} {t('app.projects.stats.test_runs').toLowerCase()}
+                                            {project.test_runs_count} {t('projects.stats.test_runs').toLowerCase()}
                                         </span>
                                     </Link>
                                 ))

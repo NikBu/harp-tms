@@ -124,7 +124,7 @@ export default function PlanForm({
         }
     }
 
-    const title = isEdit ? t('app.plans.edit') : t('app.plans.create');
+    const title = isEdit ? t('plans.edit') : t('plans.create');
 
     return (
         <>
@@ -142,7 +142,7 @@ export default function PlanForm({
                             {/* Name */}
                             <div className="grid gap-2">
                                 <Label htmlFor="name">
-                                    {t('app.plans.fields.name')} *
+                                    {t('plans.fields.name')} *
                                 </Label>
                                 <Input
                                     id="name"
@@ -162,7 +162,7 @@ export default function PlanForm({
                             {/* Description */}
                             <div className="grid gap-2">
                                 <Label htmlFor="description">
-                                    {t('app.plans.fields.description')}
+                                    {t('plans.fields.description')}
                                 </Label>
                                 <textarea
                                     id="description"
@@ -179,7 +179,7 @@ export default function PlanForm({
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="grid gap-2">
                                     <Label htmlFor="milestone_id">
-                                        {t('app.plans.fields.milestone')}
+                                        {t('plans.fields.milestone')}
                                     </Label>
                                     <Select
                                         value={data.milestone_id || 'none'}
@@ -209,7 +209,7 @@ export default function PlanForm({
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="refs">
-                                        {t('app.plans.fields.refs')}
+                                        {t('plans.fields.refs')}
                                     </Label>
                                     <Input
                                         id="refs"
@@ -226,7 +226,7 @@ export default function PlanForm({
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="grid gap-2">
                                     <Label htmlFor="start_on">
-                                        {t('app.plans.fields.start_on')}
+                                        {t('plans.fields.start_on')}
                                     </Label>
                                     <Input
                                         id="start_on"
@@ -244,7 +244,7 @@ export default function PlanForm({
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="end_on">
-                                        {t('app.plans.fields.end_on')}
+                                        {t('plans.fields.end_on')}
                                     </Label>
                                     <Input
                                         id="end_on"
@@ -265,11 +265,11 @@ export default function PlanForm({
                             {/* Suite entries (create only) */}
                             {!isEdit && (
                                 <div className="grid gap-3">
-                                    <Label>{t('app.plans.entries.title')}</Label>
+                                    <Label>{t('plans.entries.title')}</Label>
 
                                     {data.entries.length === 0 && (
                                         <p className="text-sm text-muted-foreground">
-                                            {t('app.plans.entries.empty')}
+                                            {t('plans.entries.empty')}
                                         </p>
                                     )}
 
@@ -330,7 +330,7 @@ export default function PlanForm({
                                                                 className="size-4 accent-primary"
                                                             />
                                                             {t(
-                                                                'app.plans.entries.all_cases',
+                                                                'plans.entries.all_cases',
                                                             )}
                                                         </label>
                                                         <label className="flex cursor-pointer items-center gap-2">
@@ -350,7 +350,7 @@ export default function PlanForm({
                                                                 className="size-4 accent-primary"
                                                             />
                                                             {t(
-                                                                'app.plans.entries.select_cases',
+                                                                'plans.entries.select_cases',
                                                             )}
                                                         </label>
                                                     </div>
@@ -359,7 +359,7 @@ export default function PlanForm({
                                                     <div className="grid gap-2">
                                                         <Label>
                                                             {t(
-                                                                'app.runs.fields.assigned_to',
+                                                                'runs.fields.assigned_to',
                                                             )}
                                                         </Label>
                                                         <Select
@@ -380,14 +380,14 @@ export default function PlanForm({
                                                             <SelectTrigger>
                                                                 <SelectValue
                                                                     placeholder={t(
-                                                                        'app.plans.entries.nobody',
+                                                                        'plans.entries.nobody',
                                                                     )}
                                                                 />
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 <SelectItem value="none">
                                                                     {t(
-                                                                        'app.plans.entries.nobody',
+                                                                        'plans.entries.nobody',
                                                                     )}
                                                                 </SelectItem>
                                                                 {members.map(
@@ -414,7 +414,7 @@ export default function PlanForm({
                                                     <div className="grid gap-2">
                                                         <Label>
                                                             {t(
-                                                                'app.plans.fields.refs',
+                                                                'plans.fields.refs',
                                                             )}
                                                         </Label>
                                                         <Input
@@ -434,7 +434,7 @@ export default function PlanForm({
                                                     <div className="grid gap-2">
                                                         <Label>
                                                             {t(
-                                                                'app.plans.fields.description',
+                                                                'plans.fields.description',
                                                             )}
                                                         </Label>
                                                         <textarea
@@ -461,7 +461,7 @@ export default function PlanForm({
                                                         <div className="grid gap-2">
                                                             <Label>
                                                                 {t(
-                                                                    'app.plans.fields.start_on',
+                                                                    'plans.fields.start_on',
                                                                 )}
                                                             </Label>
                                                             <Input
@@ -482,7 +482,7 @@ export default function PlanForm({
                                                         <div className="grid gap-2">
                                                             <Label>
                                                                 {t(
-                                                                    'app.plans.fields.end_on',
+                                                                    'plans.fields.end_on',
                                                                 )}
                                                             </Label>
                                                             <Input
@@ -520,14 +520,14 @@ export default function PlanForm({
                                                 <SelectTrigger>
                                                     <SelectValue
                                                         placeholder={t(
-                                                            'app.plans.entries.pick_suite',
+                                                            'plans.entries.pick_suite',
                                                         )}
                                                     />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="none">
                                                         {t(
-                                                            'app.plans.entries.pick_suite',
+                                                            'plans.entries.pick_suite',
                                                         )}
                                                     </SelectItem>
                                                     {suites.map((s) => (
@@ -548,7 +548,7 @@ export default function PlanForm({
                                             disabled={!addSuiteId}
                                         >
                                             <Plus className="size-4" />
-                                            {t('app.plans.entries.add_suite')}
+                                            {t('plans.entries.add_suite')}
                                         </Button>
                                     </div>
                                 </div>
@@ -557,8 +557,8 @@ export default function PlanForm({
                             <div className="flex gap-2">
                                 <Button type="submit" disabled={processing}>
                                     {isEdit
-                                        ? t('app.common.save')
-                                        : t('app.common.create')}
+                                        ? t('common.save')
+                                        : t('common.create')}
                                 </Button>
                                 <Button variant="outline" asChild>
                                     <Link
@@ -568,7 +568,7 @@ export default function PlanForm({
                                                 : `/projects/${project.id}/plans`
                                         }
                                     >
-                                        {t('app.common.cancel')}
+                                        {t('common.cancel')}
                                     </Link>
                                 </Button>
                             </div>

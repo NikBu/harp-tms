@@ -54,12 +54,12 @@ function GeneralTab({ project }: { project: Project }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-base">{t('app.settings.general')}</CardTitle>
+                <CardTitle className="text-base">{t('settings.general')}</CardTitle>
             </CardHeader>
             <CardContent>
                 <form onSubmit={submit} className="flex flex-col gap-5">
                     <div className="grid gap-2">
-                        <Label htmlFor="name">{t('app.projects.fields.name')}</Label>
+                        <Label htmlFor="name">{t('projects.fields.name')}</Label>
                         <Input
                             id="name"
                             value={data.name}
@@ -69,7 +69,7 @@ function GeneralTab({ project }: { project: Project }) {
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="description">{t('app.projects.fields.description')}</Label>
+                        <Label htmlFor="description">{t('projects.fields.description')}</Label>
                         <textarea
                             id="description"
                             value={data.description}
@@ -80,7 +80,7 @@ function GeneralTab({ project }: { project: Project }) {
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="announcement">{t('app.projects.fields.announcement')}</Label>
+                        <Label htmlFor="announcement">{t('projects.fields.announcement')}</Label>
                         <textarea
                             id="announcement"
                             value={data.announcement}
@@ -99,13 +99,13 @@ function GeneralTab({ project }: { project: Project }) {
                             className="size-4 rounded border-input"
                         />
                         <Label htmlFor="show_announcement" className="cursor-pointer">
-                            {t('app.projects.fields.show_announcement')}
+                            {t('projects.fields.show_announcement')}
                         </Label>
                     </div>
 
                     <div>
                         <Button type="submit" disabled={processing}>
-                            {t('app.common.save')}
+                            {t('common.save')}
                         </Button>
                     </div>
                 </form>
@@ -141,7 +141,7 @@ function MembersTab({
     }
 
     function removeMember(member: ProjectMember) {
-        if (!window.confirm(t('app.common.confirm_delete'))) return;
+        if (!window.confirm(t('common.confirm_delete'))) return;
         router.delete(`/projects/${project.id}/settings/members/${member.id}`);
     }
 
@@ -150,7 +150,7 @@ function MembersTab({
             {/* Current members */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">{t('app.settings.members_current')}</CardTitle>
+                    <CardTitle className="text-base">{t('settings.members_current')}</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-2">
                     {(project.members ?? []).map((member) => (
@@ -193,18 +193,18 @@ function MembersTab({
             {available.length > 0 && (
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">{t('app.settings.members_add')}</CardTitle>
+                        <CardTitle className="text-base">{t('settings.members_add')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submitAdd} className="flex flex-wrap items-end gap-3">
                             <div className="grid min-w-48 flex-1 gap-2">
-                                <Label>{t('app.settings.user')}</Label>
+                                <Label>{t('settings.user')}</Label>
                                 <Select
                                     value={addForm.data.user_id || 'none'}
                                     onValueChange={(v) => addForm.setData('user_id', v === 'none' ? '' : v)}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder={t('app.settings.select_user')} />
+                                        <SelectValue placeholder={t('settings.select_user')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="none">—</SelectItem>
@@ -218,7 +218,7 @@ function MembersTab({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label>{t('app.settings.role')}</Label>
+                                <Label>{t('settings.role')}</Label>
                                 <Select
                                     value={addForm.data.role}
                                     onValueChange={(v) => addForm.setData('role', v as ProjectRole)}
@@ -241,7 +241,7 @@ function MembersTab({
                                 disabled={addForm.processing || !addForm.data.user_id}
                             >
                                 <UserPlus className="size-4" />
-                                {t('app.settings.members_add')}
+                                {t('settings.members_add')}
                             </Button>
                         </form>
                     </CardContent>
@@ -277,22 +277,22 @@ function DangerTab({ project }: { project: Project }) {
                 <CardHeader>
                     <CardTitle className="text-base text-orange-700">
                         {project.is_completed
-                            ? t('app.settings.danger.reactivate_title')
-                            : t('app.settings.danger.complete_title')
+                            ? t('settings.danger.reactivate_title')
+                            : t('settings.danger.complete_title')
                         }
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center justify-between gap-4">
                     <p className="text-sm text-muted-foreground">
                         {project.is_completed
-                            ? t('app.settings.danger.reactivate_desc')
-                            : t('app.settings.danger.complete_desc')
+                            ? t('settings.danger.reactivate_desc')
+                            : t('settings.danger.complete_desc')
                         }
                     </p>
                     <Button variant="outline" onClick={toggleComplete} className="shrink-0">
                         {project.is_completed
-                            ? t('app.settings.danger.reactivate')
-                            : t('app.settings.danger.complete')
+                            ? t('settings.danger.reactivate')
+                            : t('settings.danger.complete')
                         }
                     </Button>
                 </CardContent>
@@ -302,16 +302,16 @@ function DangerTab({ project }: { project: Project }) {
             <Card className="border-destructive/40">
                 <CardHeader>
                     <CardTitle className="text-base text-destructive">
-                        {t('app.settings.danger.delete_title')}
+                        {t('settings.danger.delete_title')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-4">
                     <p className="text-sm text-muted-foreground">
-                        {t('app.settings.danger.delete_desc')}
+                        {t('settings.danger.delete_desc')}
                     </p>
                     <div className="grid gap-2">
                         <Label className="text-sm">
-                            {t('app.settings.danger.confirm_label')}
+                            {t('settings.danger.confirm_label')}
                             {' '}
                             <strong>{project.name}</strong>
                         </Label>
@@ -328,7 +328,7 @@ function DangerTab({ project }: { project: Project }) {
                             onClick={deleteProject}
                         >
                             <Trash2 className="size-4" />
-                            {t('app.settings.danger.delete_confirm')}
+                            {t('settings.danger.delete_confirm')}
                         </Button>
                     </div>
                 </CardContent>
@@ -352,26 +352,26 @@ export default function ProjectSettings({
 
     return (
         <>
-            <Head title={`${project.name} — ${t('app.settings.title')}`} />
+            <Head title={`${project.name} — ${t('settings.title')}`} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center justify-between gap-2">
                     <div>
-                        <h1 className="text-2xl font-semibold">{t('app.settings.title')}</h1>
+                        <h1 className="text-2xl font-semibold">{t('settings.title')}</h1>
                         <p className="text-sm text-muted-foreground">{project.name}</p>
                     </div>
                     <Button variant="outline" asChild>
                         <Link href={`/projects/${project.id}`}>
-                            ← {t('app.common.back')}
+                            ← {t('common.back')}
                         </Link>
                     </Button>
                 </div>
 
                 <Tabs defaultValue="general" className="w-full">
                     <TabsList>
-                        <TabsTrigger value="general">{t('app.settings.general')}</TabsTrigger>
-                        <TabsTrigger value="members">{t('app.settings.members')}</TabsTrigger>
-                        <TabsTrigger value="danger">{t('app.settings.danger.tab')}</TabsTrigger>
+                        <TabsTrigger value="general">{t('settings.general')}</TabsTrigger>
+                        <TabsTrigger value="members">{t('settings.members')}</TabsTrigger>
+                        <TabsTrigger value="danger">{t('settings.danger.tab')}</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="general" className="mt-4 max-w-2xl">

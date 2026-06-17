@@ -121,12 +121,12 @@ class TestRunController extends Controller
         });
 
         if ($request->boolean('add_and_create')) {
-            Inertia::flash('toast', ['type' => 'success', 'message' => __('app.runs.created')]);
+            Inertia::flash('toast', ['type' => 'success', 'message' => __('runs.created')]);
 
             return to_route('projects.runs.create', $project);
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.runs.created')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('runs.created')]);
 
         return to_route('runs.show', $run);
     }
@@ -177,7 +177,7 @@ class TestRunController extends Controller
         $projectId = $project->id;
         $testRun->delete();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.runs.deleted')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('runs.deleted')]);
 
         return to_route('projects.runs.index', $projectId);
     }
@@ -196,7 +196,7 @@ class TestRunController extends Controller
             'completed_at' => now(),
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.runs.closed')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('runs.closed')]);
 
         return back();
     }
@@ -211,7 +211,7 @@ class TestRunController extends Controller
             'completed_at' => null,
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.runs.reopened')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('runs.reopened')]);
 
         return back();
     }
@@ -223,7 +223,7 @@ class TestRunController extends Controller
     {
         $this->authorizeProjectAccess($request, $testRun->project);
 
-        abort_if($testRun->is_completed, 422, __('app.runs.closed_error'));
+        abort_if($testRun->is_completed, 422, __('runs.closed_error'));
         abort_unless($test->run_id === $testRun->id, 404);
 
         $validated = $request->validate([
@@ -263,7 +263,7 @@ class TestRunController extends Controller
     {
         $this->authorizeProjectAccess($request, $testRun->project);
 
-        abort_if($testRun->is_completed, 422, __('app.runs.closed_error'));
+        abort_if($testRun->is_completed, 422, __('runs.closed_error'));
 
         $validated = $request->validate([
             'results' => ['required', 'array', 'min:1', 'max:500'],
@@ -308,7 +308,7 @@ class TestRunController extends Controller
             $this->recalculateRunCounts($testRun);
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.runs.bulk_results_saved')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('runs.bulk_results_saved')]);
 
         return back();
     }
@@ -341,7 +341,7 @@ class TestRunController extends Controller
     {
         $this->authorizeProjectAccess($request, $testRun->project);
 
-        abort_if($testRun->is_completed, 422, __('app.runs.closed_error'));
+        abort_if($testRun->is_completed, 422, __('runs.closed_error'));
 
         $request->validate([
             'results' => ['required', 'string'], // JSON-encoded on the frontend

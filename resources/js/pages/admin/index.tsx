@@ -49,23 +49,23 @@ export default function AdminIndex({ stats }: { stats: AdminStats }) {
     const t = useTrans();
 
     const cards: { icon: LucideIcon; label: string; value: number }[] = [
-        { icon: Users, label: t('app.admin.stats.users'), value: stats.users },
-        { icon: FolderKanban, label: t('app.admin.stats.projects'), value: stats.projects },
-        { icon: ClipboardList, label: t('app.admin.stats.test_cases'), value: stats.test_cases },
-        { icon: PlayCircle, label: t('app.admin.stats.test_runs'), value: stats.test_runs },
-        { icon: Layers, label: t('app.admin.stats.suites'), value: stats.suites },
-        { icon: ListChecks, label: t('app.admin.stats.tests'), value: stats.tests },
+        { icon: Users, label: t('admin.stats.users'), value: stats.users },
+        { icon: FolderKanban, label: t('admin.stats.projects'), value: stats.projects },
+        { icon: ClipboardList, label: t('admin.stats.test_cases'), value: stats.test_cases },
+        { icon: PlayCircle, label: t('admin.stats.test_runs'), value: stats.test_runs },
+        { icon: Layers, label: t('admin.stats.suites'), value: stats.suites },
+        { icon: ListChecks, label: t('admin.stats.tests'), value: stats.tests },
     ];
 
     return (
         <>
-            <Head title={t('app.admin.title')} />
+            <Head title={t('admin.title')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="grid gap-1">
-                    <h1 className="text-2xl font-semibold">{t('app.admin.title')}</h1>
+                    <h1 className="text-2xl font-semibold">{t('admin.title')}</h1>
                     <p className="text-sm text-muted-foreground">
-                        {t('app.admin.overview')}
+                        {t('admin.overview')}
                     </p>
                 </div>
 

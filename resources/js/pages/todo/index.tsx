@@ -59,11 +59,11 @@ export default function TodoIndex({
 
     return (
         <>
-            <Head title={t('app.todo.title')} />
+            <Head title={t('todo.title')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-semibold">{t('app.todo.title')}</h1>
+                    <h1 className="text-2xl font-semibold">{t('todo.title')}</h1>
                     {totalCount > 0 && (
                         <Badge variant="secondary">{totalCount}</Badge>
                     )}
@@ -74,7 +74,7 @@ export default function TodoIndex({
                         <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
                             <CheckCircle2 className="size-10 text-green-500" />
                             <p className="text-sm text-muted-foreground">
-                                {t('app.todo.empty')}
+                                {t('todo.empty')}
                             </p>
                         </CardContent>
                     </Card>
@@ -82,15 +82,15 @@ export default function TodoIndex({
                     <>
                         <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
                             <TabsList>
-                                <TabsTrigger value="all">{t('app.todo.all')}</TabsTrigger>
-                                <TabsTrigger value="untested">{t('app.todo.untested')}</TabsTrigger>
-                                <TabsTrigger value="failed">{t('app.todo.failed')}</TabsTrigger>
-                                <TabsTrigger value="retest">{t('app.todo.retest')}</TabsTrigger>
+                                <TabsTrigger value="all">{t('todo.all')}</TabsTrigger>
+                                <TabsTrigger value="untested">{t('todo.untested')}</TabsTrigger>
+                                <TabsTrigger value="failed">{t('todo.failed')}</TabsTrigger>
+                                <TabsTrigger value="retest">{t('todo.retest')}</TabsTrigger>
                             </TabsList>
                         </Tabs>
 
                         {filteredGroups.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">{t('app.todo.empty')}</p>
+                            <p className="text-sm text-muted-foreground">{t('todo.empty')}</p>
                         ) : (
                             filteredGroups.map((group) => (
                                 <Card key={group.run.id}>
@@ -101,10 +101,10 @@ export default function TodoIndex({
                                         <table className="w-full text-sm">
                                             <thead>
                                                 <tr className="border-b text-left text-muted-foreground">
-                                                    <th className="p-3 font-medium">{t('app.todo.case_id')}</th>
-                                                    <th className="p-3 font-medium">{t('app.test_cases.fields.title')}</th>
-                                                    <th className="p-3 font-medium">{t('app.test_cases.fields.priority')}</th>
-                                                    <th className="p-3 font-medium">{t('app.runs.result.status')}</th>
+                                                    <th className="p-3 font-medium">{t('todo.case_id')}</th>
+                                                    <th className="p-3 font-medium">{t('test_cases.fields.title')}</th>
+                                                    <th className="p-3 font-medium">{t('test_cases.fields.priority')}</th>
+                                                    <th className="p-3 font-medium">{t('runs.result.status')}</th>
                                                     <th className="p-3" />
                                                 </tr>
                                             </thead>
@@ -119,7 +119,7 @@ export default function TodoIndex({
                                                                     variant="outline"
                                                                     className={`capitalize ${PRIORITY_CLASS[test.priority] ?? ''}`}
                                                                 >
-                                                                    {t(`app.requirements.priorities.${test.priority}`)}
+                                                                    {t(`requirements.priorities.${test.priority}`)}
                                                                 </Badge>
                                                             ) : (
                                                                 <span className="text-muted-foreground">—</span>
@@ -127,13 +127,13 @@ export default function TodoIndex({
                                                         </td>
                                                         <td className="p-3">
                                                             <Badge variant={STATUS_VARIANT[test.status]} className="capitalize">
-                                                                {t(`app.runs.statuses.${test.status}`)}
+                                                                {t(`runs.statuses.${test.status}`)}
                                                             </Badge>
                                                         </td>
                                                         <td className="p-3 text-right">
                                                             <Button variant="ghost" size="sm" asChild>
                                                                 <Link href={`/runs/${test.run_id}`}>
-                                                                    {t('app.todo.view')}
+                                                                    {t('todo.view')}
                                                                 </Link>
                                                             </Button>
                                                         </td>

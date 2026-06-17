@@ -92,10 +92,10 @@ export default function ProjectDefectsIndex({ project, defects }: Props) {
                     <div className="grid gap-1">
                         <h1 className="flex items-center gap-2 text-2xl font-semibold">
                             <Bug className="size-6" />
-                            {t('app.defects.title')}
+                            {t('defects.title')}
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            {t('app.defects.description')}
+                            {t('defects.description')}
                         </p>
                     </div>
                 </div>
@@ -104,7 +104,7 @@ export default function ProjectDefectsIndex({ project, defects }: Props) {
                 <div className="relative max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
                     <Input
-                        placeholder={t('app.common.search')}
+                        placeholder={t('common.search')}
                         className="pl-8"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
@@ -118,8 +118,8 @@ export default function ProjectDefectsIndex({ project, defects }: Props) {
                             <Bug className="size-10 opacity-30" />
                             <p className="text-sm">
                                 {query
-                                    ? t('app.common.no_results')
-                                    : t('app.defects.empty')}
+                                    ? t('common.no_results')
+                                    : t('defects.empty')}
                             </p>
                         </CardContent>
                     </Card>
@@ -128,13 +128,13 @@ export default function ProjectDefectsIndex({ project, defects }: Props) {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>{t('app.defects.issue')}</TableHead>
-                                    <TableHead>{t('app.defects.title')}</TableHead>
-                                    <TableHead>{t('app.defects.tracker')}</TableHead>
-                                    <TableHead>{t('app.defects.status')}</TableHead>
-                                    <TableHead>{t('app.defects.run')}</TableHead>
-                                    <TableHead>{t('app.defects.test')}</TableHead>
-                                    <TableHead className="text-right">{t('app.defects.refreshed')}</TableHead>
+                                    <TableHead>{t('defects.issue')}</TableHead>
+                                    <TableHead>{t('defects.title')}</TableHead>
+                                    <TableHead>{t('defects.tracker')}</TableHead>
+                                    <TableHead>{t('defects.status')}</TableHead>
+                                    <TableHead>{t('defects.run')}</TableHead>
+                                    <TableHead>{t('defects.test')}</TableHead>
+                                    <TableHead className="text-right">{t('defects.refreshed')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

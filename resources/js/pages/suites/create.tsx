@@ -31,22 +31,22 @@ export default function SuitesCreate({ project }: { project: Project }) {
 
     return (
         <>
-            <Head title={t('app.suites.create')} />
+            <Head title={t('suites.create')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <h1 className="text-2xl font-semibold">
-                    {t('app.suites.create')}
+                    {t('suites.create')}
                 </h1>
 
                 <Card className="max-w-2xl">
                     <CardHeader>
-                        <CardTitle>{t('app.suites.create')}</CardTitle>
+                        <CardTitle>{t('suites.create')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit} className="flex flex-col gap-6">
                             <div className="grid gap-2">
                                 <Label htmlFor="name">
-                                    {t('app.projects.name')}
+                                    {t('projects.name')}
                                 </Label>
                                 <Input
                                     id="name"
@@ -65,7 +65,7 @@ export default function SuitesCreate({ project }: { project: Project }) {
 
                             <div className="grid gap-2">
                                 <Label htmlFor="description">
-                                    {t('app.projects.description')}
+                                    {t('projects.description')}
                                 </Label>
                                 <textarea
                                     id="description"
@@ -85,11 +85,11 @@ export default function SuitesCreate({ project }: { project: Project }) {
 
                             <div className="flex gap-2">
                                 <Button type="submit" disabled={processing}>
-                                    {t('app.common.create')}
+                                    {t('common.create')}
                                 </Button>
                                 <Button variant="outline" asChild>
                                     <Link href={suitesIndex.url(project.id)}>
-                                        {t('app.common.cancel')}
+                                        {t('common.cancel')}
                                     </Link>
                                 </Button>
                             </div>

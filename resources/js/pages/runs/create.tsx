@@ -156,21 +156,21 @@ export default function RunsCreate({
 
     return (
         <>
-            <Head title={t('app.runs.create')} />
+            <Head title={t('runs.create')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
-                <h1 className="text-2xl font-semibold">{t('app.runs.create')}</h1>
+                <h1 className="text-2xl font-semibold">{t('runs.create')}</h1>
 
                 <Card className="max-w-2xl">
                     <CardHeader>
-                        <CardTitle>{t('app.runs.create')}</CardTitle>
+                        <CardTitle>{t('runs.create')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit} className="flex flex-col gap-6">
                             {/* Name */}
                             <div className="grid gap-2">
                                 <Label htmlFor="name">
-                                    {t('app.runs.fields.name')} *
+                                    {t('runs.fields.name')} *
                                 </Label>
                                 <Input
                                     id="name"
@@ -179,7 +179,7 @@ export default function RunsCreate({
                                         nameTouched.current = true;
                                         setData('name', e.target.value);
                                     }}
-                                    placeholder={t('app.runs.fields.name_placeholder')}
+                                    placeholder={t('runs.fields.name_placeholder')}
                                     autoFocus
                                 />
                                 {errors.name && (
@@ -192,7 +192,7 @@ export default function RunsCreate({
                             {/* References */}
                             <div className="grid gap-2">
                                 <Label htmlFor="refs">
-                                    {t('app.runs.fields.refs')}
+                                    {t('runs.fields.refs')}
                                 </Label>
                                 <Input
                                     id="refs"
@@ -200,7 +200,7 @@ export default function RunsCreate({
                                     onChange={(e) =>
                                         setData('refs', e.target.value)
                                     }
-                                    placeholder={t('app.runs.fields.refs_placeholder')}
+                                    placeholder={t('runs.fields.refs_placeholder')}
                                 />
                             </div>
 
@@ -208,7 +208,7 @@ export default function RunsCreate({
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="grid gap-2">
                                     <Label htmlFor="suite">
-                                        {t('app.navigation.suites')}
+                                        {t('navigation.suites')}
                                     </Label>
                                     <Select
                                         value={data.suite_id || 'none'}
@@ -233,7 +233,7 @@ export default function RunsCreate({
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="milestone">
-                                        {t('app.runs.fields.milestone')}
+                                        {t('runs.fields.milestone')}
                                     </Label>
                                     <Select
                                         value={data.milestone_id || 'none'}
@@ -263,7 +263,7 @@ export default function RunsCreate({
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="assigned_to">
-                                        {t('app.runs.fields.assigned_to')}
+                                        {t('runs.fields.assigned_to')}
                                     </Label>
                                     <Select
                                         value={data.assigned_to || 'none'}
@@ -282,7 +282,7 @@ export default function RunsCreate({
                                             <SelectItem
                                                 value={String(currentUserId)}
                                             >
-                                                {t('app.runs.fields.assign_me')}
+                                                {t('runs.fields.assign_me')}
                                             </SelectItem>
                                             {members
                                                 .filter(
@@ -304,7 +304,7 @@ export default function RunsCreate({
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div className="grid gap-2">
                                         <Label htmlFor="start_on">
-                                            {t('app.runs.fields.start_on')}
+                                            {t('runs.fields.start_on')}
                                         </Label>
                                         <Input
                                             id="start_on"
@@ -320,7 +320,7 @@ export default function RunsCreate({
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="end_on">
-                                            {t('app.runs.fields.end_on')}
+                                            {t('runs.fields.end_on')}
                                         </Label>
                                         <Input
                                             id="end_on"
@@ -342,7 +342,7 @@ export default function RunsCreate({
                             {/* Description */}
                             <div className="grid gap-2">
                                 <Label htmlFor="description">
-                                    {t('app.runs.fields.description')}
+                                    {t('runs.fields.description')}
                                 </Label>
                                 <textarea
                                     id="description"
@@ -357,7 +357,7 @@ export default function RunsCreate({
 
                             {/* Case selection mode */}
                             <div className="grid gap-3">
-                                <Label>{t('app.runs.fields.case_selection')}</Label>
+                                <Label>{t('runs.fields.case_selection')}</Label>
                                 <div className="grid gap-2">
                                     {(
                                         [
@@ -377,7 +377,7 @@ export default function RunsCreate({
                                                 onChange={() => setMode(m)}
                                                 className="size-4 accent-primary"
                                             />
-                                            {t(`app.runs.selection.${m}`)}
+                                            {t(`runs.selection.${m}`)}
                                         </label>
                                     ))}
                                 </div>
@@ -387,11 +387,11 @@ export default function RunsCreate({
                                     <div className="max-h-72 overflow-y-auto rounded-md border p-2">
                                         {!data.suite_id ? (
                                             <p className="px-2 py-4 text-center text-sm text-muted-foreground">
-                                                {t('app.runs.selection.pick_suite')}
+                                                {t('runs.selection.pick_suite')}
                                             </p>
                                         ) : sections.length === 0 ? (
                                             <p className="px-2 py-4 text-center text-sm text-muted-foreground">
-                                                {t('app.test_cases.empty')}
+                                                {t('test_cases.empty')}
                                             </p>
                                         ) : (
                                             sections.map((section) => (
@@ -411,7 +411,7 @@ export default function RunsCreate({
                                     <div className="grid gap-4 rounded-md border p-3 sm:grid-cols-2">
                                         <div className="grid gap-2">
                                             <Label htmlFor="filter_priority">
-                                                {t('app.test_cases.fields.priority')}
+                                                {t('test_cases.fields.priority')}
                                             </Label>
                                             <Select
                                                 value={
@@ -439,7 +439,7 @@ export default function RunsCreate({
                                                                 value={opt.value}
                                                             >
                                                                 {t(
-                                                                    `app.test_cases.priorities.${opt.key}`,
+                                                                    `test_cases.priorities.${opt.key}`,
                                                                 )}
                                                             </SelectItem>
                                                         ),
@@ -449,7 +449,7 @@ export default function RunsCreate({
                                         </div>
                                         <div className="grid gap-2">
                                             <Label htmlFor="filter_type">
-                                                {t('app.test_cases.fields.type')}
+                                                {t('test_cases.fields.type')}
                                             </Label>
                                             <Select
                                                 value={
@@ -490,7 +490,7 @@ export default function RunsCreate({
                             {/* Actions */}
                             <div className="flex flex-wrap gap-2">
                                 <Button type="submit" disabled={processing}>
-                                    {t('app.runs.create')}
+                                    {t('runs.create')}
                                 </Button>
                                 <Button
                                     type="button"
@@ -501,11 +501,11 @@ export default function RunsCreate({
                                         submit();
                                     }}
                                 >
-                                    {t('app.runs.add_and_create')}
+                                    {t('runs.add_and_create')}
                                 </Button>
                                 <Button variant="outline" asChild>
                                     <Link href={`/projects/${project.id}/runs`}>
-                                        {t('app.common.cancel')}
+                                        {t('common.cancel')}
                                     </Link>
                                 </Button>
                             </div>

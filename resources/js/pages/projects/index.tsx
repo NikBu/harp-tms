@@ -24,9 +24,9 @@ type ViewMode = 'grid' | 'list';
 function SuiteModeBadge({ mode }: { mode: SuiteMode }) {
     const t = useTrans();
     const labels: Record<SuiteMode, string> = {
-        1: t('app.projects.suite_mode_single'),
-        2: t('app.projects.suite_mode_single_baseline'),
-        3: t('app.projects.suite_mode_multi'),
+        1: t('projects.suite_mode_single'),
+        2: t('projects.suite_mode_single_baseline'),
+        3: t('projects.suite_mode_multi'),
     };
 
     return <Badge variant="secondary">{labels[mode]}</Badge>;
@@ -52,7 +52,7 @@ function ProjectCard({ project, view }: { project: Project; view: ViewMode }) {
                 ) : null}
                 <div className="flex shrink-0 items-center gap-2">
                     {project.is_completed ? (
-                        <Badge variant="outline">{t('app.projects.completed')}</Badge>
+                        <Badge variant="outline">{t('projects.completed')}</Badge>
                     ) : null}
                     <SuiteModeBadge mode={project.suite_mode} />
                 </div>
@@ -77,7 +77,7 @@ function ProjectCard({ project, view }: { project: Project; view: ViewMode }) {
                 <CardContent className="text-sm text-muted-foreground">
                     {project.is_completed ? (
                         <Badge variant="outline">
-                            {t('app.projects.completed')}
+                            {t('projects.completed')}
                         </Badge>
                     ) : null}
                 </CardContent>
@@ -106,12 +106,12 @@ export default function ProjectsIndex({
 
     return (
         <>
-            <Head title={t('app.projects.title')} />
+            <Head title={t('projects.title')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-semibold">
-                        {t('app.projects.title')}
+                        {t('projects.title')}
                     </h1>
                     <div className="flex items-center gap-2">
                         {/* View toggle */}
@@ -145,7 +145,7 @@ export default function ProjectsIndex({
                         <Button asChild>
                             <Link href={projectsCreate().url}>
                                 <Plus className="size-4" />
-                                {t('app.projects.create')}
+                                {t('projects.create')}
                             </Link>
                         </Button>
                     </div>
@@ -155,15 +155,15 @@ export default function ProjectsIndex({
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-12 text-center">
                         <FolderOpen className="size-10 text-muted-foreground" />
                         <h2 className="text-lg font-medium">
-                            {t('app.projects.empty_title')}
+                            {t('projects.empty_title')}
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                            {t('app.projects.empty_description')}
+                            {t('projects.empty_description')}
                         </p>
                         <Button asChild className="mt-2">
                             <Link href={projectsCreate().url}>
                                 <Plus className="size-4" />
-                                {t('app.projects.create')}
+                                {t('projects.create')}
                             </Link>
                         </Button>
                     </div>

@@ -132,18 +132,18 @@ export default function RunsIndex({
 
         return [
             {
-                label: t('app.runs.group_open'),
+                label: t('runs.group_open'),
                 runs: sorted.filter((r) => !r.is_completed),
             },
             {
-                label: t('app.runs.group_closed'),
+                label: t('runs.group_closed'),
                 runs: sorted.filter((r) => r.is_completed),
             },
         ].filter((g) => g.runs.length > 0);
     }, [sorted, groupByStatus, t]);
 
     function deleteRun(run: TestRun) {
-        if (!window.confirm(t('app.runs.delete_confirm'))) {
+        if (!window.confirm(t('runs.delete_confirm'))) {
             return;
         }
 
@@ -178,12 +178,12 @@ export default function RunsIndex({
 
     return (
         <>
-            <Head title={t('app.runs.title')} />
+            <Head title={t('runs.title')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center justify-between gap-2">
                     <h1 className="text-2xl font-semibold">
-                        {t('app.runs.title')}
+                        {t('runs.title')}
                     </h1>
                     <div className="flex items-center gap-2">
                         <Button
@@ -192,12 +192,12 @@ export default function RunsIndex({
                             onClick={() => setGroupByStatus((v) => !v)}
                         >
                             <Layers className="size-4" />
-                            {t('app.runs.group_by_status')}
+                            {t('runs.group_by_status')}
                         </Button>
                         <Button asChild>
                             <Link href={`/projects/${project.id}/runs/create`}>
                                 <Plus className="size-4" />
-                                {t('app.runs.create')}
+                                {t('runs.create')}
                             </Link>
                         </Button>
                     </div>
@@ -206,7 +206,7 @@ export default function RunsIndex({
                 {runs.data.length === 0 ? (
                     <Card>
                         <CardContent className="py-12 text-center text-sm text-muted-foreground">
-                            {t('app.runs.empty')}
+                            {t('runs.empty')}
                         </CardContent>
                     </Card>
                 ) : (
@@ -216,39 +216,39 @@ export default function RunsIndex({
                                 <tr>
                                     <th className="px-3 py-2">
                                         <SortHeader
-                                            label={t('app.runs.fields.name')}
+                                            label={t('runs.fields.name')}
                                             column="name"
                                         />
                                     </th>
                                     <th className="px-3 py-2">
                                         <SortHeader
-                                            label={t('app.navigation.suites')}
+                                            label={t('navigation.suites')}
                                             column="suite"
                                         />
                                     </th>
                                     <th className="px-3 py-2">
                                         <SortHeader
-                                            label={t('app.runs.fields.status')}
+                                            label={t('runs.fields.status')}
                                             column="status"
                                         />
                                     </th>
                                     <th className="px-3 py-2 w-48">
-                                        {t('app.runs.fields.progress')}
+                                        {t('runs.fields.progress')}
                                     </th>
                                     <th className="px-3 py-2">
                                         <SortHeader
-                                            label={t('app.runs.fields.milestone')}
+                                            label={t('runs.fields.milestone')}
                                             column="milestone"
                                         />
                                     </th>
                                     <th className="px-3 py-2">
                                         <SortHeader
-                                            label={t('app.runs.fields.created')}
+                                            label={t('runs.fields.created')}
                                             column="created"
                                         />
                                     </th>
                                     <th className="px-3 py-2 text-right">
-                                        {t('app.common.actions')}
+                                        {t('common.actions')}
                                     </th>
                                 </tr>
                             </thead>
@@ -317,11 +317,11 @@ function RunGroup({
                     <td className="px-3 py-2">
                         {run.is_completed ? (
                             <Badge variant="secondary" className="text-xs">
-                                {t('app.runs.completed')}
+                                {t('runs.completed')}
                             </Badge>
                         ) : (
                             <Badge variant="outline" className="text-xs">
-                                {t('app.runs.group_open')}
+                                {t('runs.group_open')}
                             </Badge>
                         )}
                     </td>
@@ -344,7 +344,7 @@ function RunGroup({
                         <div className="flex items-center justify-end gap-1">
                             <Button variant="ghost" size="sm" asChild>
                                 <Link href={`/runs/${run.id}`}>
-                                    {t('app.test_cases.view')}
+                                    {t('test_cases.view')}
                                 </Link>
                             </Button>
                             <Button

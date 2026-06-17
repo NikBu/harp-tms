@@ -44,16 +44,16 @@ function useAddItems(url: string, t: TransFn, projectId?: number): { label: stri
         const suiteId = suiteMatch ? suiteMatch[1] : null;
 
         items.push({
-            label: t('app.sections.add'),
+            label: t('sections.add'),
             href: suiteId ? `/suites/${suiteId}` : `${base}/suites`,
         });
     }
 
     items.push(
-        { label: t('app.test_cases.add_test_case'), href: `${base}/cases/create` },
-        { label: t('app.runs.create'), href: `${base}/runs/create` },
-        { label: t('app.plans.create'), href: `${base}/plans/create` },
-        { label: t('app.runs.milestones.create'), href: `${base}/milestones/create` },
+        { label: t('test_cases.add_test_case'), href: `${base}/cases/create` },
+        { label: t('runs.create'), href: `${base}/runs/create` },
+        { label: t('plans.create'), href: `${base}/plans/create` },
+        { label: t('runs.milestones.create'), href: `${base}/milestones/create` },
     );
 
     return items;
@@ -83,11 +83,11 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         <SheetTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <LayoutGrid className="h-4 w-4" />
-                                <span className="sr-only">{t('app.navigation.main')}</span>
+                                <span className="sr-only">{t('navigation.main')}</span>
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="left" className="w-64 bg-sidebar p-0">
-                            <SheetTitle className="sr-only">{t('app.navigation.main')}</SheetTitle>
+                            <SheetTitle className="sr-only">{t('navigation.main')}</SheetTitle>
                             <SheetHeader className="flex h-12 items-center border-b border-sidebar-border px-4">
                                 <Link href={dashboard()}>
                                     <img src={logoSrc} alt="HARP TMS" className="h-7 w-auto object-contain" />
@@ -99,14 +99,14 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-sidebar-accent"
                                 >
                                     <LayoutGrid className="h-4 w-4" />
-                                    {t('app.navigation.dashboard')}
+                                    {t('navigation.dashboard')}
                                 </Link>
                                 <Link
                                     href="/projects"
                                     className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-sidebar-accent"
                                 >
                                     <Search className="h-4 w-4" />
-                                    {t('app.navigation.projects')}
+                                    {t('navigation.projects')}
                                 </Link>
                                 {isSiteAdmin && (
                                     <Link
@@ -114,7 +114,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                         className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-sidebar-accent"
                                     >
                                         <ShieldCheck className="h-4 w-4" />
-                                        {t('app.navigation.admin')}
+                                        {t('navigation.admin')}
                                     </Link>
                                 )}
                             </nav>
@@ -150,7 +150,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             )}
                         >
                             <LayoutGrid className="h-4 w-4" />
-                            {t('app.navigation.dashboard')}
+                            {t('navigation.dashboard')}
                         </Link>
                     </nav>
                 )}
@@ -163,7 +163,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             <DropdownMenuTrigger asChild>
                                 <Button variant="default" size="sm" className="h-8 gap-1 px-3 text-xs font-medium">
                                     <Plus className="h-3.5 w-3.5" />
-                                    {t('app.common.add')}
+                                    {t('common.add')}
                                     <ChevronDown className="h-3 w-3 opacity-70" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -179,7 +179,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
                     <Button variant="ghost" size="icon" className="h-8 w-8">
                         <Search className="h-4 w-4 opacity-70" />
-                        <span className="sr-only">{t('app.common.search')}</span>
+                        <span className="sr-only">{t('common.search')}</span>
                     </Button>
 
                     <ThemeToggle />
@@ -192,7 +192,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                             onClick={() => router.visit('/admin')}
                         >
                             <ShieldCheck className="h-3.5 w-3.5" />
-                            {t('app.navigation.admin')}
+                            {t('navigation.admin')}
                         </Button>
                     )}
 

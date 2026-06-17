@@ -55,11 +55,11 @@ export default function TodoGlobal({
 
     return (
         <>
-            <Head title={t('app.todo.my_tasks')} />
+            <Head title={t('todo.my_tasks')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-semibold">{t('app.todo.my_tasks')}</h1>
+                    <h1 className="text-2xl font-semibold">{t('todo.my_tasks')}</h1>
                     {totalCount > 0 && <Badge variant="secondary">{totalCount}</Badge>}
                 </div>
 
@@ -68,7 +68,7 @@ export default function TodoGlobal({
                         <CardContent className="flex flex-col items-center justify-center gap-3 py-12 text-center">
                             <CheckCircle2 className="size-10 text-green-500" />
                             <p className="text-sm text-muted-foreground">
-                                {t('app.todo.global_empty')}
+                                {t('todo.global_empty')}
                             </p>
                         </CardContent>
                     </Card>
@@ -113,13 +113,13 @@ function ProjectSection({ group }: { group: TodoGroup }) {
                 <CollapsibleContent>
                     <CardContent className="flex flex-col gap-4 pt-0">
                         {group.cases.length > 0 && (
-                            <Subsection title={t('app.todo.cases')}>
+                            <Subsection title={t('todo.cases')}>
                                 {group.cases.map((c) => (
                                     <EntityRow
                                         key={`case-${c.id}`}
                                         href={`/cases/${c.id}`}
                                         label={c.title}
-                                        view={t('app.todo.view')}
+                                        view={t('todo.view')}
                                     >
                                         {c.priority && (
                                             <Badge
@@ -129,7 +129,7 @@ function ProjectSection({ group }: { group: TodoGroup }) {
                                                     PRIORITY_CLASS[c.priority] ?? '',
                                                 )}
                                             >
-                                                {t(`app.requirements.priorities.${c.priority}`)}
+                                                {t(`requirements.priorities.${c.priority}`)}
                                             </Badge>
                                         )}
                                     </EntityRow>
@@ -138,26 +138,26 @@ function ProjectSection({ group }: { group: TodoGroup }) {
                         )}
 
                         {group.runs.length > 0 && (
-                            <Subsection title={t('app.todo.runs')}>
+                            <Subsection title={t('todo.runs')}>
                                 {group.runs.map((r) => (
                                     <EntityRow
                                         key={`run-${r.id}`}
                                         href={`/runs/${r.id}`}
                                         label={r.name}
-                                        view={t('app.todo.view')}
+                                        view={t('todo.view')}
                                     />
                                 ))}
                             </Subsection>
                         )}
 
                         {group.plans.length > 0 && (
-                            <Subsection title={t('app.todo.plans')}>
+                            <Subsection title={t('todo.plans')}>
                                 {group.plans.map((p) => (
                                     <EntityRow
                                         key={`plan-${p.id}`}
                                         href={`/plans/${p.id}`}
                                         label={p.name}
-                                        view={t('app.todo.view')}
+                                        view={t('todo.view')}
                                     />
                                 ))}
                             </Subsection>

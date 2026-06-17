@@ -33,7 +33,7 @@ class DefectLinkController extends Controller
         $issue       = $client->findIssue($data['external_id']);
 
         if ($issue === null) {
-            return response()->json(['message' => __('app.defects.issue_not_found')], 422);
+            return response()->json(['message' => __('defects.issue_not_found')], 422);
         }
 
         $link = $result->defectLinks()->create([
@@ -99,7 +99,7 @@ class DefectLinkController extends Controller
 
         $defect->delete();
 
-        return response()->json(['message' => __('app.defects.unlinked')]);
+        return response()->json(['message' => __('defects.unlinked')]);
     }
 
     /**
@@ -129,7 +129,7 @@ class DefectLinkController extends Controller
         $issue  = $client->findIssue($issueId);
 
         if ($issue === null) {
-            return response()->json(['message' => __('app.defects.issue_not_found')], 404);
+            return response()->json(['message' => __('defects.issue_not_found')], 404);
         }
 
         return response()->json($issue);
@@ -138,7 +138,7 @@ class DefectLinkController extends Controller
     private function authorizeResult(TestResult $result): void
     {
         $run = $result->run;
-        abort_if($run->is_closed, 403, __('app.runs.closed_error'));
+        abort_if($run->is_closed, 403, __('runs.closed_error'));
         Gate::authorize('view', $run->project);
     }
 }

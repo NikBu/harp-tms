@@ -89,15 +89,15 @@ function AddEntryDialog({
             <DialogContent>
                 <form onSubmit={submit} className="grid gap-4">
                     <DialogHeader>
-                        <DialogTitle>{t('app.plans.add_run')}</DialogTitle>
+                        <DialogTitle>{t('plans.add_run')}</DialogTitle>
                     </DialogHeader>
 
                     {/* Run picker */}
                     <div className="grid gap-2">
-                        <Label>{t('app.navigation.runs')}</Label>
+                        <Label>{t('navigation.runs')}</Label>
                         <Select value={data.run_id || 'none'} onValueChange={(v) => setData('run_id', v === 'none' ? '' : v)}>
                             <SelectTrigger>
-                                <SelectValue placeholder={t('app.plans.select_run')} />
+                                <SelectValue placeholder={t('plans.select_run')} />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="none">—</SelectItem>
@@ -110,7 +110,7 @@ function AddEntryDialog({
 
                     {/* Assign to */}
                     <div className="grid gap-2">
-                        <Label>{t('app.runs.fields.assigned_to')}</Label>
+                        <Label>{t('runs.fields.assigned_to')}</Label>
                         <Select value={data.assigned_to || 'none'} onValueChange={(v) => setData('assigned_to', v === 'none' ? '' : v)}>
                             <SelectTrigger>
                                 <SelectValue placeholder="—" />
@@ -127,7 +127,7 @@ function AddEntryDialog({
                     {/* Configurations (optional) */}
                     {configGroups.length > 0 && (
                         <div className="grid gap-2">
-                            <Label>{t('app.plans.configurations')}</Label>
+                            <Label>{t('plans.configurations')}</Label>
                             <div className="flex flex-wrap gap-2">
                                 {configGroups.map((group) =>
                                     group.configurations.map((cfg) => (
@@ -151,10 +151,10 @@ function AddEntryDialog({
 
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={onClose}>
-                            {t('app.common.cancel')}
+                            {t('common.cancel')}
                         </Button>
                         <Button type="submit" disabled={processing || !data.run_id}>
-                            {t('app.plans.add_run')}
+                            {t('plans.add_run')}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -177,7 +177,7 @@ function EntryRow({
     const t = useTrans();
 
     function removeEntry() {
-        if (!window.confirm(t('app.common.confirm_delete'))) return;
+        if (!window.confirm(t('common.confirm_delete'))) return;
         router.delete(`/plans/${planId}/entries/${entry.id}`);
     }
 
@@ -209,7 +209,7 @@ function EntryRow({
 
             <div className="flex shrink-0 items-center gap-2">
                 {entry.run?.is_completed && (
-                    <Badge variant="secondary" className="text-xs">{t('app.runs.completed')}</Badge>
+                    <Badge variant="secondary" className="text-xs">{t('runs.completed')}</Badge>
                 )}
                 {!planCompleted && (
                     <Button variant="ghost" size="icon" className="size-7 text-destructive hover:text-destructive" onClick={removeEntry}>
@@ -246,7 +246,7 @@ export default function PlansShow({
     }
 
     function deletePlan() {
-        if (!window.confirm(t('app.common.confirm_delete'))) return;
+        if (!window.confirm(t('common.confirm_delete'))) return;
         router.delete(`/plans/${plan.id}`);
     }
 
@@ -262,20 +262,20 @@ export default function PlansShow({
                         <h1 className="text-2xl font-semibold">{plan.name}</h1>
                         <p className="text-sm text-muted-foreground">
                             {plan.milestone?.name ?? '—'}
-                            {plan.end_on && <> · {t('app.plans.ends')} {plan.end_on}</>}
+                            {plan.end_on && <> · {t('plans.ends')} {plan.end_on}</>}
                         </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                         <Button variant="outline" asChild>
                             <Link href={`/plans/${plan.id}/edit`}>
                                 <Pencil className="size-4" />
-                                {t('app.common.edit')}
+                                {t('common.edit')}
                             </Link>
                         </Button>
                         <Button variant="outline" onClick={toggleClose}>
                             {plan.is_completed
-                                ? <><XCircle className="size-4" /> {t('app.plans.reopen')}</>
-                                : <><CheckCircle2 className="size-4" /> {t('app.plans.close')}</>
+                                ? <><XCircle className="size-4" /> {t('plans.reopen')}</>
+                                : <><CheckCircle2 className="size-4" /> {t('plans.close')}</>
                             }
                         </Button>
                         <Button variant="destructive" onClick={deletePlan}>
@@ -288,13 +288,13 @@ export default function PlansShow({
                 {(plan.start_on || plan.end_on || plan.refs || plan.description) && (
                     <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
                         {plan.start_on && (
-                            <span>{t('app.plans.fields.start_on')}: <strong className="text-foreground">{plan.start_on}</strong></span>
+                            <span>{t('plans.fields.start_on')}: <strong className="text-foreground">{plan.start_on}</strong></span>
                         )}
                         {plan.end_on && (
-                            <span>{t('app.plans.fields.end_on')}: <strong className="text-foreground">{plan.end_on}</strong></span>
+                            <span>{t('plans.fields.end_on')}: <strong className="text-foreground">{plan.end_on}</strong></span>
                         )}
                         {plan.refs && (
-                            <span>{t('app.plans.fields.refs')}: <strong className="text-foreground">{plan.refs}</strong></span>
+                            <span>{t('plans.fields.refs')}: <strong className="text-foreground">{plan.refs}</strong></span>
                         )}
                     </div>
                 )}
@@ -304,12 +304,12 @@ export default function PlansShow({
                 <div className="grid gap-2">
                     <div className="flex items-center justify-between">
                         <h2 className="text-sm font-medium text-muted-foreground">
-                            {t('app.navigation.runs')} ({plan.entries?.length ?? 0})
+                            {t('navigation.runs')} ({plan.entries?.length ?? 0})
                         </h2>
                         {!plan.is_completed && availableRuns.length > 0 && (
                             <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
                                 <Plus className="size-4" />
-                                {t('app.plans.add_run')}
+                                {t('plans.add_run')}
                             </Button>
                         )}
                     </div>
@@ -317,7 +317,7 @@ export default function PlansShow({
                     {(!plan.entries || plan.entries.length === 0) ? (
                         <Card>
                             <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                                {t('app.plans.no_entries')}
+                                {t('plans.no_entries')}
                             </CardContent>
                         </Card>
                     ) : (

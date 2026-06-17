@@ -56,7 +56,7 @@ export default function MilestoneForm({
         }
     }
 
-    const title = isEdit ? t('app.milestones.edit') : t('app.milestones.create');
+    const title = isEdit ? t('milestones.edit') : t('milestones.create');
 
     return (
         <>
@@ -74,7 +74,7 @@ export default function MilestoneForm({
 
                             {/* Name */}
                             <div className="grid gap-2">
-                                <Label htmlFor="name">{t('app.milestones.fields.name')}</Label>
+                                <Label htmlFor="name">{t('milestones.fields.name')}</Label>
                                 <Input
                                     id="name"
                                     value={data.name}
@@ -88,7 +88,7 @@ export default function MilestoneForm({
 
                             {/* Description */}
                             <div className="grid gap-2">
-                                <Label htmlFor="description">{t('app.milestones.fields.description')}</Label>
+                                <Label htmlFor="description">{t('milestones.fields.description')}</Label>
                                 <textarea
                                     id="description"
                                     value={data.description}
@@ -101,7 +101,7 @@ export default function MilestoneForm({
                             {/* Status + Parent */}
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="status">{t('app.milestones.fields.status')}</Label>
+                                    <Label htmlFor="status">{t('milestones.fields.status')}</Label>
                                     <Select
                                         value={data.status}
                                         onValueChange={(v) => setData('status', v as MilestoneStatus)}
@@ -124,7 +124,7 @@ export default function MilestoneForm({
 
                                 {parents.length > 0 && (
                                     <div className="grid gap-2">
-                                        <Label htmlFor="parent_id">{t('app.milestones.fields.parent')}</Label>
+                                        <Label htmlFor="parent_id">{t('milestones.fields.parent')}</Label>
                                         <Select
                                             value={data.parent_id || 'none'}
                                             onValueChange={(v) => setData('parent_id', v === 'none' ? '' : v)}
@@ -148,7 +148,7 @@ export default function MilestoneForm({
                             {/* Dates */}
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="start_on">{t('app.milestones.fields.start_on')}</Label>
+                                    <Label htmlFor="start_on">{t('milestones.fields.start_on')}</Label>
                                     <Input
                                         id="start_on"
                                         type="date"
@@ -160,7 +160,7 @@ export default function MilestoneForm({
                                     )}
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="due_on">{t('app.milestones.fields.due_on')}</Label>
+                                    <Label htmlFor="due_on">{t('milestones.fields.due_on')}</Label>
                                     <Input
                                         id="due_on"
                                         type="date"
@@ -175,7 +175,7 @@ export default function MilestoneForm({
 
                             {/* Refs */}
                             <div className="grid gap-2">
-                                <Label htmlFor="refs">{t('app.milestones.fields.refs')}</Label>
+                                <Label htmlFor="refs">{t('milestones.fields.refs')}</Label>
                                 <Input
                                     id="refs"
                                     value={data.refs}
@@ -186,14 +186,14 @@ export default function MilestoneForm({
 
                             <div className="flex gap-2">
                                 <Button type="submit" disabled={processing}>
-                                    {isEdit ? t('app.common.save') : t('app.common.create')}
+                                    {isEdit ? t('common.save') : t('common.create')}
                                 </Button>
                                 <Button variant="outline" asChild>
                                     <Link href={isEdit
                                         ? `/milestones/${milestone!.id}`
                                         : `/projects/${project.id}/milestones`
                                     }>
-                                        {t('app.common.cancel')}
+                                        {t('common.cancel')}
                                     </Link>
                                 </Button>
                             </div>

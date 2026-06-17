@@ -84,7 +84,7 @@ class AdminDefectPluginsController extends Controller
             'created_by'  => $request->user()->getKey(),
         ])->save();
 
-        return back()->with('success', __('app.integrations.saved'));
+        return back()->with('success', __('integrations.saved'));
     }
 
     // ── Update ─────────────────────────────────────────────────────────────────────
@@ -108,7 +108,7 @@ class AdminDefectPluginsController extends Controller
             'is_active'   => $data['is_active']   ?? $integration->is_active,
         ])->save();
 
-        return back()->with('success', __('app.integrations.saved'));
+        return back()->with('success', __('integrations.saved'));
     }
 
     // ── Destroy ────────────────────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ class AdminDefectPluginsController extends Controller
 
         $integration->delete();
 
-        return back()->with('success', __('app.integrations.deleted'));
+        return back()->with('success', __('integrations.deleted'));
     }
 
     // ── Test connection ─────────────────────────────────────────────────────────

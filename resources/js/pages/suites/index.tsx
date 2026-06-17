@@ -40,7 +40,7 @@ function SuiteCard({ suite, view }: { suite: Suite; view: ViewMode }) {
                     size="icon"
                     asChild
                     className="h-7 w-7 shrink-0"
-                    title={t('app.common.edit')}
+                    title={t('common.edit')}
                 >
                     <Link href={edit.url(suite.id)}>
                         <Pencil className="size-3.5" />
@@ -67,7 +67,7 @@ function SuiteCard({ suite, view }: { suite: Suite; view: ViewMode }) {
                 size="icon"
                 asChild
                 className="absolute top-2 right-2"
-                title={t('app.common.edit')}
+                title={t('common.edit')}
             >
                 <Link href={edit.url(suite.id)}>
                     <Pencil className="size-4" />
@@ -99,12 +99,12 @@ export default function SuitesIndex({
 
     return (
         <>
-            <Head title={t('app.suites.title')} />
+            <Head title={t('suites.title')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-semibold">
-                        {t('app.suites.title')}
+                        {t('suites.title')}
                     </h1>
                     <div className="flex items-center gap-2">
                         {/* View toggle */}
@@ -138,7 +138,7 @@ export default function SuitesIndex({
                         <Button asChild>
                             <Link href={create.url(project.id)}>
                                 <Plus className="size-4" />
-                                {t('app.suites.new_suite')}
+                                {t('suites.new_suite')}
                             </Link>
                         </Button>
                     </div>
@@ -148,12 +148,12 @@ export default function SuitesIndex({
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-12 text-center">
                         <Layers className="size-10 text-muted-foreground" />
                         <p className="text-sm text-muted-foreground">
-                            {t('app.suites.empty')}
+                            {t('suites.empty')}
                         </p>
                         <Button asChild className="mt-2">
                             <Link href={create.url(project.id)}>
                                 <Plus className="size-4" />
-                                {t('app.suites.new_suite')}
+                                {t('suites.new_suite')}
                             </Link>
                         </Button>
                     </div>

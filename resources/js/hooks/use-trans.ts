@@ -7,7 +7,7 @@ export function useTrans() {
     const { translations } = usePage<{ translations: Translations }>().props;
 
     return function t(key: string, replacements?: Record<string, string>): string {
-        // key format: "app.common.save" or "app.navigation.projects"
+        // key format: "app.common.save" or "navigation.projects"
         const parts = key.split('.');
         let result: unknown = translations;
 

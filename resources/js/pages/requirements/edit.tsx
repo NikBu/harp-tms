@@ -65,7 +65,7 @@ export default function RequirementEdit({
 
     return (
         <>
-            <Head title={`${t('app.requirements.edit')} – ${requirement.title}`} />
+            <Head title={`${t('requirements.edit')} – ${requirement.title}`} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center justify-between gap-2">
@@ -73,11 +73,11 @@ export default function RequirementEdit({
                         <span className="font-mono text-sm text-muted-foreground">
                             {requirement.display_id}
                         </span>
-                        <h1 className="text-2xl font-semibold">{t('app.requirements.edit')}</h1>
+                        <h1 className="text-2xl font-semibold">{t('requirements.edit')}</h1>
                     </div>
                     <Button variant="outline" asChild>
                         <Link href={`/requirements/${requirement.id}`}>
-                            {t('app.common.cancel')}
+                            {t('common.cancel')}
                         </Link>
                     </Button>
                 </div>
@@ -87,14 +87,14 @@ export default function RequirementEdit({
                     <Card className="lg:col-span-2">
                         <CardHeader>
                             <CardTitle className="text-base">
-                                {t('app.requirements.fields.details')}
+                                {t('requirements.fields.details')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-4">
 
                             <div className="grid gap-2">
                                 <Label htmlFor="title">
-                                    {t('app.requirements.fields.title')}{' '}
+                                    {t('requirements.fields.title')}{' '}
                                     <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
@@ -110,7 +110,7 @@ export default function RequirementEdit({
 
                             <div className="grid gap-2">
                                 <Label htmlFor="description">
-                                    {t('app.requirements.fields.description')}
+                                    {t('requirements.fields.description')}
                                 </Label>
                                 <textarea
                                     id="description"
@@ -123,25 +123,25 @@ export default function RequirementEdit({
 
                             <div className="grid gap-2">
                                 <Label htmlFor="external_ref">
-                                    {t('app.requirements.fields.external_ref')}
+                                    {t('requirements.fields.external_ref')}
                                 </Label>
                                 <Input
                                     id="external_ref"
                                     value={data.external_ref}
                                     onChange={(e) => setData('external_ref', e.target.value)}
-                                    placeholder={t('app.requirements.placeholders.external_ref')}
+                                    placeholder={t('requirements.placeholders.external_ref')}
                                 />
                             </div>
 
                             <div className="grid gap-2">
                                 <Label htmlFor="tags">
-                                    {t('app.requirements.fields.tags')}
+                                    {t('requirements.fields.tags')}
                                 </Label>
                                 <Input
                                     id="tags"
                                     value={data.tags}
                                     onChange={(e) => setData('tags', e.target.value)}
-                                    placeholder={t('app.requirements.placeholders.tags')}
+                                    placeholder={t('requirements.placeholders.tags')}
                                 />
                             </div>
                         </CardContent>
@@ -151,25 +151,25 @@ export default function RequirementEdit({
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-base">
-                                    {t('app.requirements.fields.properties')}
+                                    {t('requirements.fields.properties')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="grid gap-4">
 
                                 <div className="grid gap-2">
-                                    <Label>{t('app.requirements.fields.type')}</Label>
+                                    <Label>{t('requirements.fields.type')}</Label>
                                     <Select
                                         value={data.type || 'none'}
                                         onValueChange={(v) => setData('type', v === 'none' ? '' : v)}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('app.requirements.placeholders.type')} />
+                                            <SelectValue placeholder={t('requirements.placeholders.type')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">—</SelectItem>
                                             {types.map((type) => (
                                                 <SelectItem key={type} value={type}>
-                                                    {t(`app.requirements.types.${type}`)}
+                                                    {t(`requirements.types.${type}`)}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -177,19 +177,19 @@ export default function RequirementEdit({
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label>{t('app.requirements.fields.priority')}</Label>
+                                    <Label>{t('requirements.fields.priority')}</Label>
                                     <Select
                                         value={data.priority || 'none'}
                                         onValueChange={(v) => setData('priority', v === 'none' ? '' : v)}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('app.requirements.placeholders.priority')} />
+                                            <SelectValue placeholder={t('requirements.placeholders.priority')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">—</SelectItem>
                                             {priorities.map((priority) => (
                                                 <SelectItem key={priority} value={priority}>
-                                                    {t(`app.requirements.priorities.${priority}`)}
+                                                    {t(`requirements.priorities.${priority}`)}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -197,19 +197,19 @@ export default function RequirementEdit({
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label>{t('app.requirements.fields.status')}</Label>
+                                    <Label>{t('requirements.fields.status')}</Label>
                                     <Select
                                         value={data.status || 'none'}
                                         onValueChange={(v) => setData('status', v === 'none' ? '' : v)}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('app.requirements.placeholders.status')} />
+                                            <SelectValue placeholder={t('requirements.placeholders.status')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">—</SelectItem>
                                             {statuses.map((status) => (
                                                 <SelectItem key={status} value={status}>
-                                                    {t(`app.requirements.statuses.${status}`)}
+                                                    {t(`requirements.statuses.${status}`)}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -217,17 +217,17 @@ export default function RequirementEdit({
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label>{t('app.requirements.fields.folder')}</Label>
+                                    <Label>{t('requirements.fields.folder')}</Label>
                                     <Select
                                         value={data.folder_id || 'none'}
                                         onValueChange={(v) => setData('folder_id', v === 'none' ? '' : v)}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('app.requirements.placeholders.folder_none')} />
+                                            <SelectValue placeholder={t('requirements.placeholders.folder_none')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">
-                                                {t('app.requirements.placeholders.folder_none')}
+                                                {t('requirements.placeholders.folder_none')}
                                             </SelectItem>
                                             {folders.map((f) => (
                                                 <SelectItem key={f.id} value={String(f.id)}>
@@ -239,17 +239,17 @@ export default function RequirementEdit({
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label>{t('app.requirements.fields.assigned_to')}</Label>
+                                    <Label>{t('requirements.fields.assigned_to')}</Label>
                                     <Select
                                         value={data.assigned_to || 'none'}
                                         onValueChange={(v) => setData('assigned_to', v === 'none' ? '' : v)}
                                     >
                                         <SelectTrigger>
-                                            <SelectValue placeholder={t('app.requirements.placeholders.unassigned')} />
+                                            <SelectValue placeholder={t('requirements.placeholders.unassigned')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">
-                                                {t('app.requirements.placeholders.unassigned')}
+                                                {t('requirements.placeholders.unassigned')}
                                             </SelectItem>
                                             {members.map((m) => (
                                                 <SelectItem key={m.id} value={String(m.id)}>
@@ -264,7 +264,7 @@ export default function RequirementEdit({
                         </Card>
 
                         <Button type="submit" disabled={processing} className="w-full">
-                            {t('app.requirements.actions.save')}
+                            {t('requirements.actions.save')}
                         </Button>
                     </div>
                 </form>

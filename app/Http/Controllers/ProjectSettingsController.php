@@ -74,7 +74,7 @@ class ProjectSettingsController extends Controller
 
         $project->update($validated);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.settings.saved')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('settings.saved')]);
 
         return back();
     }
@@ -97,7 +97,7 @@ class ProjectSettingsController extends Controller
             $validated['user_id'] => ['role' => $validated['role']],
         ]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.settings.member_added')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('settings.member_added')]);
 
         return back();
     }
@@ -122,13 +122,13 @@ class ProjectSettingsController extends Controller
                     ->wherePivot('role', 'project_admin')
                     ->count();
 
-                abort_if($remaining <= 1, 422, __('app.settings.last_admin_error'));
+                abort_if($remaining <= 1, 422, __('settings.last_admin_error'));
             }
         }
 
         $project->members()->updateExistingPivot($user->id, ['role' => $validated['role']]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.settings.role_updated')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('settings.role_updated')]);
 
         return back();
     }
@@ -145,15 +145,15 @@ class ProjectSettingsController extends Controller
 
         if ($isAdmin) {
             $adminCount = $project->members()->wherePivot('role', 'project_admin')->count();
-            abort_if($adminCount <= 1, 422, __('app.settings.last_admin_error'));
+            abort_if($adminCount <= 1, 422, __('settings.last_admin_error'));
         }
 
         // Cannot remove yourself (use "Leave project" flow instead — not in scope here)
-        abort_if($user->id === $request->user()->id, 422, __('app.settings.remove_self_error'));
+        abort_if($user->id === $request->user()->id, 422, __('settings.remove_self_error'));
 
         $project->members()->detach($user->id);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.settings.member_removed')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('settings.member_removed')]);
 
         return back();
     }

@@ -48,7 +48,7 @@ export default function MilestoneShow({
     }
 
     function deleteMilestone() {
-        if (!window.confirm(t('app.common.confirm_delete'))) return;
+        if (!window.confirm(t('common.confirm_delete'))) return;
         router.delete(`/milestones/${milestone.id}`);
     }
 
@@ -69,7 +69,7 @@ export default function MilestoneShow({
                         </div>
                         {milestone.parent && (
                             <p className="text-sm text-muted-foreground">
-                                {t('app.milestones.sub_of')}{' '}
+                                {t('milestones.sub_of')}{' '}
                                 <Link href={`/milestones/${milestone.parent.id}`} className="hover:underline">
                                     {milestone.parent.name}
                                 </Link>
@@ -81,13 +81,13 @@ export default function MilestoneShow({
                         <Button variant="outline" asChild>
                             <Link href={`/milestones/${milestone.id}/edit`}>
                                 <Pencil className="size-4" />
-                                {t('app.common.edit')}
+                                {t('common.edit')}
                             </Link>
                         </Button>
                         <Button variant="outline" onClick={toggleComplete}>
                             {milestone.is_completed
-                                ? <><XCircle className="size-4" /> {t('app.milestones.reopen')}</>
-                                : <><CheckCircle2 className="size-4" /> {t('app.milestones.complete')}</>
+                                ? <><XCircle className="size-4" /> {t('milestones.reopen')}</>
+                                : <><CheckCircle2 className="size-4" /> {t('milestones.complete')}</>
                             }
                         </Button>
                         <Button variant="destructive" onClick={deleteMilestone}>
@@ -99,13 +99,13 @@ export default function MilestoneShow({
                 {/* Meta */}
                 <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
                     {milestone.start_on && (
-                        <span>{t('app.milestones.fields.start_on')}: <strong className="text-foreground">{milestone.start_on}</strong></span>
+                        <span>{t('milestones.fields.start_on')}: <strong className="text-foreground">{milestone.start_on}</strong></span>
                     )}
                     {milestone.due_on && (
-                        <span>{t('app.milestones.fields.due_on')}: <strong className="text-foreground">{milestone.due_on}</strong></span>
+                        <span>{t('milestones.fields.due_on')}: <strong className="text-foreground">{milestone.due_on}</strong></span>
                     )}
                     {milestone.refs && (
-                        <span>{t('app.milestones.fields.refs')}: <strong className="text-foreground">{milestone.refs}</strong></span>
+                        <span>{t('milestones.fields.refs')}: <strong className="text-foreground">{milestone.refs}</strong></span>
                     )}
                 </div>
 
@@ -117,7 +117,7 @@ export default function MilestoneShow({
                 {milestone.children && milestone.children.length > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-base">{t('app.milestones.sub_milestones')}</CardTitle>
+                            <CardTitle className="text-base">{t('milestones.sub_milestones')}</CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-2">
                             {milestone.children.map((child) => (
@@ -138,7 +138,7 @@ export default function MilestoneShow({
                 {milestone.test_runs && milestone.test_runs.length > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-base">{t('app.navigation.runs')}</CardTitle>
+                            <CardTitle className="text-base">{t('navigation.runs')}</CardTitle>
                         </CardHeader>
                         <CardContent className="grid gap-2">
                             {milestone.test_runs.map((run) => (
@@ -150,7 +150,7 @@ export default function MilestoneShow({
                                         <RunProgressBar run={run} />
                                         {run.is_completed && (
                                             <Badge variant="secondary" className="text-xs">
-                                                {t('app.runs.completed')}
+                                                {t('runs.completed')}
                                             </Badge>
                                         )}
                                     </div>

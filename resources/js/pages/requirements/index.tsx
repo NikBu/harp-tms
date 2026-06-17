@@ -126,17 +126,17 @@ function RequirementRow({
             <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                 {req.type && (
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${TYPE_BADGE[req.type]}`}>
-                        {t(`app.requirements.types.${req.type}`)}
+                        {t(`requirements.types.${req.type}`)}
                     </span>
                 )}
                 {req.priority && (
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${PRIORITY_BADGE[req.priority]}`}>
-                        {t(`app.requirements.priorities.${req.priority}`)}
+                        {t(`requirements.priorities.${req.priority}`)}
                     </span>
                 )}
                 {req.status && (
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${STATUS_BADGE[req.status]}`}>
-                        {t(`app.requirements.statuses.${req.status}`)}
+                        {t(`requirements.statuses.${req.status}`)}
                     </span>
                 )}
             </div>
@@ -190,20 +190,20 @@ export default function RequirementsIndex({
 
     return (
         <>
-            <Head title={t('app.requirements.title')} />
+            <Head title={t('requirements.title')} />
 
             <div className="flex h-full flex-1 gap-0 overflow-hidden">
 
                 {!isGlobal && (
                     <aside className="hidden w-56 shrink-0 overflow-y-auto border-r p-3 lg:block">
                         <p className="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                            {t('app.requirements.folders')}
+                            {t('requirements.folders')}
                         </p>
                         <FolderTree
                             folders={folders}
                             selectedFolderId={selectedFolder}
                             onSelect={setSelectedFolder}
-                            allLabel={t('app.requirements.all')}
+                            allLabel={t('requirements.all')}
                         />
                     </aside>
                 )}
@@ -213,14 +213,14 @@ export default function RequirementsIndex({
                     <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                             <BookOpen className="size-5 text-muted-foreground" />
-                            <h1 className="text-2xl font-semibold">{t('app.requirements.title')}</h1>
+                            <h1 className="text-2xl font-semibold">{t('requirements.title')}</h1>
                             <Badge variant="secondary">{filtered.length}</Badge>
                         </div>
                         {!isGlobal && project && (
                             <Button asChild>
                                 <Link href={`/projects/${project.id}/requirements/create`}>
                                     <Plus className="size-4" />
-                                    {t('app.requirements.create')}
+                                    {t('requirements.create')}
                                 </Link>
                             </Button>
                         )}
@@ -229,13 +229,13 @@ export default function RequirementsIndex({
                     <div className="flex flex-wrap gap-2">
                         <Select value={filterType} onValueChange={setFilterType}>
                             <SelectTrigger className="h-8 w-40 text-xs">
-                                <SelectValue placeholder={t('app.requirements.filters.all_types')} />
+                                <SelectValue placeholder={t('requirements.filters.all_types')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('app.requirements.filters.all_types')}</SelectItem>
+                                <SelectItem value="all">{t('requirements.filters.all_types')}</SelectItem>
                                 {types.map((type) => (
                                     <SelectItem key={type} value={type}>
-                                        {t(`app.requirements.types.${type}`)}
+                                        {t(`requirements.types.${type}`)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -243,13 +243,13 @@ export default function RequirementsIndex({
 
                         <Select value={filterStatus} onValueChange={setFilterStatus}>
                             <SelectTrigger className="h-8 w-40 text-xs">
-                                <SelectValue placeholder={t('app.requirements.filters.all_statuses')} />
+                                <SelectValue placeholder={t('requirements.filters.all_statuses')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('app.requirements.filters.all_statuses')}</SelectItem>
+                                <SelectItem value="all">{t('requirements.filters.all_statuses')}</SelectItem>
                                 {statuses.map((status) => (
                                     <SelectItem key={status} value={status}>
-                                        {t(`app.requirements.statuses.${status}`)}
+                                        {t(`requirements.statuses.${status}`)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -257,13 +257,13 @@ export default function RequirementsIndex({
 
                         <Select value={filterPriority} onValueChange={setFilterPriority}>
                             <SelectTrigger className="h-8 w-40 text-xs">
-                                <SelectValue placeholder={t('app.requirements.filters.all_priorities')} />
+                                <SelectValue placeholder={t('requirements.filters.all_priorities')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">{t('app.requirements.filters.all_priorities')}</SelectItem>
+                                <SelectItem value="all">{t('requirements.filters.all_priorities')}</SelectItem>
                                 {priorities.map((priority) => (
                                     <SelectItem key={priority} value={priority}>
-                                        {t(`app.requirements.priorities.${priority}`)}
+                                        {t(`requirements.priorities.${priority}`)}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -273,12 +273,12 @@ export default function RequirementsIndex({
                     {filtered.length === 0 ? (
                         <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-12 text-center">
                             <BookOpen className="size-10 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">{t('app.requirements.empty')}</p>
+                            <p className="text-sm text-muted-foreground">{t('requirements.empty')}</p>
                             {!isGlobal && project && (
                                 <Button asChild className="mt-2">
                                     <Link href={`/projects/${project.id}/requirements/create`}>
                                         <Plus className="size-4" />
-                                        {t('app.requirements.create')}
+                                        {t('requirements.create')}
                                     </Link>
                                 </Button>
                             )}

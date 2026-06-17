@@ -63,7 +63,7 @@ export function UserMenuContent({ user }: Props) {
                         onClick={cleanup}
                     >
                         <Settings className="mr-2" />
-                        {t('app.common.settings')}
+                        {t('common.settings')}
                     </Link>
                 </DropdownMenuItem>
 
@@ -71,7 +71,7 @@ export function UserMenuContent({ user }: Props) {
                 <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                         <Globe className="mr-2 h-4 w-4" />
-                        <span>{t('app.common.language')}</span>
+                        <span>{t('common.language')}</span>
                         <span className="ml-auto text-xs uppercase text-muted-foreground">
                             {currentLocale}
                         </span>
@@ -105,7 +105,7 @@ export function UserMenuContent({ user }: Props) {
                     data-test="logout-button"
                 >
                     <LogOut className="mr-2" />
-                    {t('app.common.logout')}
+                    {t('common.logout')}
                 </Link>
             </DropdownMenuItem>
         </>

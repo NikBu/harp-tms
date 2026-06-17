@@ -105,7 +105,7 @@ function PassFailDonut({ stats }: { stats: LatestRunStats }) {
     if (stats === null) {
         return (
             <p className="py-6 text-center text-sm text-muted-foreground">
-                {t('app.dashboard.no_runs')}
+                {t('dashboard.no_runs')}
             </p>
         );
     }
@@ -117,7 +117,7 @@ function PassFailDonut({ stats }: { stats: LatestRunStats }) {
     if (total === 0) {
         return (
             <p className="py-6 text-center text-sm text-muted-foreground">
-                {t('app.runs.no_tests')}
+                {t('runs.no_tests')}
             </p>
         );
     }
@@ -152,7 +152,7 @@ function PassFailDonut({ stats }: { stats: LatestRunStats }) {
                 <div className="absolute inset-[18%] flex flex-col items-center justify-center rounded-full bg-background">
                     <span className="text-xl font-semibold">{passPct}%</span>
                     <span className="text-xs text-muted-foreground">
-                        {t('app.runs.statuses.passed')}
+                        {t('runs.statuses.passed')}
                     </span>
                 </div>
             </div>
@@ -164,7 +164,7 @@ function PassFailDonut({ stats }: { stats: LatestRunStats }) {
                             style={{ backgroundColor: s.color }}
                         />
                         <span className="capitalize text-muted-foreground">
-                            {t(`app.runs.statuses.${s.key}`)}
+                            {t(`runs.statuses.${s.key}`)}
                         </span>
                         <span className="ml-auto font-medium tabular-nums">{s.count}</span>
                     </div>
@@ -192,7 +192,7 @@ function CasesByPriorityChart({ data }: { data: CasesByPriority }) {
             {PRIORITY_BAR.map(({ key, color }) => (
                 <div key={key} className="grid grid-cols-[5rem_1fr_2rem] items-center gap-2 text-sm">
                     <span className="text-muted-foreground">
-                        {t(`app.requirements.priorities.${key}`)}
+                        {t(`requirements.priorities.${key}`)}
                     </span>
                     <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
                         <div
@@ -236,25 +236,25 @@ export default function ProjectsShow({
     }[] = [
         {
             icon: ClipboardList,
-            label: t('app.projects.stats.test_cases'),
+            label: t('projects.stats.test_cases'),
             value: project.test_cases_count ?? 0,
             href: casesHref,
         },
         {
             icon: PlayCircle,
-            label: t('app.projects.stats.test_runs'),
+            label: t('projects.stats.test_runs'),
             value: project.test_runs_count ?? 0,
             href: `/projects/${pid}/runs`,
         },
         {
             icon: BookOpen,
-            label: t('app.projects.stats.requirements'),
+            label: t('projects.stats.requirements'),
             value: project.requirements_count ?? 0,
             href: `/projects/${pid}/requirements`,
         },
         {
             icon: Flag,
-            label: t('app.projects.stats.milestones'),
+            label: t('projects.stats.milestones'),
             value: project.milestones?.length ?? 0,
             href: `/projects/${pid}/milestones`,
         },
@@ -273,7 +273,7 @@ export default function ProjectsShow({
                             <h1 className="text-2xl font-semibold">{project.name}</h1>
                             {project.is_completed && (
                                 <Badge variant="outline">
-                                    {t('app.projects.completed')}
+                                    {t('projects.completed')}
                                 </Badge>
                             )}
                         </div>
@@ -288,7 +288,7 @@ export default function ProjectsShow({
                         <Button variant="outline" size="sm" asChild>
                             <Link href={`/projects/${pid}/settings`}>
                                 <Settings2 className="size-4" />
-                                {t('app.settings.title')}
+                                {t('settings.title')}
                             </Link>
                         </Button>
                     )}
@@ -299,7 +299,7 @@ export default function ProjectsShow({
                     <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20">
                         <CardHeader>
                             <CardTitle className="text-base">
-                                {t('app.projects.announcement')}
+                                {t('projects.announcement')}
                             </CardTitle>
                             <CardDescription className="text-foreground">
                                 {project.announcement}
@@ -326,7 +326,7 @@ export default function ProjectsShow({
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base">
-                                {t('app.projects.latest_run')}
+                                {t('projects.latest_run')}
                             </CardTitle>
                             {latestRunStats && (
                                 <CardDescription className="truncate">
@@ -342,7 +342,7 @@ export default function ProjectsShow({
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base">
-                                {t('app.projects.cases_by_priority')}
+                                {t('projects.cases_by_priority')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -357,18 +357,18 @@ export default function ProjectsShow({
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-base">
-                                {t('app.projects.recent_runs')}
+                                {t('projects.recent_runs')}
                             </CardTitle>
                             <Button variant="ghost" size="sm" asChild>
                                 <Link href={`/projects/${pid}/runs`}>
-                                    {t('app.common.view_all')}
+                                    {t('common.view_all')}
                                 </Link>
                             </Button>
                         </CardHeader>
                         <CardContent className="grid gap-3">
                             {recentRuns.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
-                                    {t('app.projects.no_active_runs')}
+                                    {t('projects.no_active_runs')}
                                 </p>
                             ) : (
                                 recentRuns.map((run) => (
@@ -397,18 +397,18 @@ export default function ProjectsShow({
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-base">
-                                {t('app.runs.milestones.title')}
+                                {t('runs.milestones.title')}
                             </CardTitle>
                             <Button variant="ghost" size="sm" asChild>
                                 <Link href={`/projects/${pid}/milestones`}>
-                                    {t('app.common.view_all')}
+                                    {t('common.view_all')}
                                 </Link>
                             </Button>
                         </CardHeader>
                         <CardContent className="grid gap-3">
                             {milestoneStats.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
-                                    {t('app.runs.milestones.empty')}
+                                    {t('runs.milestones.empty')}
                                 </p>
                             ) : (
                                 milestoneStats.map((ms) => (
@@ -416,7 +416,7 @@ export default function ProjectsShow({
                                         <div className="flex items-center justify-between gap-2 text-sm">
                                             <span className="truncate font-medium">{ms.name}</span>
                                             <span className="shrink-0 text-xs text-muted-foreground">
-                                                {ms.run_count} {t('app.runs.milestones.runs')}
+                                                {ms.run_count} {t('runs.milestones.runs')}
                                             </span>
                                         </div>
                                         <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -437,12 +437,12 @@ export default function ProjectsShow({
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-base">
-                            {t('app.projects.members')}
+                            {t('projects.members')}
                         </CardTitle>
                         {canManage && (
                             <Button variant="ghost" size="sm" asChild>
                                 <Link href={`/projects/${pid}/settings?tab=members`}>
-                                    {t('app.common.manage')}
+                                    {t('common.manage')}
                                 </Link>
                             </Button>
                         )}

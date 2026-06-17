@@ -124,7 +124,7 @@ class TestCaseController extends Controller
             }
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.created')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.created')]);
 
         if ($request->boolean('add_and_create')) {
             return to_route('suites.cases.create', $suite);
@@ -183,7 +183,7 @@ class TestCaseController extends Controller
             $testCase->requirements()->sync($syncData);
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.updated')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.updated')]);
 
         return to_route('cases.show', $testCase);
     }
@@ -243,7 +243,7 @@ class TestCaseController extends Controller
 
         $testCase->delete();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.deleted')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.deleted')]);
 
         return to_route('suites.cases.index', $suite);
     }
@@ -296,7 +296,7 @@ class TestCaseController extends Controller
             return $copy;
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.copied')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.copied')]);
 
         return back();
     }
@@ -340,7 +340,7 @@ class TestCaseController extends Controller
             TestCase::query()->whereIn('id', $validated['ids'])->update($update);
         }
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.bulk_updated')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.bulk_updated')]);
 
         return back();
     }
@@ -361,7 +361,7 @@ class TestCaseController extends Controller
 
         TestCase::query()->whereIn('id', $validated['ids'])->delete();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.bulk_deleted')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.bulk_deleted')]);
 
         return back();
     }
@@ -385,7 +385,7 @@ class TestCaseController extends Controller
             ->whereIn('id', $validated['ids'])
             ->update(['assigned_to' => $validated['assigned_to_id'] ?? null]);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.test_cases.bulk_updated')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.bulk_updated')]);
 
         return back();
     }

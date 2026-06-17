@@ -44,7 +44,7 @@ export default function AdminUsers({
     }
 
     function deleteUser(user: AdminUser) {
-        if (!window.confirm(t('app.admin.confirm_delete_user'))) {
+        if (!window.confirm(t('admin.confirm_delete_user'))) {
             return;
         }
         router.delete(`/admin/users/${user.id}`, { preserveScroll: true });
@@ -52,13 +52,13 @@ export default function AdminUsers({
 
     return (
         <>
-            <Head title={t('app.admin.users')} />
+            <Head title={t('admin.users')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="grid gap-1">
-                    <h1 className="text-2xl font-semibold">{t('app.admin.users')}</h1>
+                    <h1 className="text-2xl font-semibold">{t('admin.users')}</h1>
                     <p className="text-sm text-muted-foreground">
-                        {users.total} {t('app.admin.users').toLowerCase()}
+                        {users.total} {t('admin.users').toLowerCase()}
                     </p>
                 </div>
 
@@ -67,10 +67,10 @@ export default function AdminUsers({
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b text-left text-muted-foreground">
-                                    <th className="p-3 font-medium">{t('app.admin.fields.name')}</th>
-                                    <th className="p-3 font-medium">{t('app.admin.fields.email')}</th>
-                                    <th className="p-3 font-medium">{t('app.admin.fields.role')}</th>
-                                    <th className="p-3 font-medium">{t('app.admin.fields.created')}</th>
+                                    <th className="p-3 font-medium">{t('admin.fields.name')}</th>
+                                    <th className="p-3 font-medium">{t('admin.fields.email')}</th>
+                                    <th className="p-3 font-medium">{t('admin.fields.role')}</th>
+                                    <th className="p-3 font-medium">{t('admin.fields.created')}</th>
                                     <th className="p-3" />
                                 </tr>
                             </thead>
@@ -114,7 +114,7 @@ export default function AdminUsers({
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => deleteUser(user)}
-                                                    title={t('app.common.delete')}
+                                                    title={t('common.delete')}
                                                 >
                                                     <Trash2 className="size-4 text-destructive" />
                                                 </Button>

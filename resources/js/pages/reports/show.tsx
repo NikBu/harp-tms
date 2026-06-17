@@ -82,12 +82,12 @@ function ActivityReport({ data }: { data: ActivityData }) {
                 {(['new_cases', 'updated_cases', 'new_results'] as const).map((k) => (
                     <div key={k} className="rounded-lg border border-border bg-muted/30 p-4 text-center">
                         <p className="text-2xl font-semibold tabular-nums">{data.totals[k]}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">{t(`app.reports.activity.${k}`)}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{t(`reports.activity.${k}`)}</p>
                     </div>
                 ))}
             </div>
             <div>
-                <p className="mb-2 text-xs text-muted-foreground">{t('app.reports.dashboard.activity_intro')}</p>
+                <p className="mb-2 text-xs text-muted-foreground">{t('reports.dashboard.activity_intro')}</p>
                 <div className="flex h-32 items-end gap-px overflow-hidden rounded">
                     {data.daily.map((d) => {
                         const h = Math.round(((d.new_results + d.new_cases) / peak) * 100);
@@ -118,7 +118,7 @@ function CoverageReport({ data }: { data: CoverageData }) {
     return (
         <div className="grid gap-6">
             <p className="text-sm text-muted-foreground">
-                {data.run_count} {t('app.reports.runs_analyzed')}
+                {data.run_count} {t('reports.runs_analyzed')}
             </p>
             <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
                 {total > 0 && keys.filter((k) => data[k] > 0).map((k) => (
@@ -129,16 +129,16 @@ function CoverageReport({ data }: { data: CoverageData }) {
                 {keys.map((k) => (
                     <div key={k} className="flex items-center gap-2 text-sm">
                         <span className={`size-3 rounded-sm ${STATUS_COLORS[k]}`} />
-                        <span className="capitalize text-muted-foreground">{t(`app.runs.statuses.${k}`)}</span>
+                        <span className="capitalize text-muted-foreground">{t(`runs.statuses.${k}`)}</span>
                         <span className="ml-auto font-medium tabular-nums">{data[k]}</span>
                     </div>
                 ))}
             </div>
             <div className="grid gap-2 rounded-lg border border-border p-4">
-                <p className="text-sm font-medium">{t('app.reports.coverage.by_priority')}</p>
+                <p className="text-sm font-medium">{t('reports.coverage.by_priority')}</p>
                 {priorities.map((p) => (
                     <div key={p} className="grid grid-cols-[4rem_1fr_3rem] items-center gap-2 text-sm">
-                        <span className="text-muted-foreground capitalize">{t(`app.test_cases.priorities.${p}`)}</span>
+                        <span className="text-muted-foreground capitalize">{t(`test_cases.priorities.${p}`)}</span>
                         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                             <div className={`h-full ${PRIORITY_COLORS[p]}`} style={{ width: `${data.by_priority[p]?.pct ?? 0}%` }} />
                         </div>
@@ -150,19 +150,19 @@ function CoverageReport({ data }: { data: CoverageData }) {
                 <div className="grid grid-cols-4 gap-2 text-center">
                     <div>
                         <p className="text-xl font-semibold tabular-nums">{data.coverage.total}</p>
-                        <p className="text-xs text-muted-foreground">{t('app.reports.dashboard.total_cases')}</p>
+                        <p className="text-xs text-muted-foreground">{t('reports.dashboard.total_cases')}</p>
                     </div>
                     <div>
                         <p className="text-xl font-semibold tabular-nums">{data.coverage.run}</p>
-                        <p className="text-xs text-muted-foreground">{t('app.reports.dashboard.cases_run')}</p>
+                        <p className="text-xs text-muted-foreground">{t('reports.dashboard.cases_run')}</p>
                     </div>
                     <div>
                         <p className="text-xl font-semibold tabular-nums">{data.coverage.untested}</p>
-                        <p className="text-xs text-muted-foreground">{t('app.reports.dashboard.cases_untested')}</p>
+                        <p className="text-xs text-muted-foreground">{t('reports.dashboard.cases_untested')}</p>
                     </div>
                     <div>
                         <p className="text-xl font-semibold tabular-nums">{data.coverage.pct}%</p>
-                        <p className="text-xs text-muted-foreground">{t('app.reports.dashboard.coverage_pct')}</p>
+                        <p className="text-xs text-muted-foreground">{t('reports.dashboard.coverage_pct')}</p>
                     </div>
                 </div>
             </div>
@@ -177,7 +177,7 @@ function DistributionReport({ data }: { data: DistributionData }) {
     return (
         <div className="grid gap-6">
             <div>
-                <p className="mb-3 text-sm font-medium">{t('app.reports.distribution.by_priority')}</p>
+                <p className="mb-3 text-sm font-medium">{t('reports.distribution.by_priority')}</p>
                 <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
                     {priorities.filter((p) => data.byPriority[p] > 0).map((p) => (
                         <div key={p} className={PRIORITY_COLORS[p]} style={{ width: `${(data.byPriority[p] / total) * 100}%` }} title={`${p}: ${data.byPriority[p]}`} />
@@ -187,27 +187,27 @@ function DistributionReport({ data }: { data: DistributionData }) {
                     {priorities.map((p) => (
                         <div key={p} className="flex items-center gap-2 text-sm">
                             <span className={`size-3 rounded-sm ${PRIORITY_COLORS[p]}`} />
-                            <span className="capitalize text-muted-foreground">{t(`app.test_cases.priorities.${p}`)}</span>
+                            <span className="capitalize text-muted-foreground">{t(`test_cases.priorities.${p}`)}</span>
                             <span className="ml-auto font-medium tabular-nums">{data.byPriority[p]}</span>
                         </div>
                     ))}
                     <div className="flex items-center gap-2 text-sm font-semibold">
                         <span className="size-3 rounded-sm bg-muted" />
-                        <span className="text-muted-foreground">{t('app.reports.distribution.total')}</span>
+                        <span className="text-muted-foreground">{t('reports.distribution.total')}</span>
                         <span className="ml-auto tabular-nums">{data.byPriority.total}</span>
                     </div>
                 </div>
             </div>
             {data.byTemplate && Object.keys(data.byTemplate).length > 0 && (
                 <div>
-                    <p className="mb-3 text-sm font-medium">{t('app.reports.distribution.by_template')}</p>
+                    <p className="mb-3 text-sm font-medium">{t('reports.distribution.by_template')}</p>
                     <div className="grid gap-1.5">
                         {Object.entries(data.byTemplate)
                             .filter(([, v]) => v > 0)
                             .sort((a, b) => b[1] - a[1])
                             .map(([k, v]) => (
                                 <div key={k} className="flex items-center gap-2 text-sm">
-                                    <span className="w-24 capitalize text-muted-foreground">{t(`app.test_cases.templates.${k}`)}</span>
+                                    <span className="w-24 capitalize text-muted-foreground">{t(`test_cases.templates.${k}`)}</span>
                                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                                         <div className="h-full bg-primary/70" style={{ width: `${(v / total) * 100}%` }} />
                                     </div>
@@ -219,7 +219,7 @@ function DistributionReport({ data }: { data: DistributionData }) {
             )}
             {data.bySection && data.bySection.length > 0 && (
                 <div>
-                    <p className="mb-3 text-sm font-medium">{t('app.reports.distribution.by_section')}</p>
+                    <p className="mb-3 text-sm font-medium">{t('reports.distribution.by_section')}</p>
                     <div className="grid gap-1.5">
                         {data.bySection.slice(0, 15).map(({ section, count }) => (
                             <div key={section} className="flex items-center gap-2 text-sm">
@@ -235,7 +235,7 @@ function DistributionReport({ data }: { data: DistributionData }) {
             )}
             {data.byType && data.byType.length > 0 && (
                 <div>
-                    <p className="mb-3 text-sm font-medium">{t('app.reports.distribution.by_type')}</p>
+                    <p className="mb-3 text-sm font-medium">{t('reports.distribution.by_type')}</p>
                     <div className="grid gap-1.5">
                         {data.byType.map(({ type, count }) => (
                             <div key={type} className="flex items-center gap-2 text-sm">
@@ -257,19 +257,19 @@ function MilestoneReport({ data }: { data: MilestoneData }) {
             <div className="grid grid-cols-4 gap-4 text-center">
                 <div className="rounded-lg border border-border bg-muted/30 p-4">
                     <p className="text-2xl font-semibold tabular-nums">{data.totals.total}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{t('app.reports.milestone.total')}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{t('reports.milestone.total')}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-muted/30 p-4">
                     <p className="text-2xl font-semibold tabular-nums">{data.totals.completed}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{t('app.reports.milestone.completed')}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{t('reports.milestone.completed')}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-muted/30 p-4">
                     <p className="text-2xl font-semibold tabular-nums">{data.totals.active}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{t('app.reports.milestone.active')}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{t('reports.milestone.active')}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-muted/30 p-4">
                     <p className="text-2xl font-semibold tabular-nums">{data.totals.pct_done}%</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{t('app.reports.dashboard.pct_done')}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{t('reports.dashboard.pct_done')}</p>
                 </div>
             </div>
             {data.milestones.length > 0 && (
@@ -277,10 +277,10 @@ function MilestoneReport({ data }: { data: MilestoneData }) {
                     <table className="w-full text-sm">
                         <thead className="text-xs text-muted-foreground">
                             <tr className="border-b border-border">
-                                <th className="px-3 py-2 text-left">{t('app.reports.dashboard.milestone_name')}</th>
-                                <th className="px-3 py-2 text-right">{t('app.reports.dashboard.runs_count')}</th>
-                                <th className="px-3 py-2 text-right">{t('app.reports.dashboard.pct_done')}</th>
-                                <th className="px-3 py-2 text-right">{t('app.reports.dashboard.due_date')}</th>
+                                <th className="px-3 py-2 text-left">{t('reports.dashboard.milestone_name')}</th>
+                                <th className="px-3 py-2 text-right">{t('reports.dashboard.runs_count')}</th>
+                                <th className="px-3 py-2 text-right">{t('reports.dashboard.pct_done')}</th>
+                                <th className="px-3 py-2 text-right">{t('reports.dashboard.due_date')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -290,7 +290,7 @@ function MilestoneReport({ data }: { data: MilestoneData }) {
                                         {m.name}
                                         {m.is_completed && (
                                             <span className="ml-2 rounded-full bg-green-100 px-1.5 py-0.5 text-xs text-green-700">
-                                                {t('app.runs.milestones.completed')}
+                                                {t('runs.milestones.completed')}
                                             </span>
                                         )}
                                     </td>
@@ -304,7 +304,7 @@ function MilestoneReport({ data }: { data: MilestoneData }) {
                                         </div>
                                     </td>
                                     <td className="px-3 py-2 text-right text-muted-foreground">
-                                        {m.due_on ?? t('app.reports.dashboard.no_due')}
+                                        {m.due_on ?? t('reports.dashboard.no_due')}
                                     </td>
                                 </tr>
                             ))}
@@ -321,7 +321,7 @@ function WorkloadReport({ data }: { data: WorkloadData }) {
     if (data.members.length === 0) {
         return (
             <p className="py-6 text-center text-sm text-muted-foreground">
-                {t('app.reports.dashboard.no_workload')}
+                {t('reports.dashboard.no_workload')}
             </p>
         );
     }
@@ -331,11 +331,11 @@ function WorkloadReport({ data }: { data: WorkloadData }) {
                 <table className="w-full text-sm">
                     <thead className="text-xs text-muted-foreground">
                         <tr className="border-b border-border">
-                            <th className="px-3 py-2 text-left">{t('app.reports.dashboard.member')}</th>
-                            <th className="px-3 py-2 text-right">{t('app.reports.dashboard.assigned_cases')}</th>
-                            <th className="px-3 py-2 text-right">{t('app.reports.dashboard.results_logged')}</th>
-                            <th className="px-3 py-2 text-right">{t('app.reports.workload.pass_rate')}</th>
-                            <th className="px-3 py-2 text-left">{t('app.reports.workload.status_breakdown')}</th>
+                            <th className="px-3 py-2 text-left">{t('reports.dashboard.member')}</th>
+                            <th className="px-3 py-2 text-right">{t('reports.dashboard.assigned_cases')}</th>
+                            <th className="px-3 py-2 text-right">{t('reports.dashboard.results_logged')}</th>
+                            <th className="px-3 py-2 text-right">{t('reports.workload.pass_rate')}</th>
+                            <th className="px-3 py-2 text-left">{t('reports.workload.status_breakdown')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -376,17 +376,17 @@ function WorkloadReport({ data }: { data: WorkloadData }) {
                         <div className="mt-2 grid grid-cols-3 gap-1 text-center text-xs">
                             <div>
                                 <p className="tabular-nums font-semibold">{m.assigned_cases}</p>
-                                <p className="text-muted-foreground">{t('app.reports.workload.assigned')}</p>
+                                <p className="text-muted-foreground">{t('reports.workload.assigned')}</p>
                             </div>
                             <div>
                                 <p className="tabular-nums font-semibold">{m.results_logged}</p>
-                                <p className="text-muted-foreground">{t('app.reports.workload.logged')}</p>
+                                <p className="text-muted-foreground">{t('reports.workload.logged')}</p>
                             </div>
                             <div>
                                 <p className={`tabular-nums font-semibold ${
                                     m.pass_rate >= 80 ? 'text-green-600' : m.pass_rate >= 50 ? 'text-yellow-600' : 'text-red-600'
                                 }`}>{m.pass_rate}%</p>
-                                <p className="text-muted-foreground">{t('app.reports.workload.pass_rate')}</p>
+                                <p className="text-muted-foreground">{t('reports.workload.pass_rate')}</p>
                             </div>
                         </div>
                         {Object.values(m.statuses).some((v) => v > 0) && (
@@ -412,9 +412,9 @@ function ExportMenu({ projectId, type }: { projectId: number; type: string }) {
     const base = `/projects/${projectId}/reports/${type}/export`;
 
     const formats = [
-        { fmt: 'csv',  label: t('app.reports.export.csv') },
-        { fmt: 'xlsx', label: t('app.reports.export.xlsx') },
-        { fmt: 'pdf',  label: t('app.reports.export.pdf') },
+        { fmt: 'csv',  label: t('reports.export.csv') },
+        { fmt: 'xlsx', label: t('reports.export.xlsx') },
+        { fmt: 'pdf',  label: t('reports.export.pdf') },
     ];
 
     return (
@@ -422,7 +422,7 @@ function ExportMenu({ projectId, type }: { projectId: number; type: string }) {
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
                     <Download className="mr-1.5 size-4" />
-                    {t('app.reports.export.button')}
+                    {t('reports.export.button')}
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -455,7 +455,7 @@ export default function ReportsShow({
         if (!data) {
             return (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                    {t('app.reports.coming_soon')}
+                    {t('reports.coming_soon')}
                 </p>
             );
         }
@@ -468,7 +468,7 @@ export default function ReportsShow({
             default:
                 return (
                     <p className="py-6 text-center text-sm text-muted-foreground">
-                        {t('app.reports.coming_soon')}
+                        {t('reports.coming_soon')}
                     </p>
                 );
         }
@@ -476,16 +476,16 @@ export default function ReportsShow({
 
     return (
         <>
-            <Head title={t(`app.reports.types.${type}.name`)} />
+            <Head title={t(`reports.types.${type}.name`)} />
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 {/* Header row: title + export */}
                 <div className="flex items-start justify-between gap-4">
                     <div className="grid gap-1">
                         <h1 className="text-2xl font-semibold">
-                            {t(`app.reports.types.${type}.name`)}
+                            {t(`reports.types.${type}.name`)}
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            {project.name} · {t(`app.reports.types.${type}.desc`)}
+                            {project.name} · {t(`reports.types.${type}.desc`)}
                         </p>
                     </div>
                     {data && <ExportMenu projectId={project.id} type={type} />}
@@ -493,7 +493,7 @@ export default function ReportsShow({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-base">{t('app.reports.summary')}</CardTitle>
+                        <CardTitle className="text-base">{t('reports.summary')}</CardTitle>
                     </CardHeader>
                     <CardContent>{renderReport()}</CardContent>
                 </Card>
@@ -502,7 +502,7 @@ export default function ReportsShow({
                     <Button variant="outline" size="sm" asChild>
                         <Link href={`/projects/${project.id}/reports`}>
                             <ArrowLeft className="size-4" />
-                            {t('app.reports.back')}
+                            {t('reports.back')}
                         </Link>
                     </Button>
                 </div>

@@ -29,18 +29,18 @@ export default function ProjectsCreate() {
     const suiteModes: { value: SuiteMode; label: string; desc: string }[] = [
         {
             value: 1,
-            label: t('app.projects.suite_mode_single'),
-            desc: t('app.projects.suite_mode_single_desc'),
+            label: t('projects.suite_mode_single'),
+            desc: t('projects.suite_mode_single_desc'),
         },
         {
             value: 2,
-            label: t('app.projects.suite_mode_single_baseline'),
-            desc: t('app.projects.suite_mode_single_baseline_desc'),
+            label: t('projects.suite_mode_single_baseline'),
+            desc: t('projects.suite_mode_single_baseline_desc'),
         },
         {
             value: 3,
-            label: t('app.projects.suite_mode_multi'),
-            desc: t('app.projects.suite_mode_multi_desc'),
+            label: t('projects.suite_mode_multi'),
+            desc: t('projects.suite_mode_multi_desc'),
         },
     ];
 
@@ -51,22 +51,22 @@ export default function ProjectsCreate() {
 
     return (
         <>
-            <Head title={t('app.projects.create_title')} />
+            <Head title={t('projects.create_title')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <h1 className="text-2xl font-semibold">
-                    {t('app.projects.create_title')}
+                    {t('projects.create_title')}
                 </h1>
 
                 <Card className="max-w-2xl">
                     <CardHeader>
-                        <CardTitle>{t('app.projects.create')}</CardTitle>
+                        <CardTitle>{t('projects.create')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit} className="flex flex-col gap-6">
                             <div className="grid gap-2">
                                 <Label htmlFor="name">
-                                    {t('app.projects.name')}
+                                    {t('projects.name')}
                                 </Label>
                                 <Input
                                     id="name"
@@ -75,7 +75,7 @@ export default function ProjectsCreate() {
                                         setData('name', e.target.value)
                                     }
                                     placeholder={t(
-                                        'app.projects.name_placeholder',
+                                        'projects.name_placeholder',
                                     )}
                                     autoFocus
                                 />
@@ -88,7 +88,7 @@ export default function ProjectsCreate() {
 
                             <div className="grid gap-2">
                                 <Label htmlFor="description">
-                                    {t('app.projects.description')}
+                                    {t('projects.description')}
                                 </Label>
                                 <textarea
                                     id="description"
@@ -97,7 +97,7 @@ export default function ProjectsCreate() {
                                         setData('description', e.target.value)
                                     }
                                     placeholder={t(
-                                        'app.projects.description_placeholder',
+                                        'projects.description_placeholder',
                                     )}
                                     rows={4}
                                     className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
@@ -110,7 +110,7 @@ export default function ProjectsCreate() {
                             </div>
 
                             <div className="grid gap-3">
-                                <Label>{t('app.projects.suite_mode')}</Label>
+                                <Label>{t('projects.suite_mode')}</Label>
                                 <div className="grid gap-3">
                                     {suiteModes.map((mode) => (
                                         <label
@@ -152,7 +152,7 @@ export default function ProjectsCreate() {
 
                             <div className="flex gap-2">
                                 <Button type="submit" disabled={processing}>
-                                    {t('app.common.create')}
+                                    {t('common.create')}
                                 </Button>
                             </div>
                         </form>

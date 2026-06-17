@@ -33,7 +33,7 @@ function MilestoneRow({ milestone }: { milestone: Milestone }) {
                     </Link>
                     {milestone.due_on && (
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                            {t('app.milestones.due')} {milestone.due_on}
+                            {t('milestones.due')} {milestone.due_on}
                         </p>
                     )}
                 </div>
@@ -42,7 +42,7 @@ function MilestoneRow({ milestone }: { milestone: Milestone }) {
             <div className="flex shrink-0 items-center gap-2">
                 {milestone.test_runs_count !== undefined && milestone.test_runs_count > 0 && (
                     <span className="text-xs text-muted-foreground">
-                        {milestone.test_runs_count} {t('app.milestones.runs')}
+                        {milestone.test_runs_count} {t('milestones.runs')}
                     </span>
                 )}
                 <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${STATUS_BADGE[milestone.status as MilestoneStatus]}`}>
@@ -69,15 +69,15 @@ export default function MilestonesIndex({
 
     return (
         <>
-            <Head title={t('app.milestones.title')} />
+            <Head title={t('milestones.title')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center justify-between gap-2">
-                    <h1 className="text-2xl font-semibold">{t('app.milestones.title')}</h1>
+                    <h1 className="text-2xl font-semibold">{t('milestones.title')}</h1>
                     <Button asChild>
                         <Link href={`/projects/${project.id}/milestones/create`}>
                             <Plus className="size-4" />
-                            {t('app.milestones.create')}
+                            {t('milestones.create')}
                         </Link>
                     </Button>
                 </div>
@@ -85,7 +85,7 @@ export default function MilestonesIndex({
                 {milestones.length === 0 ? (
                     <Card>
                         <CardContent className="py-12 text-center text-sm text-muted-foreground">
-                            {t('app.milestones.empty')}
+                            {t('milestones.empty')}
                         </CardContent>
                     </Card>
                 ) : (

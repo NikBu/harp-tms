@@ -150,7 +150,7 @@ class RequirementController extends Controller
         ]));
 
         return to_route('projects.requirements.index', $project)
-            ->with('success', __('app.requirements.created'));
+            ->with('success', __('requirements.created'));
     }
 
     public function edit(Request $request, Requirement $requirement): Response
@@ -201,7 +201,7 @@ class RequirementController extends Controller
         ]));
 
         return to_route('requirements.show', $requirement)
-            ->with('success', __('app.requirements.updated'));
+            ->with('success', __('requirements.updated'));
     }
 
     public function destroy(Request $request, Requirement $requirement): RedirectResponse
@@ -219,7 +219,7 @@ class RequirementController extends Controller
         $requirement->delete();
 
         return to_route('projects.requirements.index', $project)
-            ->with('success', __('app.requirements.deleted'));
+            ->with('success', __('requirements.deleted'));
     }
 
     // -------------------------------------------------------------------------

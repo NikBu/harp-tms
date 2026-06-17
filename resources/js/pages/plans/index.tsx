@@ -19,15 +19,15 @@ export default function PlansIndex({
 
     return (
         <>
-            <Head title={t('app.plans.title')} />
+            <Head title={t('plans.title')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div className="flex items-center justify-between gap-2">
-                    <h1 className="text-2xl font-semibold">{t('app.plans.title')}</h1>
+                    <h1 className="text-2xl font-semibold">{t('plans.title')}</h1>
                     <Button asChild>
                         <Link href={`/projects/${project.id}/plans/create`}>
                             <Plus className="size-4" />
-                            {t('app.plans.create')}
+                            {t('plans.create')}
                         </Link>
                     </Button>
                 </div>
@@ -35,7 +35,7 @@ export default function PlansIndex({
                 {plans.data.length === 0 ? (
                     <Card>
                         <CardContent className="py-12 text-center text-sm text-muted-foreground">
-                            {t('app.plans.empty')}
+                            {t('plans.empty')}
                         </CardContent>
                     </Card>
                 ) : (
@@ -59,10 +59,10 @@ export default function PlansIndex({
                                         </Link>
                                         <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
                                             {plan.entries_count !== undefined && (
-                                                <span>{plan.entries_count} {t('app.plans.runs_count')}</span>
+                                                <span>{plan.entries_count} {t('plans.runs_count')}</span>
                                             )}
                                             {plan.end_on && (
-                                                <span>{t('app.plans.ends')} {plan.end_on}</span>
+                                                <span>{t('plans.ends')} {plan.end_on}</span>
                                             )}
                                         </div>
                                     </div>
@@ -76,7 +76,7 @@ export default function PlansIndex({
                                     )}
                                     {plan.is_completed && (
                                         <Badge variant="secondary" className="text-xs">
-                                            {t('app.plans.completed')}
+                                            {t('plans.completed')}
                                         </Badge>
                                     )}
                                     <Button variant="ghost" size="icon" className="size-7" asChild>

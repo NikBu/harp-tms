@@ -124,7 +124,7 @@ function fmtDate(value: string | null): string {
 export function ReportDashboard({ data }: { data: DashboardData }) {
     const t = useTrans();
 
-    const statusLabel = (k: string) => t(`app.runs.statuses.${k}`);
+    const statusLabel = (k: string) => t(`runs.statuses.${k}`);
 
     const pieData = useMemo(
         () =>
@@ -147,10 +147,10 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
             <Card>
                 <CardHeader>
                     <CardTitle className="text-base">
-                        {t('app.reports.dashboard.run_summary')}
+                        {t('reports.dashboard.run_summary')}
                     </CardTitle>
                     <CardDescription>
-                        {t('app.reports.dashboard.status_distribution')}
+                        {t('reports.dashboard.status_distribution')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-6 lg:grid-cols-[18rem_1fr]">
@@ -179,7 +179,7 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
                             </ResponsiveContainer>
                         ) : (
                             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                                {t('app.reports.dashboard.no_runs')}
+                                {t('reports.dashboard.no_runs')}
                             </div>
                         )}
                     </div>
@@ -191,21 +191,21 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
                                     <tr className="border-b border-border text-left text-xs text-muted-foreground">
                                         <th className="px-3 py-2 font-medium">
                                             {t(
-                                                'app.reports.dashboard.run_name',
+                                                'reports.dashboard.run_name',
                                             )}
                                         </th>
                                         <th className="w-40 px-3 py-2 font-medium">
                                             {t(
-                                                'app.reports.dashboard.breakdown',
+                                                'reports.dashboard.breakdown',
                                             )}
                                         </th>
                                         <th className="w-24 px-3 py-2 text-right font-medium">
                                             {t(
-                                                'app.reports.dashboard.pct_passed',
+                                                'reports.dashboard.pct_passed',
                                             )}
                                         </th>
                                         <th className="w-28 px-3 py-2 font-medium">
-                                            {t('app.reports.dashboard.created')}
+                                            {t('reports.dashboard.created')}
                                         </th>
                                     </tr>
                                 </thead>
@@ -236,7 +236,7 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
                             </table>
                         ) : (
                             <p className="py-6 text-center text-sm text-muted-foreground">
-                                {t('app.reports.dashboard.no_runs')}
+                                {t('reports.dashboard.no_runs')}
                             </p>
                         )}
                     </div>
@@ -247,10 +247,10 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
             <Card>
                 <CardHeader>
                     <CardTitle className="text-base">
-                        {t('app.reports.dashboard.activity')}
+                        {t('reports.dashboard.activity')}
                     </CardTitle>
                     <CardDescription>
-                        {t('app.reports.dashboard.activity_intro')}
+                        {t('reports.dashboard.activity_intro')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -298,7 +298,7 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
                             </ResponsiveContainer>
                         ) : (
                             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                                {t('app.reports.dashboard.no_activity')}
+                                {t('reports.dashboard.no_activity')}
                             </div>
                         )}
                     </div>
@@ -309,25 +309,25 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
             <Card>
                 <CardHeader>
                     <CardTitle className="text-base">
-                        {t('app.reports.dashboard.coverage')}
+                        {t('reports.dashboard.coverage')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-6">
                     <div className="grid gap-4 sm:grid-cols-4">
                         <CoverageStat
-                            label={t('app.reports.dashboard.total_cases')}
+                            label={t('reports.dashboard.total_cases')}
                             value={data.coverage.total}
                         />
                         <CoverageStat
-                            label={t('app.reports.dashboard.cases_run')}
+                            label={t('reports.dashboard.cases_run')}
                             value={data.coverage.run}
                         />
                         <CoverageStat
-                            label={t('app.reports.dashboard.cases_untested')}
+                            label={t('reports.dashboard.cases_untested')}
                             value={data.coverage.untested}
                         />
                         <CoverageStat
-                            label={t('app.reports.dashboard.coverage_pct')}
+                            label={t('reports.dashboard.coverage_pct')}
                             value={`${data.coverage.pct}%`}
                         />
                     </div>
@@ -335,7 +335,7 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
                     {data.sectionCoverage.length > 0 && (
                         <div>
                             <p className="mb-2 text-sm font-medium">
-                                {t('app.reports.dashboard.coverage_by_section')}
+                                {t('reports.dashboard.coverage_by_section')}
                             </p>
                             <div className="h-72">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -369,7 +369,7 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
                                         <Bar
                                             dataKey="tested"
                                             name={t(
-                                                'app.reports.dashboard.tested',
+                                                'reports.dashboard.tested',
                                             )}
                                             stackId="a"
                                             fill={STATUS_COLORS.passed}
@@ -377,7 +377,7 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
                                         <Bar
                                             dataKey="untested"
                                             name={t(
-                                                'app.reports.dashboard.untested',
+                                                'reports.dashboard.untested',
                                             )}
                                             stackId="a"
                                             fill={STATUS_COLORS.untested}
@@ -395,7 +395,7 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base">
-                            {t('app.reports.dashboard.milestones')}
+                            {t('reports.dashboard.milestones')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
@@ -404,17 +404,17 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
                                 <tr className="border-b border-border text-left text-xs text-muted-foreground">
                                     <th className="px-3 py-2 font-medium">
                                         {t(
-                                            'app.reports.dashboard.milestone_name',
+                                            'reports.dashboard.milestone_name',
                                         )}
                                     </th>
                                     <th className="w-48 px-3 py-2 font-medium">
-                                        {t('app.reports.dashboard.pct_done')}
+                                        {t('reports.dashboard.pct_done')}
                                     </th>
                                     <th className="w-20 px-3 py-2 text-right font-medium">
-                                        {t('app.reports.dashboard.runs_count')}
+                                        {t('reports.dashboard.runs_count')}
                                     </th>
                                     <th className="w-28 px-3 py-2 font-medium">
-                                        {t('app.reports.dashboard.due_date')}
+                                        {t('reports.dashboard.due_date')}
                                     </th>
                                 </tr>
                             </thead>
@@ -442,7 +442,7 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
                                             {m.due_on
                                                 ? fmtDate(m.due_on)
                                                 : t(
-                                                      'app.reports.dashboard.no_due',
+                                                      'reports.dashboard.no_due',
                                                   )}
                                         </td>
                                     </tr>
@@ -457,7 +457,7 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
             <Card>
                 <CardHeader>
                     <CardTitle className="text-base">
-                        {t('app.reports.dashboard.workload')}
+                        {t('reports.dashboard.workload')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-x-auto">
@@ -466,16 +466,16 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
                             <thead>
                                 <tr className="border-b border-border text-left text-xs text-muted-foreground">
                                     <th className="px-3 py-2 font-medium">
-                                        {t('app.reports.dashboard.member')}
+                                        {t('reports.dashboard.member')}
                                     </th>
                                     <th className="w-40 px-3 py-2 text-right font-medium">
                                         {t(
-                                            'app.reports.dashboard.assigned_cases',
+                                            'reports.dashboard.assigned_cases',
                                         )}
                                     </th>
                                     <th className="w-40 px-3 py-2 text-right font-medium">
                                         {t(
-                                            'app.reports.dashboard.results_logged',
+                                            'reports.dashboard.results_logged',
                                         )}
                                     </th>
                                 </tr>
@@ -501,7 +501,7 @@ export function ReportDashboard({ data }: { data: DashboardData }) {
                         </table>
                     ) : (
                         <p className="py-6 text-center text-sm text-muted-foreground">
-                            {t('app.reports.dashboard.no_workload')}
+                            {t('reports.dashboard.no_workload')}
                         </p>
                     )}
                 </CardContent>

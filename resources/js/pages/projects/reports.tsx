@@ -12,32 +12,32 @@ export default function ProjectsReports({ project }: { project: Project }) {
     const stats: { icon: LucideIcon; label: string; value: number }[] = [
         {
             icon: PlayCircle,
-            label: t('app.reports.stats.test_runs'),
+            label: t('reports.stats.test_runs'),
             value: project.test_runs_count ?? 0,
         },
         {
             icon: ClipboardList,
-            label: t('app.reports.stats.test_cases'),
+            label: t('reports.stats.test_cases'),
             value: project.test_cases_count ?? 0,
         },
         {
             icon: Flag,
-            label: t('app.reports.stats.milestones'),
+            label: t('reports.stats.milestones'),
             value: project.milestones_count ?? 0,
         },
     ];
 
     return (
         <>
-            <Head title={t('app.reports.title')} />
+            <Head title={t('reports.title')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
                 <div>
                     <h1 className="text-xl font-semibold">
-                        {t('app.reports.title')}
+                        {t('reports.title')}
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        {t('app.reports.description')}
+                        {t('reports.description')}
                     </p>
                 </div>
 

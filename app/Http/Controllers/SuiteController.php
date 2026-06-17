@@ -47,7 +47,7 @@ class SuiteController extends Controller
         if ($this->suiteCapReached($project)) {
             Inertia::flash('toast', [
                 'type'    => 'error',
-                'message' => __('app.suites.single_mode_limit'),
+                'message' => __('suites.single_mode_limit'),
             ]);
 
             return to_route('projects.suites.index', $project);
@@ -66,7 +66,7 @@ class SuiteController extends Controller
         $this->authorizeProjectAccess($request, $project);
 
         // Enforce single-suite mode at the write layer as well
-        abort_if($this->suiteCapReached($project), 422, __('app.suites.single_mode_limit'));
+        abort_if($this->suiteCapReached($project), 422, __('suites.single_mode_limit'));
 
         $validated = $request->validate([
             'name'        => ['required', 'string', 'max:255'],
@@ -77,7 +77,7 @@ class SuiteController extends Controller
 
         $suite = $project->suites()->create($validated);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.suites.created')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('suites.created')]);
 
         return to_route('suites.show', $suite);
     }
@@ -118,7 +118,7 @@ class SuiteController extends Controller
                 'id'          => 0,
                 'suite_id'    => $suite->id,
                 'parent_id'   => null,
-                'name'        => __('app.sections.default_name'),
+                'name'        => __('sections.default_name'),
                 'description' => null,
                 'testCases'   => $unsectionedCases->map(fn (TestCase $tc) => $this->transformSuiteCase($tc))->values()->all(),
                 'children'    => [],
@@ -213,7 +213,7 @@ class SuiteController extends Controller
 
         $suite->update($validated);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.suites.updated')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('suites.updated')]);
 
         return back();
     }
@@ -235,7 +235,7 @@ class SuiteController extends Controller
 
         $suite->delete();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('app.suites.deleted')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('suites.deleted')]);
 
         return to_route('projects.suites.index', $project);
     }
