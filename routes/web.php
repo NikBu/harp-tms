@@ -18,14 +18,14 @@ use App\Http\Controllers\TestCaseController;
 use App\Http\Controllers\TestPlanController;
 use App\Http\Controllers\TestRunController;
 use App\Http\Controllers\TodoController;
-use App\Models\Integration;
 use App\Models\Section;
 use App\Models\Suite;
 use App\Models\TestCase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return auth()->check()
+    return Auth::check()
         ? redirect()->route('dashboard')
         : redirect()->route('login');
 })->name('home');
@@ -114,19 +114,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->get(['id', 'name', 'suite_id', 'parent_id']);
 
         $mapCase = fn (TestCase $case): array => [
-            'id'         => $case->id,
-            'title'      => $case->title,
+            'id' => $case->id,
+            'title' => $case->title,
             'section_id' => $case->section_id,
         ];
 
         $mapSection = function (Section $section) use (&$mapSection, $mapCase): array {
             return [
-                'id'         => $section->id,
-                'name'       => $section->name,
-                'suite_id'   => $section->suite_id,
-                'parent_id'  => $section->parent_id,
+                'id' => $section->id,
+                'name' => $section->name,
+                'suite_id' => $section->suite_id,
+                'parent_id' => $section->parent_id,
                 'test_cases' => $section->testCases->map($mapCase)->values(),
-                'children'   => $section->children->map($mapSection)->values(),
+                'children' => $section->children->map($mapSection)->values(),
             ];
         };
 
@@ -136,12 +136,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         $unsectioned = $suite->testCases()->whereNull('section_id')->get(['id', 'title', 'section_id']);
         if ($unsectioned->isNotEmpty()) {
             $tree->prepend([
-                'id'         => 0,
-                'name'       => __('app.sections.default_name'),
-                'suite_id'   => $suite->id,
-                'parent_id'  => null,
+                'id' => 0,
+                'name' => __('app.sections.default_name'),
+                'suite_id' => $suite->id,
+                'parent_id' => null,
                 'test_cases' => $unsectioned->map($mapCase)->values(),
-                'children'   => [],
+                'children' => [],
             ]);
         }
 
@@ -151,7 +151,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Defect lookup — live issue preview without persisting (used by DefectLinkInput)
     Route::get('api/integrations/{integration}/issues/{issueId}', [DefectLinkController::class, 'lookup'])
         ->name('api.defects.lookup')
-        ->whereString('issueId');
+        ->where('issueId', '[a-zA-Z0-9\-_]+');
 
     // Test Runs
     Route::resource('projects.runs', TestRunController::class)
