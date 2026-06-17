@@ -19,6 +19,13 @@ return [
     'group_open' => 'Open',
     'group_closed' => 'Closed',
     'bulk_results_saved' => 'Results saved.',
+    'milestones' => [
+        'title' => 'Milestones',
+        'create' => 'New Milestone',
+        'empty' => 'No milestones yet.',
+        'runs' => 'runs',
+        'completed' => 'Completed',
+    ],
     'selection' => [
         'all' => 'Include all test cases',
         'specific' => 'Select specific test cases',
@@ -59,6 +66,7 @@ return [
         'submit' => 'Submit Result',
         'defect_url' => 'Defect URL',
         'defect' => 'Defect',
+        'defects' => 'Defects',
     ],
     'bulk' => [
         'button' => 'Set Results',

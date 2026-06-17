@@ -29,4 +29,5 @@ return [
     'settings' => 'Settings',
     'language' => 'Language',
     'logout' => 'Log out',
+    'no_results' => 'No results found.',
 ];

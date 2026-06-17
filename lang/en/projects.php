@@ -24,6 +24,12 @@ return [
     'created_by' => 'Created by',
     'members' => 'Members',
     'completed' => 'Completed',
+    'fields' => [
+        'name' => 'Name',
+        'description' => 'Description',
+        'announcement' => 'Announcement',
+        'show_announcement' => 'Show announcement on project overview',
+    ],
     'stats' => [
         'test_cases' => 'Test Cases',
         'test_runs' => 'Test Runs',

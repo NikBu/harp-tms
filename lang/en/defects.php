@@ -2,6 +2,12 @@
 
 return [
     'title' => 'Defects',
+    'description' => 'Description',
+    'issue' => 'Issue',
+    'run' => 'Run',
+    'status' => 'Status',
+    'test' => 'Test',
+    'tracker' => 'Tracker',
     'link' => 'Link Defect',
     'create' => 'Create Defect',
     'linked' => 'Defect linked.',

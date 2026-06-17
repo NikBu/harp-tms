@@ -2,12 +2,18 @@
 
 return [
     'title' => 'Reports',
+    'description' => 'Generate insights across your test cases, runs, and milestones.',
     'intro' => 'Generate insights across your test cases, runs, and milestones.',
     'view' => 'View Report',
     'summary' => 'Summary',
     'runs_analyzed' => 'runs analyzed',
     'coming_soon' => 'Report data will be available in a future version.',
     'back' => 'Back to Reports',
+    'stats' => [
+        'test_cases' => 'Test Cases',
+        'test_runs' => 'Test Runs',
+        'milestones' => 'Milestones',
+    ],
     'tabs' => [
         'current' => 'This Project',
         'cross' => 'Cross-Project',
