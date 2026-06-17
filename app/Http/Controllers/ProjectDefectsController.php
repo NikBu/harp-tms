@@ -15,10 +15,9 @@ class ProjectDefectsController extends Controller
      *
      * GET /projects/{project}/defects
      *
-     * Schema reality:
-     *   defect_links  → test_result_id → test_results.id
-     *   test_results  → run_id         → test_runs.id
-     *   test_results  → case_id        → test_cases.id   (direct FK, no need to go through tests)
+     * Column reality:
+     *   test_runs.name   (NOT title)
+     *   test_cases.title (correct)
      */
     public function index(Request $request, Project $project): Response
     {
@@ -39,12 +38,9 @@ class ProjectDefectsController extends Controller
                 'defect_links.status',
                 'defect_links.cache_refreshed_at',
                 'defect_links.test_result_id',
-                // From test_results
                 'test_results.run_id',
-                // From test_runs
-                'test_runs.title as run_title',
-                // From test_cases (joined directly via test_results.case_id)
-                'test_cases.title as test_title',
+                'test_runs.name as run_title',       // test_runs uses 'name', not 'title'
+                'test_cases.title as test_title',    // test_cases uses 'title'
             ])
             ->join('test_results', 'test_results.id', '=', 'defect_links.test_result_id')
             ->join('test_runs',    'test_runs.id',    '=', 'test_results.run_id')
