@@ -1,9 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
-import axios from 'axios';
 import { Search, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 interface Integration {
     id: number;
@@ -27,6 +25,10 @@ interface Props {
     placeholder?: string;
 }
 
+function csrfToken(): string {
+    return (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
+}
+
 export function DefectLinkInput({ integrations, onLink, disabled = false, placeholder }: Props) {
     const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(
         integrations[0] ?? null,
@@ -47,13 +49,19 @@ export function DefectLinkInput({ integrations, onLink, disabled = false, placeh
             clearTimeout(debounceRef.current ?? undefined);
             debounceRef.current = setTimeout(async () => {
                 try {
-                    const res = await axios.get(
-                        route('api.defects.lookup', {
-                            integration: integration.id,
-                            issueId: issueId.trim(),
-                        }),
-                    );
-                    setPreview(res.data as IssueMeta);
+                    const url = route('api.defects.lookup', {
+                        integration: integration.id,
+                        issueId: issueId.trim(),
+                    });
+                    const res = await fetch(url, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken(),
+                        },
+                    });
+                    if (!res.ok) throw new Error('not found');
+                    const data = await res.json() as IssueMeta;
+                    setPreview(data);
                     setStatus('found');
                 } catch {
                     setPreview(null);
