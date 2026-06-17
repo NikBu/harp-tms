@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { ExternalLink, RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,12 +18,12 @@ export interface DefectLinkData {
 }
 
 const TRACKER_LABELS: Record<string, string> = {
-    github:    'GH',
-    jira:      'J',
-    gitlab:    'GL',
-    youtrack:  'YT',
-    azure:     'ADO',
-    bugzilla:  'BZ',
+    github:   'GH',
+    jira:     'J',
+    gitlab:   'GL',
+    youtrack: 'YT',
+    azure:    'ADO',
+    bugzilla: 'BZ',
 };
 
 const STALE_MINUTES = 5;
@@ -33,6 +32,10 @@ function isStale(refreshedAt: string | null): boolean {
     if (!refreshedAt) return true;
     const diff = (Date.now() - new Date(refreshedAt).getTime()) / 60_000;
     return diff > STALE_MINUTES;
+}
+
+function csrfToken(): string {
+    return (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
 }
 
 interface Props {
@@ -52,7 +55,7 @@ export function DefectBadge({
     disabled = false,
     className,
 }: Props) {
-    const [data, setData]         = useState<DefectLinkData>(defect);
+    const [data, setData]             = useState<DefectLinkData>(defect);
     const [refreshing, setRefreshing] = useState(false);
     const [unlinking, setUnlinking]   = useState(false);
 
@@ -64,10 +67,18 @@ export function DefectBadge({
         if (refreshing) return;
         setRefreshing(true);
         try {
-            const res = await axios.post(
+            const res = await fetch(
                 route('defects.refresh', { result: resultId, defect: data.id }),
+                {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken(),
+                    },
+                },
             );
-            const updated = res.data as DefectLinkData;
+            if (!res.ok) throw new Error('refresh failed');
+            const updated = await res.json() as DefectLinkData;
             setData(updated);
             onRefreshed?.(updated);
         } catch {
@@ -82,9 +93,17 @@ export function DefectBadge({
         if (unlinking) return;
         setUnlinking(true);
         try {
-            await axios.delete(
+            const res = await fetch(
                 route('defects.destroy', { result: resultId, defect: data.id }),
+                {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken(),
+                    },
+                },
             );
+            if (!res.ok) throw new Error('unlink failed');
             onUnlinked?.(data.id);
         } catch {
             setUnlinking(false);
