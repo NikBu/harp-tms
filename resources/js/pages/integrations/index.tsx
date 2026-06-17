@@ -1,5 +1,4 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import axios from 'axios';
 import {
     CheckCircle2,
     ChevronRight,
@@ -206,10 +205,19 @@ function ConfigureDialog({
         setTesting(true);
         setTestResult(null);
         try {
-            const res = await axios.post<{ ok: boolean; message: string }>(
+            const res = await fetch(
                 `/projects/${project.id}/integrations/${existing.id}/test`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
+                    },
+                },
             );
-            setTestResult(res.data);
+            const json = await res.json() as { ok: boolean; message: string };
+            setTestResult(json);
         } catch {
             setTestResult({ ok: false, message: t('app.integrations.test_failed') });
         } finally {
