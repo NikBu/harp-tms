@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminDefectPluginsController;
 use App\Http\Controllers\AiController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DefectLinkController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectDefectsController;
 use App\Http\Controllers\ProjectSettingsController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportExportController;
@@ -174,6 +176,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('results/{result}/defects/{defect}/refresh', [DefectLinkController::class, 'refresh'])
         ->name('defects.refresh');
 
+    // Project-level defects index (aggregated across all runs)
+    Route::get('projects/{project}/defects', [ProjectDefectsController::class, 'index'])
+        ->name('projects.defects.index');
+
     // Milestones
     Route::resource('projects.milestones', MilestoneController::class)
         ->shallow()
@@ -208,7 +214,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/requirements/{requirement}/test-cases/{testCase}', [RequirementController::class, 'unlinkTestCase'])
         ->name('requirements.test-cases.unlink');
 
-    // Integrations
+    // Per-project Integrations
     Route::get('projects/{project}/integrations', [IntegrationController::class, 'index'])
         ->name('integrations.index');
     Route::post('projects/{project}/integrations', [IntegrationController::class, 'store'])
@@ -234,6 +240,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete');
         Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
         Route::patch('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
+
+        // Integration — Defect Plugins (instance-level)
+        Route::get('/integration/defect-plugins', [AdminDefectPluginsController::class, 'index'])
+            ->name('integration.defect-plugins.index');
+        Route::post('/integration/defect-plugins', [AdminDefectPluginsController::class, 'store'])
+            ->name('integration.defect-plugins.store');
+        Route::patch('/integration/defect-plugins/{integration}', [AdminDefectPluginsController::class, 'update'])
+            ->name('integration.defect-plugins.update');
+        Route::delete('/integration/defect-plugins/{integration}', [AdminDefectPluginsController::class, 'destroy'])
+            ->name('integration.defect-plugins.destroy');
+        Route::post('/integration/defect-plugins/{integration}/test', [AdminDefectPluginsController::class, 'testConnection'])
+            ->name('integration.defect-plugins.test');
     });
 });
 

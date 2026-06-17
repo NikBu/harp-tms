@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     BarChart2,
+    Bug,
     ClipboardList,
     ChevronsUpDown,
     FolderOpen,
@@ -86,6 +87,12 @@ export function ProjectSidebar({ project }: Props) {
             label: t('app.navigation.milestones'),
             icon: MapPin,
             href: `${base}/milestones`,
+        },
+        {
+            key: 'defects',
+            label: t('app.navigation.defects'),
+            icon: Bug,
+            href: `${base}/defects`,
         },
         {
             key: 'reports',
