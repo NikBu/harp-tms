@@ -1,16 +1,16 @@
 <?php
 
 return [
-    'title' => 'Dashboard',
-    'welcome' => 'Welcome back, :name',
-    'recent_runs' => 'Recent Runs',
-    'no_runs' => 'No runs yet.',
-    'my_projects' => 'My Projects',
-    'no_projects' => 'No projects yet.',
+    'title' => 'Главная',
+    'welcome' => 'С возвращением, :name',
+    'recent_runs' => 'Последние тест-раны',
+    'no_runs' => 'Тест-ранов пока нет.',
+    'my_projects' => 'Мои проекты',
+    'no_projects' => 'Проектов пока нет.',
     'stats' => [
-        'projects' => 'Projects',
-        'test_cases' => 'Test Cases',
-        'active_runs' => 'Active Runs',
-        'milestones' => 'Milestones',
+        'projects' => 'Проекты',
+        'test_cases' => 'Тест-кейсы',
+        'active_runs' => 'Активные раны',
+        'milestones' => 'Майлстоуны',
     ],
 ];

@@ -1,6 +1,6 @@
 <?php
 
 return [
-    'diploma_note' => 'Diploma project — MVP Test Management System prototype',
-    'author' => 'Burkov Nikita',
+    'diploma_note' => 'Дипломный проект — MVP системы управления тестированием',
+    'author' => 'Бурков Никита',
 ];

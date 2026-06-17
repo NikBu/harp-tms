@@ -1,10 +1,10 @@
 <?php
 
 return [
-    'active' => 'Active',
-    'inactive' => 'Inactive',
-    'passed' => 'Passed',
-    'failed' => 'Failed',
-    'pending' => 'Pending',
-    'blocked' => 'Blocked',
+    'active' => 'Активен',
+    'inactive' => 'Неактивен',
+    'passed' => 'Пройден',
+    'failed' => 'Провален',
+    'pending' => 'Ожидает',
+    'blocked' => 'Заблокирован',
 ];

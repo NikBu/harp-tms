@@ -1,13 +1,13 @@
 <?php
 
 return [
-    'title' => 'Test Suites',
-    'create' => 'New Suite',
-    'edit' => 'Edit Suite',
-    'created' => 'Suite created successfully.',
-    'updated' => 'Suite updated successfully.',
-    'deleted' => 'Suite deleted successfully.',
-    'empty' => 'No test suites yet.',
-    'new_suite' => 'New Suite',
-    'single_mode_limit' => 'This project only allows one test suite.',
+    'title' => 'Наборы тестов',
+    'create' => 'Новый набор',
+    'edit' => 'Редактировать набор',
+    'created' => 'Набор тестов успешно создан.',
+    'updated' => 'Набор тестов успешно обновлён.',
+    'deleted' => 'Набор тестов успешно удалён.',
+    'empty' => 'Наборов тестов пока нет.',
+    'new_suite' => 'Новый набор',
+    'single_mode_limit' => 'В этом проекте допускается только один набор тестов.',
 ];
