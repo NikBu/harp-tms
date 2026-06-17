@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\DefectLink;
 use App\Models\Project;
 use App\Models\Test;
+use App\Models\TestCase;
 use App\Models\TestResult;
 use App\Models\TestRun;
 use App\Models\User;
@@ -121,10 +122,11 @@ class DefectSeeder extends Seeder
     }
 
     /**
-     * Find the Test row for a given run + case title prefix, then get-or-create
-     * a failed TestResult on it.
+     * Look up a Test by run + case title prefix, then get-or-create a failed result.
      *
-     * Note: Test model uses the relation name `case()` (not `testCase()`).
+     * We resolve the TestCase ID first (using withTrashed to bypass SoftDeletes scope),
+     * then find the Test row directly by (run_id, case_id) — avoiding whereHas on a
+     * soft-deletable model which silently filters rows via an INNER JOIN.
      */
     private function getOrCreateFailedResult(
         TestRun $run,
@@ -133,8 +135,13 @@ class DefectSeeder extends Seeder
         string $comment,
         int $elapsed,
     ): TestResult {
-        $test = Test::whereHas('case', fn ($q) => $q->where('title', 'like', $caseTitlePrefix.'%'))
-            ->where('run_id', $run->id)
+        // Resolve the TestCase ID (withTrashed in case of soft deletes)
+        $testCase = TestCase::withTrashed()
+            ->where('title', 'like', $caseTitlePrefix.'%')
+            ->firstOrFail();
+
+        $test = Test::where('run_id', $run->id)
+            ->where('case_id', $testCase->id)
             ->firstOrFail();
 
         /** @var TestResult $result */
