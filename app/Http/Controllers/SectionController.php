@@ -9,19 +9,17 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class SectionController extends Controller
 {
-    /**
-     * Store a newly created section within the given suite.
-     */
     public function store(Request $request, Project $project, Suite $suite): RedirectResponse
     {
-        $this->authorizeProjectAccess($request, $suite->project);
+        Gate::authorize('edit', $suite->project);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'parent_id' => ['nullable', 'integer', 'exists:sections,id'],
+            'name'        => ['required', 'string', 'max:255'],
+            'parent_id'   => ['nullable', 'integer', 'exists:sections,id'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -36,15 +34,12 @@ class SectionController extends Controller
         return back();
     }
 
-    /**
-     * Update the specified section.
-     */
     public function update(Request $request, Section $section): RedirectResponse
     {
-        $this->authorizeProjectAccess($request, $section->suite->project);
+        Gate::authorize('edit', $section->suite->project);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name'        => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -53,28 +48,22 @@ class SectionController extends Controller
         return back();
     }
 
-    /**
-     * Remove the specified section.
-     */
     public function destroy(Request $request, Section $section): RedirectResponse
     {
-        $this->authorizeProjectAccess($request, $section->suite->project);
+        Gate::authorize('delete', $section->suite->project);
 
         $section->delete();
 
         return back();
     }
 
-    /**
-     * Persist a new ordering for the given suite's sections.
-     */
     public function reorder(Request $request, Project $project, Suite $suite): Response
     {
-        $this->authorizeProjectAccess($request, $project);
+        Gate::authorize('edit', $project);
 
         $validated = $request->validate([
-            'items' => ['required', 'array'],
-            'items.*.id' => ['required', 'integer', 'exists:sections,id'],
+            'items'            => ['required', 'array'],
+            'items.*.id'       => ['required', 'integer', 'exists:sections,id'],
             'items.*.position' => ['required', 'integer'],
         ]);
 
@@ -87,22 +76,5 @@ class SectionController extends Controller
         });
 
         return response()->noContent();
-    }
-
-    /**
-     * Ensure the current user may access the given project.
-     */
-    private function authorizeProjectAccess(Request $request, Project $project): void
-    {
-        $user = $request->user();
-
-        if ($user->hasRole('admin')) {
-            return;
-        }
-
-        abort_unless(
-            $project->members()->whereKey($user->getKey())->exists(),
-            403
-        );
     }
 }

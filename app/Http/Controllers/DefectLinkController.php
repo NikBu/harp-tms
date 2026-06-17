@@ -37,14 +37,14 @@ class DefectLinkController extends Controller
         }
 
         $link = $result->defectLinks()->create([
-            'tracker_type'     => $integration->provider,
-            'external_id'      => $issue['id'],
-            'external_url'     => $issue['url'],
-            'title'            => $issue['title'],
-            'status'           => $issue['status'],
-            'cached_metadata'  => $issue,
+            'tracker_type'       => $integration->provider,
+            'external_id'        => $issue['id'],
+            'external_url'       => $issue['url'],
+            'title'              => $issue['title'],
+            'status'             => $issue['status'],
+            'cached_metadata'    => $issue,
             'cache_refreshed_at' => now(),
-            'created_by'       => $request->user()->id,
+            'created_by'         => $request->user()->id,
         ]);
 
         return response()->json($link, 201);
@@ -135,10 +135,13 @@ class DefectLinkController extends Controller
         return response()->json($issue);
     }
 
+    /**
+     * The result must belong to an open run and the user must be able to submit results.
+     */
     private function authorizeResult(TestResult $result): void
     {
         $run = $result->run;
-        abort_if($run->is_closed, 403, __('runs.closed_error'));
-        Gate::authorize('view', $run->project);
+        abort_if($run->is_completed, 403, __('runs.closed_error'));
+        Gate::authorize('submitResults', $run->project);
     }
 }
