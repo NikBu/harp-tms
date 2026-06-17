@@ -155,7 +155,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </nav>
                 )}
 
-                {/* ── Right side ───────────────────────────────── */}
+                {/* ── Right side ───────────────────────────────��─ */}
                 <div className="ml-auto flex items-center gap-2">
 
                     {isInProject && canAdd && addItems.length > 0 && (
