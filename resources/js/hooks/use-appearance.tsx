@@ -46,7 +46,7 @@ let currentColorScheme: ColorScheme = 'blue';
 let currentFontSize: FontSize = 'md';
 let currentRadius: RadiusSize = 'md';
 let currentChartPalette: ChartPaletteId = 'default';
-let currentCustomChartColors: string[] = [...DEFAULT_CUSTOM_COLORS];
+let currentCustomChartColors: string[] = DEFAULT_CUSTOM_COLORS;
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 const prefersDark = (): boolean => {
@@ -138,25 +138,35 @@ export function initializeTheme(): void {
     }
 }
 
+// ── Stable server snapshots (must return the same reference every call) ───
+// React calls getServerSnapshot multiple times to detect tearing; returning
+// a new array instance each call triggers the "should be cached" warning.
+const serverSnapshotAppearance    = (): Appearance      => 'system';
+const serverSnapshotColorScheme   = (): ColorScheme     => 'blue';
+const serverSnapshotFontSize      = (): FontSize        => 'md';
+const serverSnapshotRadius        = (): RadiusSize      => 'md';
+const serverSnapshotChartPalette  = (): ChartPaletteId  => 'default';
+const serverSnapshotCustomColors  = (): string[]        => DEFAULT_CUSTOM_COLORS; // stable module-level ref
+
 // ── Hook ──────────────────────────────────────────────────────────────────
 export function useAppearance(): UseAppearanceReturn {
     const appearance = useSyncExternalStore(
-        subscribe, () => currentAppearance, () => 'system' as Appearance,
+        subscribe, () => currentAppearance, serverSnapshotAppearance,
     );
     const colorScheme = useSyncExternalStore(
-        subscribe, () => currentColorScheme, () => 'blue' as ColorScheme,
+        subscribe, () => currentColorScheme, serverSnapshotColorScheme,
     );
     const fontSize = useSyncExternalStore(
-        subscribe, () => currentFontSize, () => 'md' as FontSize,
+        subscribe, () => currentFontSize, serverSnapshotFontSize,
     );
     const radius = useSyncExternalStore(
-        subscribe, () => currentRadius, () => 'md' as RadiusSize,
+        subscribe, () => currentRadius, serverSnapshotRadius,
     );
     const chartPalette = useSyncExternalStore(
-        subscribe, () => currentChartPalette, () => 'default' as ChartPaletteId,
+        subscribe, () => currentChartPalette, serverSnapshotChartPalette,
     );
     const customChartColors = useSyncExternalStore(
-        subscribe, () => currentCustomChartColors, () => [...DEFAULT_CUSTOM_COLORS],
+        subscribe, () => currentCustomChartColors, serverSnapshotCustomColors,
     );
 
     const resolvedAppearance: ResolvedAppearance = isDarkMode(appearance) ? 'dark' : 'light';

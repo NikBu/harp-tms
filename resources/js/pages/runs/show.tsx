@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { CheckCircle2, ExternalLink, Trash2, XCircle } from 'lucide-react';
+import { CheckCircle2, Trash2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,9 +8,22 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
+import { DefectBadge, type DefectLinkData } from '@/components/defects/DefectBadge';
+import { DefectLinkInput } from '@/components/defects/DefectLinkInput';
+import { DefectCreateDialog } from '@/components/defects/DefectCreateDialog';
 import { useTrans } from '@/hooks/use-trans';
 import { index as projectsIndex } from '@/routes/projects';
 import type { BulkResultItem, TestInstance, TestRun, TestStatus } from '@/types/test-run';
+
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+
+interface Integration {
+    id: number;
+    provider: string;   // integration_type column
+    name: string | null;
+}
 
 
 // ── Status helpers ────────────────────────────────────────────────────────────
@@ -99,15 +112,19 @@ type ResultForm = {
 function ResultDialog({
     test,
     runId,
+    runIsCompleted,
     open,
     onClose,
     statuses,
+    integrations,
 }: {
     test: TestInstance;
     runId: number;
+    runIsCompleted: boolean;
     open: boolean;
     onClose: () => void;
     statuses: TestStatus[];
+    integrations: Integration[];
 }) {
     const t = useTrans();
     const { data, setData, post, processing, reset } = useForm<ResultForm>({
@@ -118,10 +135,23 @@ function ResultDialog({
         defect_url: '',
     });
 
+    // Defect links on the *latest* result — shown read-only while submitting a new one
+    const existingDefects: DefectLinkData[] =
+        (test.latest_result as any)?.defect_links ?? [];
+
+    // Local state for newly linked defects within this dialog session
+    const [pendingLinks, setPendingLinks] = useState<{ integrationId: number; issueId: string }[]>([]);
+
+    const hasIntegrations = integrations.length > 0;
+
+    function handleLink(integrationId: number, issueId: string) {
+        setPendingLinks(prev => [...prev, { integrationId, issueId }]);
+    }
+
     function submit(e: React.FormEvent) {
         e.preventDefault();
-        post(`/runs/${runId}/tests/${test.id}/results`, {
-            onSuccess: () => { reset(); onClose(); },
+        post(route('runs.tests.results.store', { testRun: runId, test: test.id }), {
+            onSuccess: () => { reset(); setPendingLinks([]); onClose(); },
         });
     }
 
@@ -144,7 +174,11 @@ function ResultDialog({
                                     key={s}
                                     type="button"
                                     onClick={() => setData('status', s)}
-                                    className={`rounded-full border px-3 py-1 text-xs font-medium capitalize transition-opacity ${STATUS_BADGE[s]} ${data.status === s ? 'opacity-100 ring-2 ring-offset-1 ring-current' : 'opacity-60 hover:opacity-90'}`}
+                                    className={`rounded-full border px-3 py-1 text-xs font-medium capitalize transition-opacity ${STATUS_BADGE[s]} ${
+                                        data.status === s
+                                            ? 'opacity-100 ring-2 ring-offset-1 ring-current'
+                                            : 'opacity-60 hover:opacity-90'
+                                    }`}
                                 >
                                     {s}
                                 </button>
@@ -185,17 +219,59 @@ function ResultDialog({
                         </div>
                     </div>
 
-                    {/* Defect URL */}
+                    {/* ── Defects section ── */}
                     <div className="grid gap-2">
-                        <Label htmlFor="defect_url">{t('app.runs.result.defect_url')}</Label>
-                        <input
-                            id="defect_url"
-                            type="url"
-                            value={data.defect_url}
-                            onChange={(e) => setData('defect_url', e.target.value)}
-                            placeholder="https://jira.example.com/browse/BUG-123"
-                            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                        />
+                        <Label>{t('app.runs.result.defects')}</Label>
+
+                        {/* Existing defect links on the last result */}
+                        {existingDefects.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                                {existingDefects.map(d => (
+                                    <DefectBadge
+                                        key={d.id}
+                                        defect={d}
+                                        resultId={test.latest_result!.id}
+                                        disabled={runIsCompleted}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {hasIntegrations ? (
+                            <>
+                                {/* Pending links queued for this new result */}
+                                {pendingLinks.length > 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                        {pendingLinks.length} defect{pendingLinks.length !== 1 ? 's' : ''} will be linked after saving
+                                    </p>
+                                )}
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1">
+                                        <DefectLinkInput
+                                            integrations={integrations}
+                                            onLink={handleLink}
+                                            disabled={processing}
+                                        />
+                                    </div>
+                                    <DefectCreateDialog
+                                        integrations={integrations}
+                                        resultId={test.latest_result?.id ?? 0}
+                                        prefillTitle={test.case?.title ? `[FAIL] ${test.case.title}` : ''}
+                                        disabled={processing || !test.latest_result}
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            /* Fallback: plain URL input when no integrations configured */
+                            <input
+                                id="defect_url"
+                                type="url"
+                                value={data.defect_url}
+                                onChange={(e) => setData('defect_url', e.target.value)}
+                                placeholder="https://jira.example.com/browse/BUG-123"
+                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            />
+                        )}
                     </div>
 
                     <DialogFooter>
@@ -265,10 +341,7 @@ function BulkResultDialog({
 
         setProcessing(true);
         router.post(
-            `/runs/${runId}/bulk-results`,
-            // Inertia v3 RequestPayload = Record<string, FormDataConvertible>.
-            // A nested array of objects doesn't satisfy that constraint at the
-            // type level, so we JSON-encode it and decode on the Laravel side.
+            route('runs.results.bulk', { testRun: runId }),
             { results: JSON.stringify(results) },
             {
                 onFinish: () => { setProcessing(false); onClose(); },
@@ -296,7 +369,11 @@ function BulkResultDialog({
                                         key={s}
                                         type="button"
                                         onClick={() => setBulkStatus(s)}
-                                        className={`rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize transition-opacity ${STATUS_BADGE[s]} ${bulkStatus === s ? 'opacity-100 ring-2 ring-offset-1 ring-current' : 'opacity-60 hover:opacity-90'}`}
+                                        className={`rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize transition-opacity ${STATUS_BADGE[s]} ${
+                                            bulkStatus === s
+                                                ? 'opacity-100 ring-2 ring-offset-1 ring-current'
+                                                : 'opacity-60 hover:opacity-90'
+                                        }`}
                                     >
                                         {s}
                                     </button>
@@ -400,9 +477,11 @@ const STATUS_COUNTS: Record<TestStatus, keyof TestRun> = {
 export default function RunsShow({
     run,
     statuses,
+    integrations,
 }: {
     run: TestRun;
     statuses: TestStatus[];
+    integrations: Integration[];
 }) {
     const t = useTrans();
     const [activeTest, setActiveTest] = useState<TestInstance | null>(null);
@@ -410,15 +489,15 @@ export default function RunsShow({
 
     function toggleClose() {
         if (run.is_completed) {
-            router.patch(`/runs/${run.id}/reopen`);
+            router.patch(route('runs.reopen', { testRun: run.id }));
         } else {
-            router.patch(`/runs/${run.id}/close`);
+            router.patch(route('runs.close', { testRun: run.id }));
         }
     }
 
     function deleteRun() {
         if (!window.confirm(t('app.common.confirm_delete'))) return;
-        router.delete(`/runs/${run.id}`);
+        router.delete(route('runs.destroy', { testRun: run.id }));
     }
 
     const grouped = (run.tests ?? []).reduce<Record<string, TestInstance[]>>((acc, test) => {
@@ -481,52 +560,68 @@ export default function RunsShow({
                 {Object.entries(grouped).map(([section, tests]) => (
                     <div key={section} className="grid gap-2">
                         <h2 className="text-sm font-medium text-muted-foreground">{section}</h2>
-                        {tests.map((test) => (
-                            <div
-                                key={test.id}
-                                className="flex items-center justify-between gap-3 rounded-md border bg-card px-4 py-3"
-                            >
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-medium">
-                                        {test.case?.title ?? `Test #${test.id}`}
-                                    </p>
-                                    {test.latest_result && (
-                                        <div className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
-                                            {test.latest_result.comment && (
-                                                <span className="truncate max-w-xs">{stripHtml(test.latest_result.comment)}</span>
-                                            )}
-                                            {test.latest_result.defect_url && (
-                                                <a
-                                                    href={test.latest_result.defect_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-0.5 text-destructive hover:underline shrink-0"
-                                                    onClick={e => e.stopPropagation()}
-                                                >
-                                                    <ExternalLink className="size-3" />
-                                                    {t('app.runs.result.defect')}
-                                                </a>
-                                            )}
-                                            {test.latest_result.version && (
-                                                <span className="shrink-0">v{test.latest_result.version}</span>
-                                            )}
-                                        </div>
-                                    )}
+                        {tests.map((test) => {
+                            const defectLinks: DefectLinkData[] =
+                                (test.latest_result as any)?.defect_links ?? [];
+
+                            return (
+                                <div
+                                    key={test.id}
+                                    className="flex items-center justify-between gap-3 rounded-md border bg-card px-4 py-3"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-medium">
+                                            {test.case?.title ?? `Test #${test.id}`}
+                                        </p>
+                                        {test.latest_result && (
+                                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                                                {test.latest_result.comment && (
+                                                    <span className="truncate max-w-xs text-xs text-muted-foreground">
+                                                        {stripHtml(test.latest_result.comment)}
+                                                    </span>
+                                                )}
+                                                {/* Defect badges */}
+                                                {defectLinks.map(d => (
+                                                    <DefectBadge
+                                                        key={d.id}
+                                                        defect={d}
+                                                        resultId={test.latest_result!.id}
+                                                        disabled={run.is_completed}
+                                                    />
+                                                ))}
+                                                {/* Legacy plain URL fallback */}
+                                                {defectLinks.length === 0 && test.latest_result.defect_url && (
+                                                    <a
+                                                        href={test.latest_result.defect_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-0.5 text-xs text-destructive hover:underline shrink-0"
+                                                        onClick={e => e.stopPropagation()}
+                                                    >
+                                                        {t('app.runs.result.defect')}
+                                                    </a>
+                                                )}
+                                                {test.latest_result.version && (
+                                                    <span className="shrink-0 text-xs text-muted-foreground">v{test.latest_result.version}</span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex shrink-0 items-center gap-2">
+                                        <StatusBadge status={test.status} />
+                                        {!run.is_completed && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setActiveTest(test)}
+                                            >
+                                                {t('app.runs.result.add')}
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="flex shrink-0 items-center gap-2">
-                                    <StatusBadge status={test.status} />
-                                    {!run.is_completed && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setActiveTest(test)}
-                                        >
-                                            {t('app.runs.result.add')}
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ))}
 
@@ -544,9 +639,11 @@ export default function RunsShow({
                 <ResultDialog
                     test={activeTest}
                     runId={run.id}
+                    runIsCompleted={run.is_completed}
                     open={activeTest !== null}
                     onClose={() => setActiveTest(null)}
                     statuses={statuses}
+                    integrations={integrations}
                 />
             )}
 

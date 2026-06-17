@@ -1,5 +1,6 @@
 <?php
 
+
 return [
     'navigation' => [
         'main' => 'Navigation',
@@ -257,15 +258,12 @@ return [
             'add_section' => 'Add Section',
             'add_subsection' => 'Add Subsection',
             'assign_to' => 'Assign To',
-            // 'edit_selected' => 'Edit',
-            // 'delete_selected' => 'Delete',
             'columns' => 'Columns',
             'visible_columns' => 'Visible Columns',
             'select_cases_first' => 'Select one or more cases first.',
             'bulk_edit_not_implemented' => 'Bulk edit is not yet implemented.',
             'assign_not_implemented' => 'Assign is not yet implemented.',
             'delete_confirm' => 'Delete :count selected case(s)?',
-            
             'export' => 'Export',
             'edit_selected' => 'Edit Selected',
             'delete_selected' => 'Delete Selected',
@@ -335,7 +333,6 @@ return [
             'elapsed' => 'Elapsed',
             'version' => 'Version',
             'submit' => 'Submit Result',
-
             'defect_url' => 'Defect URL',
             'defect' => 'Defect',
         ],
@@ -374,7 +371,6 @@ return [
             'select_untested' => 'Select untested',
             'submit' => 'Save :count results',
         ],
-
     ],
     'plans' => [
         'title' => 'Test Plans',
@@ -558,6 +554,12 @@ return [
             'report_type' => 'Report Type',
             'run' => 'Run Report',
         ],
+        'export' => [
+            'button' => 'Export',
+            'csv'  => 'Export as CSV',
+            'xlsx' => 'Export as XLSX',
+            'pdf'  => 'Export as PDF',
+        ],
         'dashboard' => [
             'run_summary' => 'Test Run Summary',
             'status_distribution' => 'Status Distribution',
@@ -589,6 +591,34 @@ return [
             'results_logged' => 'Results Logged',
             'no_workload' => 'No assignments or results yet.',
         ],
+        'activity' => [
+            'new_cases' => 'New Cases',
+            'updated_cases' => 'Updated Cases',
+            'new_results' => 'Results Logged',
+        ],
+        'coverage' => [
+            'by_priority' => 'Pass Rate by Priority',
+        ],
+        'milestone' => [
+            'total' => 'Total',
+            'completed' => 'Completed',
+            'active' => 'Active',
+        ],
+        'workload' => [
+            'members' => 'Members',
+            'avg_pass_rate' => 'Avg Pass Rate',
+            'pass_rate' => 'Pass Rate',
+            'assigned' => 'Assigned',
+            'logged' => 'Logged',
+            'status_breakdown' => 'Status Breakdown',
+        ],
+        'distribution' => [
+            'by_priority' => 'By Priority',
+            'by_template' => 'By Template',
+            'by_section' => 'By Section',
+            'by_type' => 'By Type',
+            'total' => 'Total',
+        ],
         'types' => [
             'activity_summary' => [
                 'name' => 'Activity Summary',
@@ -598,6 +628,10 @@ return [
                 'name' => 'Result Coverage',
                 'desc' => 'Pass, fail, and untested breakdown for the latest runs.',
             ],
+            'case_distribution' => [
+                'name' => 'Case Distribution',
+                'desc' => 'Distribution of test cases by priority, template, and section.',
+            ],
             'defect_summary' => [
                 'name' => 'Defect Summary',
                 'desc' => 'Overview of defects raised during testing.',
@@ -606,9 +640,9 @@ return [
                 'name' => 'Milestone Progress',
                 'desc' => 'Completion progress across milestones.',
             ],
-            'case_distribution' => [
-                'name' => 'Case Distribution',
-                'desc' => 'Distribution of test cases by priority.',
+            'workload' => [
+                'name' => 'Workload',
+                'desc' => 'Per-member assignment and result contribution breakdown.',
             ],
         ],
     ],
@@ -641,6 +675,34 @@ return [
             'zapier' => 'Automate workflows with thousands of apps.',
             'jenkins' => 'Report results from your Jenkins pipelines.',
             'azure_devops' => 'Sync work items with Azure DevOps.',
+        ],
+        'configure_form' => [
+            'title' => 'Configure :tracker',
+            'connection_status' => 'Connection status',
+            'status_connected' => 'Connected',
+            'status_error' => 'Connection error',
+            'status_unconfigured' => 'Not configured',
+            'test_connection' => 'Test connection',
+            'testing' => 'Testing…',
+            'save' => 'Save',
+            'saved' => 'Integration saved.',
+            'deleted' => 'Integration removed.',
+            'delete' => 'Remove integration',
+            'confirm_delete' => 'Remove this integration? Existing defect links will be preserved but can no longer sync.',
+            'fields' => [
+                'url' => 'Instance URL',
+                'url_placeholder' => 'https://yourcompany.atlassian.net',
+                'email' => 'Email',
+                'email_placeholder' => 'your@email.com',
+                'token' => 'API Token / PAT',
+                'token_placeholder' => 'Paste your token here',
+                'project_key' => 'Project key',
+                'project_key_placeholder' => 'e.g. PROJ or owner/repo',
+                'default_issue_type' => 'Default issue type',
+                'auth_type' => 'Auth type',
+                'auth_pat' => 'Personal Access Token',
+                'auth_oauth' => 'OAuth 2.0',
+            ],
         ],
     ],
     'ai' => [
@@ -696,5 +758,51 @@ return [
         'profile' => 'Profile',
         'security' => 'Security',
         'appearance' => 'Appearance',
+    ],
+    'footer' => [
+        'diploma_note' => 'Diploma project — MVP Test Management System prototype',
+        'author' => 'Burkov Nikita',
+    ],
+    'defects' => [
+        'title' => 'Defects',
+        'link' => 'Link Defect',
+        'create' => 'Create Defect',
+        'linked' => 'Defect linked.',
+        'created_and_linked' => 'Defect created and linked.',
+        'unlinked' => 'Defect unlinked.',
+        'refreshed' => 'Defect metadata refreshed.',
+        'issue_not_found' => 'Issue not found. Check the ID and try again.',
+        'no_integrations' => 'No active integrations. Configure one in Project Settings → Integrations.',
+        'empty' => 'No defects linked to this result.',
+        'stale_tooltip' => 'Metadata may be outdated — click refresh to sync.',
+        'section_title' => 'Linked Defects',
+        'link_existing' => 'Link existing issue',
+        'create_new' => 'Create new issue in tracker',
+        'fields' => [
+            'tracker' => 'Tracker',
+            'issue_id' => 'Issue ID',
+            'title' => 'Title',
+            'status' => 'Status',
+            'assignee' => 'Assignee',
+            'priority' => 'Priority',
+            'last_synced' => 'Last synced',
+        ],
+        'priorities' => [
+            'critical' => 'Critical',
+            'high' => 'High',
+            'medium' => 'Medium',
+            'low' => 'Low',
+        ],
+        'create_dialog' => [
+            'title' => 'Create defect in tracker',
+            'tracker_label' => 'Tracker',
+            'title_label' => 'Title',
+            'title_placeholder' => 'Short description of the defect',
+            'description_label' => 'Description',
+            'description_placeholder' => 'Steps to reproduce, expected vs actual…',
+            'priority_label' => 'Priority',
+            'submit' => 'Create & link',
+            'submitting' => 'Creating…',
+        ],
     ],
 ];

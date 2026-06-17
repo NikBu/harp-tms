@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Integration;
 use App\Models\Project;
 use App\Models\Test;
 use App\Models\TestCase;
@@ -145,13 +146,19 @@ class TestRunController extends Controller
                     'case.section:id,name',
                     'latestResult:id,status,comment,elapsed,version,defect_url,created_by,created_at',
                     'latestResult.createdBy:id,name',
+                    'latestResult.defectLinks',
                 ])->orderBy('id');
             },
         ]);
 
+        $integrations = Integration::where('project_id', $testRun->project_id)
+            ->where('is_active', true)
+            ->get(['id', 'integration_type as provider', 'name']);
+
         return Inertia::render('runs/show', [
             'run' => $testRun,
             'statuses' => Test::STATUSES,
+            'integrations' => $integrations,
         ]);
     }
 
@@ -241,7 +248,6 @@ class TestRunController extends Controller
                 'created_by' => Auth::id(),
             ]);
 
-            $test->update(['status' => $validated['status']]);
             $test->update(['status' => $validated['status']]);
             $this->recalculateRunCounts($testRun);
         });
@@ -344,8 +350,6 @@ class TestRunController extends Controller
         $items = json_decode($request->input('results'), true);
 
         abort_if(! is_array($items) || empty($items), 422, 'Invalid results payload.');
-
-        $validStatuses = implode(',', Test::STATUSES);
 
         DB::transaction(function () use ($testRun, $items): void {
             foreach ($items as $item) {

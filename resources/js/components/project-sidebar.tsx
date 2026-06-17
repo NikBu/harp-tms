@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     BarChart2,
+    Bug,
     ClipboardList,
     ChevronsUpDown,
     FolderOpen,
@@ -28,6 +29,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import { useTrans } from '@/hooks/use-trans';
 import type { ProjectContext } from '@/types/navigation';
 
 interface Props {
@@ -35,6 +37,7 @@ interface Props {
 }
 
 export function ProjectSidebar({ project }: Props) {
+    const t = useTrans();
     const page = usePage<any>();
     const currentUrl = ((page as any).url as string) ?? '';
     const projects = (page.props.accessibleProjects ?? []) as ProjectContext[];
@@ -45,34 +48,55 @@ export function ProjectSidebar({ project }: Props) {
     const navItems = [
         {
             key: 'overview',
-            label: 'Overview',
+            label: t('app.navigation.overview'),
             icon: LayoutDashboard,
             href: base,
         },
-        { key: 'todo', label: 'To Do', icon: ListChecks, href: '/todo' },
+        {
+            key: 'todo',
+            label: t('app.navigation.todo'),
+            icon: ListChecks,
+            href: '/todo',
+        },
         {
             key: 'suites',
-            label: 'Cases',
+            label: t('app.navigation.cases'),
             icon: ClipboardList,
             href: `${base}/suites`,
         },
         {
             key: 'requirements',
-            label: 'Requirements',
+            label: t('app.navigation.requirements'),
             icon: ScrollText,
             href: `${base}/requirements`,
         },
-        { key: 'runs', label: 'Runs', icon: PlayCircle, href: `${base}/runs` },
-        { key: 'plans', label: 'Plans', icon: BookOpen, href: `${base}/plans` },
+        {
+            key: 'runs',
+            label: t('app.navigation.runs'),
+            icon: PlayCircle,
+            href: `${base}/runs`,
+        },
+        {
+            key: 'plans',
+            label: t('app.navigation.plans'),
+            icon: BookOpen,
+            href: `${base}/plans`,
+        },
         {
             key: 'milestones',
-            label: 'Milestones',
+            label: t('app.navigation.milestones'),
             icon: MapPin,
             href: `${base}/milestones`,
         },
         {
+            key: 'defects',
+            label: t('app.navigation.defects'),
+            icon: Bug,
+            href: `${base}/defects`,
+        },
+        {
             key: 'reports',
-            label: 'Reports',
+            label: t('app.navigation.reports'),
             icon: BarChart2,
             href: `${base}/reports`,
         },
@@ -118,7 +142,7 @@ export function ProjectSidebar({ project }: Props) {
                                 href="/projects"
                                 className="flex w-full items-center gap-2 text-muted-foreground"
                             >
-                                All projects…
+                                {t('app.navigation.all_projects')}…
                             </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
