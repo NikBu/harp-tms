@@ -8,14 +8,13 @@ use App\Models\Test;
 use App\Models\TestResult;
 use App\Models\TestRun;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 
 /**
  * Seeds a variety of defect links into Project Alpha's existing test runs.
  *
- * Safe to run multiple times (idempotent via firstOrCreate / firstOrNew).
+ * Safe to run multiple times (idempotent via firstOrNew / forceFill).
  * Depends on TechnicalSeeder having already run (needs existing runs, tests, users).
  */
 class DefectSeeder extends Seeder
@@ -27,52 +26,15 @@ class DefectSeeder extends Seeder
         $tester2 = User::where('email', 'tester2@harp.test')->firstOrFail();
         $lead    = User::where('email', 'lead1@harp.test')->firstOrFail();
 
-        // ----------------------------------------------------------------
-        // Resolve runs by name
-        // ----------------------------------------------------------------
         $runA = TestRun::where('project_id', $project->id)->where('name', 'Auth Suite Run')->firstOrFail();
         $runB = TestRun::where('project_id', $project->id)->where('name', 'Dashboard Run')->firstOrFail();
-        $runC = TestRun::where('project_id', $project->id)->where('name', 'Standalone API Run')->firstOrFail();
-
-        // ----------------------------------------------------------------
-        // Helper: get or create a failed result for a given test
-        // ----------------------------------------------------------------
-        $getOrCreateFailedResult = function (TestRun $run, string $caseTitle, User $user, string $comment, int $elapsed) {
-            $test = Test::whereHas('testCase', fn ($q) => $q->where('title', 'like', $caseTitle.'%'))
-                ->where('run_id', $run->id)
-                ->firstOrFail();
-
-            /** @var TestResult $result */
-            $result = TestResult::firstOrNew([
-                'test_id' => $test->id,
-                'status'  => 'failed',
-            ]);
-
-            if (! $result->exists) {
-                $result->forceFill([
-                    'test_id'    => $test->id,
-                    'run_id'     => $run->id,
-                    'case_id'    => $test->case_id,
-                    'status'     => 'failed',
-                    'comment'    => $comment,
-                    'elapsed'    => $elapsed,
-                    'created_by' => $user->id,
-                    'created_at' => now(),
-                ])->save();
-            }
-
-            return $result;
-        };
 
         // ----------------------------------------------------------------
         // 1. GitHub issue on TC-002 (invalid login) — open
         // ----------------------------------------------------------------
-        $result1 = $getOrCreateFailedResult(
-            $runA,
-            'TC-002',
-            $tester1,
-            'Error message not shown after 3 failed attempts',
-            45,
+        $result1 = $this->getOrCreateFailedResult(
+            $runA, 'TC-002', $tester1,
+            'Error message not shown after 3 failed attempts', 45,
         );
         $this->createDefectLink(
             result: $result1,
@@ -88,12 +50,9 @@ class DefectSeeder extends Seeder
         // ----------------------------------------------------------------
         // 2. Jira ticket on TC-003 (registration blocked) — in_progress
         // ----------------------------------------------------------------
-        $result2 = $getOrCreateFailedResult(
-            $runA,
-            'TC-003',
-            $tester1,
-            'POST /api/register returns 500 — DB constraint violation',
-            30,
+        $result2 = $this->getOrCreateFailedResult(
+            $runA, 'TC-003', $tester1,
+            'POST /api/register returns 500 — DB constraint violation', 30,
         );
         $this->createDefectLink(
             result: $result2,
@@ -109,12 +68,9 @@ class DefectSeeder extends Seeder
         // ----------------------------------------------------------------
         // 3. GitHub issue on TC-007 (dashboard SLA) — open, linked by lead
         // ----------------------------------------------------------------
-        $result3 = $getOrCreateFailedResult(
-            $runB,
-            'TC-007',
-            $tester2,
-            'Dashboard load time 4.2s, exceeds 2s SLA threshold',
-            240,
+        $result3 = $this->getOrCreateFailedResult(
+            $runB, 'TC-007', $tester2,
+            'Dashboard load time 4.2s, exceeds 2s SLA threshold', 240,
         );
         $this->createDefectLink(
             result: $result3,
@@ -130,12 +86,9 @@ class DefectSeeder extends Seeder
         // ----------------------------------------------------------------
         // 4. Linear ticket on TC-005 (BDD login) — resolved
         // ----------------------------------------------------------------
-        $result4 = $getOrCreateFailedResult(
-            $runA,
-            'TC-005',
-            $tester1,
-            'BDD step "Then I should be redirected" fails — cookie not set',
-            80,
+        $result4 = $this->getOrCreateFailedResult(
+            $runA, 'TC-005', $tester1,
+            'BDD step "Then I should be redirected" fails — cookie not set', 80,
         );
         $this->createDefectLink(
             result: $result4,
@@ -151,12 +104,9 @@ class DefectSeeder extends Seeder
         // ----------------------------------------------------------------
         // 5. YouTrack ticket on TC-006 (deployment checklist) — open
         // ----------------------------------------------------------------
-        $result5 = $getOrCreateFailedResult(
-            $runB,
-            'TC-006',
-            $tester2,
-            'Queue workers step fails — supervisor not installed on staging',
-            15,
+        $result5 = $this->getOrCreateFailedResult(
+            $runB, 'TC-006', $tester2,
+            'Queue workers step fails — supervisor not installed on staging', 15,
         );
         $this->createDefectLink(
             result: $result5,
@@ -171,7 +121,46 @@ class DefectSeeder extends Seeder
     }
 
     /**
-     * Idempotent defect link creation — skips if the same (result, tracker, external_id) exists.
+     * Find the Test row for a given run + case title prefix, then get-or-create
+     * a failed TestResult on it.
+     *
+     * Note: Test model uses the relation name `case()` (not `testCase()`).
+     */
+    private function getOrCreateFailedResult(
+        TestRun $run,
+        string $caseTitlePrefix,
+        User $user,
+        string $comment,
+        int $elapsed,
+    ): TestResult {
+        $test = Test::whereHas('case', fn ($q) => $q->where('title', 'like', $caseTitlePrefix.'%'))
+            ->where('run_id', $run->id)
+            ->firstOrFail();
+
+        /** @var TestResult $result */
+        $result = TestResult::firstOrNew([
+            'test_id' => $test->id,
+            'status'  => 'failed',
+        ]);
+
+        if (! $result->exists) {
+            $result->forceFill([
+                'test_id'    => $test->id,
+                'run_id'     => $run->id,
+                'case_id'    => $test->case_id,
+                'status'     => 'failed',
+                'comment'    => $comment,
+                'elapsed'    => $elapsed,
+                'created_by' => $user->id,
+                'created_at' => now(),
+            ])->save();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Idempotent defect link creation — skips if (result, tracker, external_id) already exists.
      */
     private function createDefectLink(
         TestResult $result,
