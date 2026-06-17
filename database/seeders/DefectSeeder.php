@@ -10,7 +10,6 @@ use App\Models\TestResult;
 use App\Models\TestRun;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Carbon;
 
 /**
  * Seeds a variety of defect links into Project Alpha's existing test runs.
@@ -123,10 +122,6 @@ class DefectSeeder extends Seeder
 
     /**
      * Look up a Test by run + case title prefix, then get-or-create a failed result.
-     *
-     * We resolve the TestCase ID first (using withTrashed to bypass SoftDeletes scope),
-     * then find the Test row directly by (run_id, case_id) — avoiding whereHas on a
-     * soft-deletable model which silently filters rows via an INNER JOIN.
      */
     private function getOrCreateFailedResult(
         TestRun $run,
@@ -135,7 +130,6 @@ class DefectSeeder extends Seeder
         string $comment,
         int $elapsed,
     ): TestResult {
-        // Resolve the TestCase ID (withTrashed in case of soft deletes)
         $testCase = TestCase::withTrashed()
             ->where('title', 'like', $caseTitlePrefix.'%')
             ->firstOrFail();
@@ -168,6 +162,8 @@ class DefectSeeder extends Seeder
 
     /**
      * Idempotent defect link creation — skips if (result, tracker, external_id) already exists.
+     *
+     * @param \DateTimeInterface $createdAt  Accepts both Carbon and CarbonImmutable (Laravel 11+)
      */
     private function createDefectLink(
         TestResult $result,
@@ -177,7 +173,7 @@ class DefectSeeder extends Seeder
         string $title,
         string $status,
         int $createdBy,
-        Carbon $createdAt,
+        \DateTimeInterface $createdAt,
     ): DefectLink {
         /** @var DefectLink $link */
         $link = DefectLink::firstOrNew([
