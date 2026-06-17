@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,14 +18,14 @@ class RequirementController extends Controller
 {
     public function index(Request $request, Project $project): Response
     {
-        $this->authorizeProjectAccess($request, $project);
+        Gate::authorize('view', $project);
 
         $folders = RequirementFolder::query()
             ->where('project_id', $project->id)
             ->whereNull('parent_id')
             ->with([
                 'children.requirements' => fn ($q) => $q->withCount('testCases'),
-                'requirements' => fn ($q) => $q->withCount('testCases'),
+                'requirements'          => fn ($q) => $q->withCount('testCases'),
             ])
             ->orderBy('display_order')
             ->get();
@@ -38,13 +39,13 @@ class RequirementController extends Controller
             ->get();
 
         return Inertia::render('requirements/index', [
-            'project' => $project,
-            'folders' => $folders,
+            'project'      => $project,
+            'folders'      => $folders,
             'requirements' => $requirements,
-            'types' => Requirement::TYPES,
-            'priorities' => Requirement::PRIORITIES,
-            'statuses' => Requirement::STATUSES,
-            'isGlobal' => false,
+            'types'        => Requirement::TYPES,
+            'priorities'   => Requirement::PRIORITIES,
+            'statuses'     => Requirement::STATUSES,
+            'isGlobal'     => false,
         ]);
     }
 
@@ -65,22 +66,20 @@ class RequirementController extends Controller
             $query->whereIn('project_id', $projectIds);
         }
 
-        $requirements = $query->get();
-
         return Inertia::render('requirements/index', [
-            'project' => null,
-            'folders' => [],
-            'requirements' => $requirements,
-            'types' => Requirement::TYPES,
-            'priorities' => Requirement::PRIORITIES,
-            'statuses' => Requirement::STATUSES,
-            'isGlobal' => true,
+            'project'      => null,
+            'folders'      => [],
+            'requirements' => $query->get(),
+            'types'        => Requirement::TYPES,
+            'priorities'   => Requirement::PRIORITIES,
+            'statuses'     => Requirement::STATUSES,
+            'isGlobal'     => true,
         ]);
     }
 
     public function show(Request $request, Requirement $requirement): Response
     {
-        $this->authorizeProjectAccess($request, $requirement->project);
+        Gate::authorize('view', $requirement->project);
 
         $requirement->load([
             'project:id,name',
@@ -92,59 +91,55 @@ class RequirementController extends Controller
             'history' => fn ($q) => $q->latest()->limit(50),
         ]);
 
-        return Inertia::render('requirements/show', [
-            'requirement' => $requirement,
-        ]);
+        return Inertia::render('requirements/show', ['requirement' => $requirement]);
     }
 
     public function create(Request $request, Project $project): Response
     {
-        $this->authorizeProjectAccess($request, $project);
+        Gate::authorize('edit', $project);
 
         $folders = RequirementFolder::query()
             ->where('project_id', $project->id)
             ->orderBy('name')
             ->get(['id', 'name', 'parent_id']);
 
-        $members = $project->members()->get(['users.id', 'users.name']);
-
         return Inertia::render('requirements/create', [
-            'project' => $project,
-            'folders' => $folders,
-            'members' => $members,
-            'types' => Requirement::TYPES,
+            'project'    => $project,
+            'folders'    => $folders,
+            'members'    => $project->members()->get(['users.id', 'users.name']),
+            'types'      => Requirement::TYPES,
             'priorities' => Requirement::PRIORITIES,
-            'statuses' => Requirement::STATUSES,
+            'statuses'   => Requirement::STATUSES,
         ]);
     }
 
     public function store(Request $request, Project $project): RedirectResponse
     {
-        $this->authorizeProjectAccess($request, $project);
+        Gate::authorize('edit', $project);
 
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'type' => ['nullable', 'string', 'in:'.implode(',', Requirement::TYPES)],
-            'priority' => ['nullable', 'string', 'in:'.implode(',', Requirement::PRIORITIES)],
-            'status' => ['nullable', 'string', 'in:'.implode(',', Requirement::STATUSES)],
-            'folder_id' => ['nullable', 'integer', 'exists:requirement_folders,id'],
-            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'title'        => ['required', 'string', 'max:255'],
+            'description'  => ['nullable', 'string'],
+            'type'         => ['nullable', 'string', 'in:'.implode(',', Requirement::TYPES)],
+            'priority'     => ['nullable', 'string', 'in:'.implode(',', Requirement::PRIORITIES)],
+            'status'       => ['nullable', 'string', 'in:'.implode(',', Requirement::STATUSES)],
+            'folder_id'    => ['nullable', 'integer', 'exists:requirement_folders,id'],
+            'assigned_to'  => ['nullable', 'integer', 'exists:users,id'],
             'external_ref' => ['nullable', 'string', 'max:255'],
-            'tags' => ['nullable', 'string'],
+            'tags'         => ['nullable', 'string'],
         ]);
 
-        $validated['tags'] = $this->parseTags($validated['tags'] ?? null);
+        $validated['tags']     = $this->parseTags($validated['tags'] ?? null);
         $validated['type']     = $validated['type']     ?: 'functional';
         $validated['priority'] = $validated['priority'] ?: 'medium';
 
-        $seq = Requirement::where('project_id', $project->id)->count() + 1;
+        $seq       = Requirement::where('project_id', $project->id)->count() + 1;
         $displayId = 'REQ-'.str_pad($seq, 4, '0', STR_PAD_LEFT);
 
         Requirement::create(array_merge($validated, [
             'project_id' => $project->id,
             'display_id' => $displayId,
-            'source' => 'manual',
+            'source'     => 'manual',
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
         ]));
@@ -155,7 +150,7 @@ class RequirementController extends Controller
 
     public function edit(Request $request, Requirement $requirement): Response
     {
-        $this->authorizeProjectAccess($request, $requirement->project);
+        Gate::authorize('edit', $requirement->project);
 
         $requirement->load('project:id,name');
 
@@ -164,41 +159,37 @@ class RequirementController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'parent_id']);
 
-        $members = $requirement->project->members()->get(['users.id', 'users.name']);
-
         return Inertia::render('requirements/edit', [
             'requirement' => $requirement,
-            'folders' => $folders,
-            'members' => $members,
-            'types' => Requirement::TYPES,
-            'priorities' => Requirement::PRIORITIES,
-            'statuses' => Requirement::STATUSES,
+            'folders'     => $folders,
+            'members'     => $requirement->project->members()->get(['users.id', 'users.name']),
+            'types'       => Requirement::TYPES,
+            'priorities'  => Requirement::PRIORITIES,
+            'statuses'    => Requirement::STATUSES,
         ]);
     }
 
     public function update(Request $request, Requirement $requirement): RedirectResponse
     {
-        $this->authorizeProjectAccess($request, $requirement->project);
+        Gate::authorize('edit', $requirement->project);
 
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'type' => ['nullable', 'string', 'in:'.implode(',', Requirement::TYPES)],
-            'priority' => ['nullable', 'string', 'in:'.implode(',', Requirement::PRIORITIES)],
-            'status' => ['nullable', 'string', 'in:'.implode(',', Requirement::STATUSES)],
-            'folder_id' => ['nullable', 'integer', 'exists:requirement_folders,id'],
-            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'title'        => ['required', 'string', 'max:255'],
+            'description'  => ['nullable', 'string'],
+            'type'         => ['nullable', 'string', 'in:'.implode(',', Requirement::TYPES)],
+            'priority'     => ['nullable', 'string', 'in:'.implode(',', Requirement::PRIORITIES)],
+            'status'       => ['nullable', 'string', 'in:'.implode(',', Requirement::STATUSES)],
+            'folder_id'    => ['nullable', 'integer', 'exists:requirement_folders,id'],
+            'assigned_to'  => ['nullable', 'integer', 'exists:users,id'],
             'external_ref' => ['nullable', 'string', 'max:255'],
-            'tags' => ['nullable', 'string'],
+            'tags'         => ['nullable', 'string'],
         ]);
 
         $validated['tags']     = $this->parseTags($validated['tags'] ?? null);
         $validated['type']     = $validated['type']     ?: 'functional';
         $validated['priority'] = $validated['priority'] ?: 'medium';
 
-        $requirement->update(array_merge($validated, [
-            'updated_by' => Auth::id(),
-        ]));
+        $requirement->update(array_merge($validated, ['updated_by' => Auth::id()]));
 
         return to_route('requirements.show', $requirement)
             ->with('success', __('requirements.updated'));
@@ -206,16 +197,9 @@ class RequirementController extends Controller
 
     public function destroy(Request $request, Requirement $requirement): RedirectResponse
     {
+        Gate::authorize('delete', $requirement->project);
+
         $project = $requirement->project;
-        $user = $request->user();
-
-        $isProjectAdmin = $project->members()
-            ->whereKey($user->getKey())
-            ->wherePivot('role', 'project_admin')
-            ->exists();
-
-        abort_unless($isProjectAdmin || $user->hasRole('admin'), 403);
-
         $requirement->delete();
 
         return to_route('projects.requirements.index', $project)
@@ -228,10 +212,10 @@ class RequirementController extends Controller
 
     public function linkTestCases(Request $request, Requirement $requirement): JsonResponse
     {
-        $this->authorizeProjectAccess($request, $requirement->project);
+        Gate::authorize('edit', $requirement->project);
 
         $validated = $request->validate([
-            'test_case_ids' => ['required', 'array', 'min:1'],
+            'test_case_ids'   => ['required', 'array', 'min:1'],
             'test_case_ids.*' => ['integer', 'exists:test_cases,id'],
         ]);
 
@@ -248,14 +232,12 @@ class RequirementController extends Controller
         $requirement->testCases()->syncWithoutDetaching($syncData);
         $requirement->load('testCases:id,title,priority,status');
 
-        return response()->json([
-            'test_cases' => $requirement->testCases,
-        ]);
+        return response()->json(['test_cases' => $requirement->testCases]);
     }
 
     public function unlinkTestCase(Request $request, Requirement $requirement, TestCase $testCase): JsonResponse
     {
-        $this->authorizeProjectAccess($request, $requirement->project);
+        Gate::authorize('edit', $requirement->project);
 
         $requirement->testCases()->detach($testCase->id);
 
@@ -281,19 +263,5 @@ class RequirementController extends Controller
         );
 
         return $tags ?: null;
-    }
-
-    private function authorizeProjectAccess(Request $request, Project $project): void
-    {
-        $user = $request->user();
-
-        if ($user->hasRole('admin')) {
-            return;
-        }
-
-        abort_unless(
-            $project->members()->whereKey($user->getKey())->exists(),
-            403
-        );
     }
 }
