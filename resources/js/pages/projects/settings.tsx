@@ -643,10 +643,20 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
     }
 
     return (
-        <div className="grid gap-4 md:grid-cols-2">
-            {renderTable('Case fields', caseFields, 'cases')}
-            {renderTable('Result fields', resultFields, 'results')}
-        </div>
+        <Tabs defaultValue="cases" className="w-full">
+            <TabsList>
+                <TabsTrigger value="cases">Case fields</TabsTrigger>
+                <TabsTrigger value="results">Result fields</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="cases" className="mt-4">
+                {renderTable('Case fields', caseFields, 'cases')}
+            </TabsContent>
+
+            <TabsContent value="results" className="mt-4">
+                {renderTable('Result fields', resultFields, 'results')}
+            </TabsContent>
+        </Tabs>
     );
 }
 

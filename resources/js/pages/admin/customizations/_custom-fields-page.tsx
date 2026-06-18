@@ -352,9 +352,15 @@ function ProjectMatrixDialog({
 }) {
     const t = useTrans();
 
+    const [localProjects, setLocalProjects] = useState<FieldProjectPivot[]>(field?.projects ?? []);
+
+    useEffect(() => {
+        setLocalProjects(field?.projects ?? []);
+    }, [field]);
+
     if (!field) return null;
 
-    const attachedMap = new Map(field.projects.map((p) => [p.id, p]));
+    const attachedMap = new Map(localProjects.map((p) => [p.id, p]));
 
     function toggleProject(projectId: number, checked: boolean) {
         const existing = attachedMap.get(projectId);
@@ -364,6 +370,7 @@ function ProjectMatrixDialog({
             router.delete(`/projects/${projectId}/settings/fields/${field.id}`, {
                 preserveScroll: true,
             });
+            setLocalProjects((prev) => prev.filter((p) => p.id !== projectId));
             return;
         }
 
@@ -373,6 +380,20 @@ function ProjectMatrixDialog({
             display_order: existing?.display_order ?? 0,
             default_value: existing?.default_value ?? null,
         }, { preserveScroll: true });
+
+        if (!existing) {
+            const projectMeta = allProjects.find((p) => p.id === projectId);
+            setLocalProjects((prev) => [
+                ...prev,
+                {
+                    id: projectId,
+                    name: projectMeta?.name ?? String(projectId),
+                    is_required: false,
+                    display_order: 0,
+                    default_value: null,
+                },
+            ]);
+        }
     }
 
     function updateDefault(projectId: number, value: string) {
@@ -384,6 +405,12 @@ function ProjectMatrixDialog({
             display_order: existing?.display_order ?? 0,
             default_value: value || null,
         }, { preserveScroll: true });
+
+        setLocalProjects((prev) => prev.map((p) => (
+            p.id === projectId
+                ? { ...p, default_value: value || null }
+                : p
+        )));
     }
 
     function renderDefaultInputForMatrix(value: string, onChange: (v: string) => void) {
