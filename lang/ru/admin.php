@@ -16,6 +16,9 @@ return [
     'role_updated' => 'Роль пользователя обновлена.',
     'user_deleted' => 'Пользователь удалён.',
     'settings_saved' => 'Настройки сохранены.',
+    'custom_field_created' => 'Пользовательское поле создано.',
+    'custom_field_updated' => 'Пользовательское поле обновлено.',
+    'custom_field_deleted' => 'Пользовательское поле удалено.',
     'fields' => [
         'name' => 'Имя',
         'email' => 'Email',
