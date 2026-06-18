@@ -65,6 +65,7 @@ const FIELD_TYPE_LABELS: Record<string, string> = {
     string:       'Text (single line)',
     integer:      'Integer',
     text:         'Text (multi-line)',
+    rich_text:    'Rich text',
     url:          'URL',
     checkbox:     'Checkbox',
     dropdown:     'Dropdown',

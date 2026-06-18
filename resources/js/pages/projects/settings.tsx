@@ -1,6 +1,6 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Trash2, UserMinus, UserPlus } from 'lucide-react';
-import { useState } from 'react';
+import { GripVertical, Trash2, UserMinus, UserPlus } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,23 @@ import { index as projectsIndex } from '@/routes/projects';
 import type { Project, ProjectMember, ProjectRole } from '@/types/project';
 
 type AvailableUser = { id: number; name: string; email: string };
+
+type ProjectFieldPivot = {
+    is_required: boolean;
+    display_order: number;
+    default_value: string | null;
+};
+
+type ProjectField = {
+    id: number;
+    system_name: string;
+    label: string;
+    description: string | null;
+    field_type: string;
+    applies_to: 'cases' | 'results';
+    is_global: boolean;
+    pivot: ProjectFieldPivot | null;
+};
 
 // ── Role badge colours ────────────────────────────────────────────────────────
 
@@ -251,6 +268,196 @@ function MembersTab({
     );
 }
 
+// ── Custom Fields tab ─────────────────────────────────────────────────────────
+
+function FieldsTab({ project, allFields }: { project: Project; allFields: ProjectField[] }) {
+    const t = useTrans();
+
+    const [local, setLocal] = useState(() => allFields.map((f) => ({ ...f })));
+
+    const caseFields   = useMemo(() => local.filter((f) => f.applies_to === 'cases'),   [local]);
+    const resultFields = useMemo(() => local.filter((f) => f.applies_to === 'results'), [local]);
+
+    function toggleRequired(field: ProjectField) {
+        if (field.is_global && !field.pivot) return; // global fields are always present, but required flag is per-project
+
+        const isRequired = !(field.pivot?.is_required ?? false);
+        router.post(`/projects/${project.id}/settings/fields`, {
+            custom_field_id: field.id,
+            is_required: isRequired,
+            display_order: field.pivot?.display_order ?? 0,
+            default_value: field.pivot?.default_value ?? null,
+        }, { preserveScroll: true });
+
+        setLocal((prev) => prev.map((f) => (
+            f.id === field.id
+                ? { ...f, pivot: { ...(f.pivot ?? { display_order: 0, default_value: null }), is_required: isRequired } }
+                : f
+        )));
+    }
+
+    function detach(field: ProjectField) {
+        if (field.is_global) return; // cannot detach global fields
+        if (!window.confirm(t('common.confirm_delete'))) return;
+
+        router.delete(`/projects/${project.id}/settings/fields/${field.id}`, { preserveScroll: true });
+
+        setLocal((prev) => prev.map((f) => (
+            f.id === field.id ? { ...f, pivot: null } : f
+        )));
+    }
+
+    function handleReorder(appliesTo: 'cases' | 'results', direction: 'up' | 'down', field: ProjectField) {
+        const subset = (appliesTo === 'cases' ? caseFields : resultFields)
+            .filter((f) => f.is_global || f.pivot !== null)
+            .sort((a, b) => (a.pivot?.display_order ?? 0) - (b.pivot?.display_order ?? 0));
+
+        const index = subset.findIndex((f) => f.id === field.id);
+        if (index === -1) return;
+
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= subset.length) return;
+
+        const reordered = [...subset];
+        const [moved] = reordered.splice(index, 1);
+        reordered.splice(targetIndex, 0, moved);
+
+        const payload = reordered.map((f, i) => ({
+            custom_field_id: f.id,
+            display_order: i,
+            is_required: f.pivot?.is_required ?? false,
+            default_value: f.pivot?.default_value ?? null,
+        }));
+
+        router.patch(`/projects/${project.id}/settings/fields/reorder`, { fields: payload }, { preserveScroll: true });
+
+        setLocal((prev) => prev.map((f) => {
+            const match = payload.find((p) => p.custom_field_id === f.id);
+            if (!match) return f;
+            return {
+                ...f,
+                pivot: {
+                    ...(f.pivot ?? { is_required: false, default_value: null }),
+                    display_order: match.display_order,
+                    is_required: match.is_required,
+                    default_value: match.default_value,
+                },
+            };
+        }));
+    }
+
+    function renderFieldRow(field: ProjectField, appliesTo: 'cases' | 'results') {
+        const isActive = field.is_global || field.pivot !== null;
+        const required = field.pivot?.is_required ?? false;
+
+        return (
+            <tr key={field.id} className="border-b last:border-0">
+                <td className="p-3 align-top text-xs text-muted-foreground">
+                    <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => handleReorder(appliesTo, 'up', field)}
+                    >
+                        <GripVertical className="size-3" />
+                    </button>
+                </td>
+                <td className="p-3 align-top">
+                    <div className="font-medium text-sm">{field.label}</div>
+                    <div className="text-[11px] text-muted-foreground font-mono">
+                        {field.system_name}
+                    </div>
+                    {field.description && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">{field.description}</p>
+                    )}
+                </td>
+                <td className="p-3 align-top text-xs">
+                    <Badge variant="outline" className="text-[11px]">
+                        {field.field_type}
+                    </Badge>
+                </td>
+                <td className="p-3 align-top text-xs">
+                    {field.is_global ? (
+                        <Badge variant="default" className="text-[11px]">Global</Badge>
+                    ) : (
+                        <Badge variant="secondary" className="text-[11px]">Per-project</Badge>
+                    )}
+                </td>
+                <td className="p-3 align-top text-xs">
+                    {isActive ? 'Visible' : 'Hidden'}
+                </td>
+                <td className="p-3 align-top text-xs">
+                    <label className="inline-flex items-center gap-1 text-xs">
+                        <input
+                            type="checkbox"
+                            checked={required}
+                            disabled={!isActive}
+                            onChange={() => toggleRequired(field)}
+                            className="size-3 rounded border-input"
+                        />
+                        <span>Required</span>
+                    </label>
+                </td>
+                <td className="p-3 align-top text-right text-xs">
+                    {!field.is_global && isActive && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 text-destructive"
+                            onClick={() => detach(field)}
+                        >
+                            <Trash2 className="size-3.5" />
+                        </Button>
+                    )}
+                </td>
+            </tr>
+        );
+    }
+
+    function renderTable(title: string, items: ProjectField[], appliesTo: 'cases' | 'results') {
+        const visible = items.filter((f) => f.is_global || f.pivot !== null);
+
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">{title}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                    {items.length === 0 ? (
+                        <div className="px-6 py-12 text-center text-sm text-muted-foreground">
+                            {t('settings.fields.empty')}
+                        </div>
+                    ) : (
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b text-left text-muted-foreground text-xs">
+                                    <th className="w-8 p-2" />
+                                    <th className="p-2 font-medium">Field</th>
+                                    <th className="p-2 font-medium">Type</th>
+                                    <th className="p-2 font-medium">Scope</th>
+                                    <th className="p-2 font-medium">Visibility</th>
+                                    <th className="p-2 font-medium">Required</th>
+                                    <th className="w-10 p-2" />
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {visible.map((field) => renderFieldRow(field, appliesTo))}
+                            </tbody>
+                        </table>
+                    )}
+                </CardContent>
+            </Card>
+        );
+    }
+
+    return (
+        <div className="grid gap-4 md:grid-cols-2">
+            {renderTable('Case fields', caseFields, 'cases')}
+            {renderTable('Result fields', resultFields, 'results')}
+        </div>
+    );
+}
+
 // ── Danger tab ────────────────────────────────────────────────────────────────
 
 function DangerTab({ project }: { project: Project }) {
@@ -343,10 +550,12 @@ export default function ProjectSettings({
     project,
     available,
     roles,
+    allFields,
 }: {
     project: Project;
     available: AvailableUser[];
     roles: ProjectRole[];
+    allFields: ProjectField[];
 }) {
     const t = useTrans();
 
@@ -371,6 +580,7 @@ export default function ProjectSettings({
                     <TabsList>
                         <TabsTrigger value="general">{t('settings.general')}</TabsTrigger>
                         <TabsTrigger value="members">{t('settings.members')}</TabsTrigger>
+                        <TabsTrigger value="fields">Custom fields</TabsTrigger>
                         <TabsTrigger value="danger">{t('settings.danger.tab')}</TabsTrigger>
                     </TabsList>
 
@@ -380,6 +590,10 @@ export default function ProjectSettings({
 
                     <TabsContent value="members" className="mt-4 max-w-3xl">
                         <MembersTab project={project} available={available} roles={roles} />
+                    </TabsContent>
+
+                    <TabsContent value="fields" className="mt-4">
+                        <FieldsTab project={project} allFields={allFields} />
                     </TabsContent>
 
                     <TabsContent value="danger" className="mt-4 max-w-2xl">
