@@ -13,7 +13,7 @@ use Inertia\Response;
 class AdminCustomFieldController extends Controller
 {
     private const FIELD_TYPES = [
-        'string', 'integer', 'text', 'url', 'checkbox',
+        'string', 'integer', 'text', 'rich_text', 'url', 'checkbox',
         'dropdown', 'user', 'date', 'milestone',
         'steps', 'step_results', 'multi_select',
     ];
@@ -146,8 +146,6 @@ class AdminCustomFieldController extends Controller
 
     /**
      * Sync options for dropdown / multi_select fields.
-     * Existing options (with id) are updated; new ones (without id) are created;
-     * options absent from the payload are deleted.
      *
      * @param  array<int, array{id?: int|null, option_label: string}>  $optionsData
      */

@@ -78,6 +78,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('projects/{project}/settings/members/{user}', [ProjectSettingsController::class, 'removeMember'])
         ->name('projects.settings.members.remove');
 
+    // Project Settings — Custom Fields tab
+    Route::post('projects/{project}/settings/fields', [ProjectSettingsController::class, 'syncProjectField'])
+        ->name('projects.settings.fields.sync');
+    Route::delete('projects/{project}/settings/fields/{customField}', [ProjectSettingsController::class, 'removeProjectField'])
+        ->name('projects.settings.fields.remove');
+    Route::patch('projects/{project}/settings/fields/reorder', [ProjectSettingsController::class, 'reorderProjectFields'])
+        ->name('projects.settings.fields.reorder');
+
     Route::resource('projects.suites', SuiteController::class)->shallow();
     Route::resource('projects.suites.sections', SectionController::class)
         ->shallow()
