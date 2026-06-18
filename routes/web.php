@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminCustomFieldController;
 use App\Http\Controllers\AdminDefectPluginsController;
 use App\Http\Controllers\AiController;
 use App\Http\Controllers\DashboardController;
@@ -240,6 +241,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete');
         Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
         Route::patch('/settings', [AdminController::class, 'updateSettings'])->name('settings.update');
+
+        // Customizations — Case Fields
+        Route::get('/customizations/case-fields', [AdminCustomFieldController::class, 'caseFields'])
+            ->name('customizations.case-fields.index');
+        Route::post('/customizations/case-fields', [AdminCustomFieldController::class, 'store'])
+            ->name('customizations.case-fields.store');
+        Route::patch('/customizations/case-fields/{customField}', [AdminCustomFieldController::class, 'update'])
+            ->name('customizations.case-fields.update');
+        Route::delete('/customizations/case-fields/{customField}', [AdminCustomFieldController::class, 'destroy'])
+            ->name('customizations.case-fields.destroy');
+
+        // Customizations — Result Fields
+        Route::get('/customizations/result-fields', [AdminCustomFieldController::class, 'resultFields'])
+            ->name('customizations.result-fields.index');
+        Route::post('/customizations/result-fields', [AdminCustomFieldController::class, 'store'])
+            ->name('customizations.result-fields.store');
+        Route::patch('/customizations/result-fields/{customField}', [AdminCustomFieldController::class, 'update'])
+            ->name('customizations.result-fields.update');
+        Route::delete('/customizations/result-fields/{customField}', [AdminCustomFieldController::class, 'destroy'])
+            ->name('customizations.result-fields.destroy');
 
         // Integration — Defect Plugins (instance-level)
         Route::get('/integration/defect-plugins', [AdminDefectPluginsController::class, 'index'])
