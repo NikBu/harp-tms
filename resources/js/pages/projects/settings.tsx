@@ -425,6 +425,55 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
         }));
     }
 
+    function renderDefaultInput(field: ProjectField, value: string, onChange: (v: string) => void) {
+        switch (field.field_type) {
+            case 'integer':
+                return (
+                    <Input
+                        type="number"
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="Default"
+                        className="h-7 text-xs max-w-[120px]"
+                    />
+                );
+            case 'date':
+                return (
+                    <Input
+                        type="date"
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        className="h-7 text-xs max-w-[160px]"
+                    />
+                );
+            case 'checkbox':
+                return (
+                    <Select
+                        value={value === '1' ? '1' : value === '0' ? '0' : ''}
+                        onValueChange={(v) => onChange(v)}
+                    >
+                        <SelectTrigger className="h-7 w-[120px] text-xs">
+                            <SelectValue placeholder="No default" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="">No default</SelectItem>
+                            <SelectItem value="1">Checked</SelectItem>
+                            <SelectItem value="0">Unchecked</SelectItem>
+                        </SelectContent>
+                    </Select>
+                );
+            default:
+                return (
+                    <Input
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="Default value"
+                        className="h-7 text-xs max-w-[180px]"
+                    />
+                );
+        }
+    }
+
     function renderFieldRow(field: ProjectField, appliesTo: 'cases' | 'results') {
         const isActive = field.is_global || field.pivot !== null;
         const required = field.pivot?.is_required ?? false;
@@ -481,12 +530,7 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
                 </td>
                 <td className="p-3 align-top text-xs">
                     {isActive ? (
-                        <Input
-                            value={defaultValue}
-                            onChange={(e) => updateDefault(field, e.target.value)}
-                            placeholder="Default value"
-                            className="h-7 text-xs"
-                        />
+                        renderDefaultInput(field, defaultValue, (v) => updateDefault(field, v))
                     ) : (
                         <span className="text-muted-foreground">—</span>
                     )}
@@ -560,13 +604,13 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
                         )}
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0">
+                <CardContent className="p-0 overflow-x-auto">
                     {items.length === 0 ? (
                         <div className="px-6 py-12 text-center text-sm text-muted-foreground">
                             {t('settings.fields.empty')}
                         </div>
                     ) : (
-                        <table className="w-full text-sm">
+                        <table className="w-full min-w-[720px] text-sm">
                             <thead>
                                 <tr className="border-b text-left text-muted-foreground text-xs">
                                     <th className="w-8 p-2" />

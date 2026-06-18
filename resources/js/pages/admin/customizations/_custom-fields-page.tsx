@@ -37,6 +37,14 @@ export interface FieldOption {
     display_order: number;
 }
 
+export interface FieldProjectPivot {
+    id: number;
+    name: string;
+    is_required: boolean;
+    display_order: number;
+    default_value: string | null;
+}
+
 export interface CustomField {
     id: number;
     system_name: string;
@@ -46,6 +54,7 @@ export interface CustomField {
     applies_to: string;
     is_global: boolean;
     options: FieldOption[];
+    projects: FieldProjectPivot[];
 }
 
 export interface ProjectSummary {
@@ -328,89 +337,120 @@ function FieldDialog({
     );
 }
 
-// ── Project attach dialog ─────────────────────────────────────────────────────
+// ── Project matrix dialog ─────────────────────────────────────────────────────
 
-function AttachToProjectDialog({
+function ProjectMatrixDialog({
     open,
     onClose,
     field,
-    projects,
+    allProjects,
 }: {
     open: boolean;
     onClose: () => void;
     field: CustomField | null;
-    projects: ProjectSummary[];
+    allProjects: ProjectSummary[];
 }) {
     const t = useTrans();
-    const [projectId, setProjectId] = useState('');
 
-    function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
-        if (!field || !projectId) return;
+    if (!field) return null;
+
+    const attachedMap = new Map(field.projects.map((p) => [p.id, p]));
+
+    function toggleProject(projectId: number, checked: boolean) {
+        const existing = attachedMap.get(projectId);
+
+        if (!checked) {
+            if (!existing) return;
+            router.delete(`/projects/${projectId}/settings/fields/${field.id}`, {
+                preserveScroll: true,
+            });
+            return;
+        }
 
         router.post(`/projects/${projectId}/settings/fields`, {
             custom_field_id: field.id,
-            is_required: false,
-            display_order: 0,
-            default_value: null,
-        }, {
-            preserveScroll: true,
-            onSuccess: onClose,
-        });
+            is_required: existing?.is_required ?? false,
+            display_order: existing?.display_order ?? 0,
+            default_value: existing?.default_value ?? null,
+        }, { preserveScroll: true });
     }
 
-    const sortedProjects = useMemo(
-        () => [...projects].sort((a, b) => a.name.localeCompare(b.name)),
-        [projects],
-    );
+    function updateDefault(projectId: number, value: string) {
+        const existing = attachedMap.get(projectId);
+
+        router.post(`/projects/${projectId}/settings/fields`, {
+            custom_field_id: field.id,
+            is_required: existing?.is_required ?? false,
+            display_order: existing?.display_order ?? 0,
+            default_value: value || null,
+        }, { preserveScroll: true });
+    }
 
     return (
         <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-            <DialogContent className="max-w-sm">
-                <form onSubmit={handleSubmit} className="grid gap-4">
-                    <DialogHeader>
-                        <DialogTitle>
-                            Attach field to project
-                        </DialogTitle>
-                    </DialogHeader>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>
+                        Attach field to projects
+                    </DialogTitle>
+                </DialogHeader>
 
-                    <div className="grid gap-1.5 text-sm">
-                        <Label>Field</Label>
-                        <div>
-                            <div className="font-medium">{field?.label}</div>
-                            <div className="text-xs text-muted-foreground font-mono">{field?.system_name}</div>
-                        </div>
-                    </div>
+                <div className="mb-4 text-sm">
+                    <div className="font-medium">{field.label}</div>
+                    <div className="text-xs text-muted-foreground font-mono">{field.system_name}</div>
+                </div>
 
-                    <div className="grid gap-1.5">
-                        <Label>Project</Label>
-                        <Select
-                            value={projectId || 'none'}
-                            onValueChange={(v) => setProjectId(v === 'none' ? '' : v)}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select project" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="none">—</SelectItem>
-                                {sortedProjects.map((p) => (
-                                    <SelectItem key={p.id} value={String(p.id)}>
-                                        {p.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div className="max-h-[420px] overflow-y-auto rounded-md border">
+                    <table className="w-full border-collapse text-xs">
+                        <thead className="bg-muted">
+                            <tr className="border-b">
+                                <th className="p-2 text-left font-medium w-8">Use</th>
+                                <th className="p-2 text-left font-medium">Project</th>
+                                <th className="p-2 text-left font-medium w-48">Default value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {allProjects.map((p) => {
+                                const attached = attachedMap.get(p.id);
+                                const checked = !!attached;
+                                const defaultValue = attached?.default_value ?? '';
+                                return (
+                                    <tr key={p.id} className="border-b last:border-0">
+                                        <td className="p-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={(e) => toggleProject(p.id, e.target.checked)}
+                                                className="size-3 rounded border-input"
+                                            />
+                                        </td>
+                                        <td className="p-2">
+                                            <span className="text-xs font-medium">{p.name}</span>
+                                        </td>
+                                        <td className="p-2 align-top">
+                                            {checked ? (
+                                                <Input
+                                                    value={defaultValue}
+                                                    onChange={(e) => updateDefault(p.id, e.target.value)}
+                                                    placeholder="Default value"
+                                                    className="h-7 text-xs max-w-[180px]"
+                                                />
+                                            ) : (
+                                                <span className="text-muted-foreground">—</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
 
-                    <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
-                            {t('common.cancel')}
-                        </Button>
-                        <Button type="submit" disabled={!projectId}>
-                            Attach
-                        </Button>
-                    </DialogFooter>
-                </form>
+                <DialogFooter className="mt-4">
+                    <Button type="button" variant="outline" onClick={onClose}>
+                        {t('common.close')}
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
@@ -432,8 +472,8 @@ export function CustomFieldsPage({
     const t = useTrans();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing]       = useState<CustomField | null>(null);
-    const [attachOpen, setAttachOpen] = useState(false);
-    const [fieldToAttach, setFieldToAttach] = useState<CustomField | null>(null);
+    const [matrixOpen, setMatrixOpen] = useState(false);
+    const [fieldForMatrix, setFieldForMatrix] = useState<CustomField | null>(null);
 
     function openCreate() {
         setEditing(null);
@@ -450,9 +490,9 @@ export function CustomFieldsPage({
         router.delete(destroyUrl(field.id), { preserveScroll: true });
     }
 
-    function openAttach(field: CustomField) {
-        setFieldToAttach(field);
-        setAttachOpen(true);
+    function openMatrix(field: CustomField) {
+        setFieldForMatrix(field);
+        setMatrixOpen(true);
     }
 
     return (
@@ -533,9 +573,9 @@ export function CustomFieldsPage({
                                                     variant="outline"
                                                     size="sm"
                                                     className="h-8 px-2 text-xs"
-                                                    onClick={() => openAttach(field)}
+                                                    onClick={() => openMatrix(field)}
                                                 >
-                                                    Attach to project
+                                                    Projects & defaults
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
@@ -576,12 +616,12 @@ export function CustomFieldsPage({
                 updateUrl={updateUrl}
             />
 
-            {/* Attach to project dialog */}
-            <AttachToProjectDialog
-                open={attachOpen}
-                onClose={() => setAttachOpen(false)}
-                field={fieldToAttach}
-                projects={projects}
+            {/* Project matrix dialog */}
+            <ProjectMatrixDialog
+                open={matrixOpen}
+                onClose={() => setMatrixOpen(false)}
+                field={fieldForMatrix}
+                allProjects={projects}
             />
         </div>
     );

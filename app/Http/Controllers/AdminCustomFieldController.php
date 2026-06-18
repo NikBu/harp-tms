@@ -30,9 +30,13 @@ class AdminCustomFieldController extends Controller
     {
         $this->authorizeAdmin($request);
 
+        $projects = Project::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         $fields = CustomField::query()
             ->where('applies_to', $appliesTo)
-            ->with('options')
+            ->with(['options', 'projects' => fn ($q) => $q->orderBy('name')])
             ->orderBy('label')
             ->get()
             ->map(fn (CustomField $f) => [
@@ -49,12 +53,15 @@ class AdminCustomFieldController extends Controller
                     'option_label'  => $o->option_label,
                     'display_order' => $o->display_order,
                 ])->values(),
+                'projects'    => $f->projects->map(fn (Project $p) => [
+                    'id'            => $p->id,
+                    'name'          => $p->name,
+                    'is_required'   => (bool) $p->pivot->is_required,
+                    'display_order' => $p->pivot->display_order,
+                    'default_value' => $p->pivot->default_value,
+                ])->values(),
             ])
             ->values();
-
-        $projects = Project::query()
-            ->orderBy('name')
-            ->get(['id', 'name']);
 
         $page = $appliesTo === 'cases'
             ? 'admin/customizations/case-fields'
