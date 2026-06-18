@@ -251,10 +251,12 @@ class ProjectSettingsController extends Controller
         ]);
 
         foreach ($validated['fields'] as $row) {
-            $project->customFields()->updateExistingPivot($row['custom_field_id'], [
-                'display_order' => $row['display_order'],
-                'is_required'   => $row['is_required'] ?? false,
-                'default_value' => $row['default_value'] ?? null,
+            $project->customFields()->syncWithoutDetaching([
+                $row['custom_field_id'] => [
+                    'display_order' => $row['display_order'],
+                    'is_required'   => $row['is_required'] ?? false,
+                    'default_value' => $row['default_value'] ?? null,
+                ],
             ]);
         }
 

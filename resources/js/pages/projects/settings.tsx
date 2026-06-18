@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { GripVertical, Trash2, UserMinus, UserPlus } from 'lucide-react';
+import { GripVertical, Plus, Trash2, UserMinus, UserPlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -278,20 +278,70 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
     const caseFields   = useMemo(() => local.filter((f) => f.applies_to === 'cases'),   [local]);
     const resultFields = useMemo(() => local.filter((f) => f.applies_to === 'results'), [local]);
 
+    const visibleCaseFields = useMemo(
+        () => caseFields.filter((f) => f.is_global || f.pivot !== null),
+        [caseFields],
+    );
+    const visibleResultFields = useMemo(
+        () => resultFields.filter((f) => f.is_global || f.pivot !== null),
+        [resultFields],
+    );
+
+    const availableCaseFields = useMemo(
+        () => caseFields.filter((f) => !f.is_global && f.pivot === null),
+        [caseFields],
+    );
+    const availableResultFields = useMemo(
+        () => resultFields.filter((f) => !f.is_global && f.pivot === null),
+        [resultFields],
+    );
+
+    function attach(field: ProjectField, appliesTo: 'cases' | 'results') {
+        const subset = appliesTo === 'cases' ? visibleCaseFields : visibleResultFields;
+        const nextOrder = subset.length;
+
+        router.post(`/projects/${project.id}/settings/fields`, {
+            custom_field_id: field.id,
+            is_required: false,
+            display_order: nextOrder,
+            default_value: null,
+        }, { preserveScroll: true });
+
+        setLocal((prev) => prev.map((f) => (
+            f.id === field.id
+                ? { ...f, pivot: { is_required: false, display_order: nextOrder, default_value: null } }
+                : f
+        )));
+    }
+
     function toggleRequired(field: ProjectField) {
-        if (field.is_global && !field.pivot) return; // global fields are always present, but required flag is per-project
+        // Allow toggling required for any active field (global or per-project),
+        // creating/updating pivot as needed.
+        if (!field.is_global && !field.pivot) return; // non-global must be attached first
 
         const isRequired = !(field.pivot?.is_required ?? false);
+
+        const displayOrder = field.pivot?.display_order
+            ?? (field.applies_to === 'cases'
+                ? visibleCaseFields.length
+                : visibleResultFields.length);
+
         router.post(`/projects/${project.id}/settings/fields`, {
             custom_field_id: field.id,
             is_required: isRequired,
-            display_order: field.pivot?.display_order ?? 0,
+            display_order: displayOrder,
             default_value: field.pivot?.default_value ?? null,
         }, { preserveScroll: true });
 
         setLocal((prev) => prev.map((f) => (
             f.id === field.id
-                ? { ...f, pivot: { ...(f.pivot ?? { display_order: 0, default_value: null }), is_required: isRequired } }
+                ? {
+                    ...f,
+                    pivot: {
+                        ...(f.pivot ?? { display_order: displayOrder, default_value: null }),
+                        is_required: isRequired,
+                    },
+                }
                 : f
         )));
     }
@@ -308,8 +358,8 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
     }
 
     function handleReorder(appliesTo: 'cases' | 'results', direction: 'up' | 'down', field: ProjectField) {
-        const subset = (appliesTo === 'cases' ? caseFields : resultFields)
-            .filter((f) => f.is_global || f.pivot !== null)
+        const subset = (appliesTo === 'cases' ? visibleCaseFields : visibleResultFields)
+            .slice()
             .sort((a, b) => (a.pivot?.display_order ?? 0) - (b.pivot?.display_order ?? 0));
 
         const index = subset.findIndex((f) => f.id === field.id);
@@ -337,7 +387,7 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
             return {
                 ...f,
                 pivot: {
-                    ...(f.pivot ?? { is_required: false, default_value: null }),
+                    ...(f.pivot ?? { is_required: match.is_required, default_value: match.default_value }),
                     display_order: match.display_order,
                     is_required: match.is_required,
                     default_value: match.default_value,
@@ -353,13 +403,24 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
         return (
             <tr key={field.id} className="border-b last:border-0">
                 <td className="p-3 align-top text-xs text-muted-foreground">
-                    <button
-                        type="button"
-                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                        onClick={() => handleReorder(appliesTo, 'up', field)}
-                    >
-                        <GripVertical className="size-3" />
-                    </button>
+                    {isActive && (
+                        <div className="flex flex-col gap-0.5">
+                            <button
+                                type="button"
+                                className="inline-flex items-center justify-center text-xs text-muted-foreground hover:text-foreground"
+                                onClick={() => handleReorder(appliesTo, 'up', field)}
+                            >
+                                <GripVertical className="size-3 rotate-180" />
+                            </button>
+                            <button
+                                type="button"
+                                className="inline-flex items-center justify-center text-xs text-muted-foreground hover:text-foreground"
+                                onClick={() => handleReorder(appliesTo, 'down', field)}
+                            >
+                                <GripVertical className="size-3" />
+                            </button>
+                        </div>
+                    )}
                 </td>
                 <td className="p-3 align-top">
                     <div className="font-medium text-sm">{field.label}</div>
@@ -420,7 +481,48 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
         return (
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">{title}</CardTitle>
+                    <CardTitle className="text-base flex items-center justify-between gap-2">
+                        <span>{title}</span>
+                        {/* Attach dropdown: list available fields */}
+                        {appliesTo === 'cases' && availableCaseFields.length > 0 && (
+                            <Select
+                                onValueChange={(v) => {
+                                    const field = availableCaseFields.find((f) => String(f.id) === v);
+                                    if (field) attach(field, appliesTo);
+                                }}
+                            >
+                                <SelectTrigger className="h-7 w-44 text-xs">
+                                    <SelectValue placeholder="Add field" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableCaseFields.map((f) => (
+                                        <SelectItem key={f.id} value={String(f.id)} className="text-xs">
+                                            {f.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        {appliesTo === 'results' && availableResultFields.length > 0 && (
+                            <Select
+                                onValueChange={(v) => {
+                                    const field = availableResultFields.find((f) => String(f.id) === v);
+                                    if (field) attach(field, appliesTo);
+                                }}
+                            >
+                                <SelectTrigger className="h-7 w-44 text-xs">
+                                    <SelectValue placeholder="Add field" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableResultFields.map((f) => (
+                                        <SelectItem key={f.id} value={String(f.id)} className="text-xs">
+                                            {f.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                     {items.length === 0 ? (
