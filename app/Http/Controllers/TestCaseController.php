@@ -107,6 +107,9 @@ class TestCaseController extends Controller
                 $toAttach = array_diff($ids, $existing);
 
                 if ($toAttach) {
+                    // Only pass created_by; the pivot's useCurrent() handles created_at.
+                    // Do NOT include created_at here — Eloquent would also inject
+                    // updated_at which does not exist on this pivot table.
                     $testCase->requirements()->attach(
                         array_fill_keys($toAttach, ['created_by' => Auth::id()]),
                     );
@@ -170,9 +173,10 @@ class TestCaseController extends Controller
                     ->map(fn ($v) => (int) $v)
                     ->all();
 
+                // Only pass created_by; omit created_at to prevent Eloquent
+                // from appending updated_at (which does not exist on this pivot).
                 $syncData = array_fill_keys($ids, [
                     'created_by' => Auth::id(),
-                    'created_at' => now(),
                 ]);
 
                 $testCase->requirements()->sync($syncData);
