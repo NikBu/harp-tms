@@ -16,6 +16,9 @@ return [
     'role_updated' => 'User role updated.',
     'user_deleted' => 'User deleted.',
     'settings_saved' => 'Settings saved.',
+    'custom_field_created' => 'Custom field created.',
+    'custom_field_updated' => 'Custom field updated.',
+    'custom_field_deleted' => 'Custom field deleted.',
     'fields' => [
         'name' => 'Name',
         'email' => 'Email',
