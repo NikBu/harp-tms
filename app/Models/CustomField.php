@@ -18,7 +18,11 @@ class CustomField extends Model
     /** @use HasFactory<CustomFieldFactory> */
     use HasFactory, LogsActivity;
 
-    public const FIELD_TYPES = ['string', 'integer', 'text', 'url', 'checkbox', 'dropdown', 'user', 'date', 'milestone', 'steps', 'step_results', 'multi_select'];
+    public const FIELD_TYPES = [
+        'string', 'integer', 'text', 'rich_text', 'url',
+        'checkbox', 'dropdown', 'user', 'date', 'milestone',
+        'steps', 'step_results', 'multi_select',
+    ];
 
     public const APPLIES_TO = ['cases', 'results'];
 

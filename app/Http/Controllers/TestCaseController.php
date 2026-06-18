@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CustomField;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\Section;
 use App\Models\Suite;
 use App\Models\TestCase;
+use App\Models\TestCaseCustomValue;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -52,11 +54,12 @@ class TestCaseController extends Controller
             ->get(['id', 'display_id', 'title', 'priority', 'status']);
 
         return Inertia::render('test-cases/create', [
-            'suite'        => $suite->load('project'),
-            'suites'       => $suite->project->suites()->orderBy('name')->get(['id', 'name']),
-            'sections'     => $suite->sections()->orderBy('display_order')->get(),
-            'requirements' => $requirements,
-            'members'      => $suite->project->members()->get(['users.id', 'users.name']),
+            'suite'         => $suite->load('project'),
+            'suites'        => $suite->project->suites()->orderBy('name')->get(['id', 'name']),
+            'sections'      => $suite->sections()->orderBy('display_order')->get(),
+            'requirements'  => $requirements,
+            'members'       => $suite->project->members()->get(['users.id', 'users.name']),
+            'custom_fields' => $this->loadCaseFields($suite->project_id),
         ]);
     }
 
@@ -70,12 +73,13 @@ class TestCaseController extends Controller
             ->get(['id', 'display_id', 'title', 'priority', 'status']);
 
         return Inertia::render('test-cases/create', [
-            'suite'        => null,
-            'suites'       => $project->suites()->orderBy('name')->get(['id', 'name']),
-            'project'      => $project->only(['id', 'name']),
-            'sections'     => [],
-            'requirements' => $requirements,
-            'members'      => $project->members()->get(['users.id', 'users.name']),
+            'suite'         => null,
+            'suites'        => $project->suites()->orderBy('name')->get(['id', 'name']),
+            'project'       => $project->only(['id', 'name']),
+            'sections'      => [],
+            'requirements'  => $requirements,
+            'members'       => $project->members()->get(['users.id', 'users.name']),
+            'custom_fields' => $this->loadCaseFields($project->id),
         ]);
     }
 
@@ -86,29 +90,38 @@ class TestCaseController extends Controller
         $validated = $this->validateCase($request);
         $template  = self::TEMPLATE_MAP[$validated['template']];
 
-        $testCase = $suite->testCases()->create($this->mapAttributes($validated, [
-            'created_by' => Auth::id(),
-        ]));
+        DB::transaction(function () use ($request, $suite, $validated, $template): TestCase {
+            $testCase = $suite->testCases()->create($this->mapAttributes($validated, [
+                'created_by' => Auth::id(),
+            ]));
 
-        $this->syncContent($testCase, $template, $request);
+            $this->syncContent($testCase, $template, $request);
 
-        if ($request->filled('requirement_ids')) {
-            $ids = collect($request->input('requirement_ids'))
-                ->filter(fn ($v) => is_int($v) || ctype_digit((string) $v))
-                ->map(fn ($v) => (int) $v)
-                ->all();
+            if ($request->filled('requirement_ids')) {
+                $ids = collect($request->input('requirement_ids'))
+                    ->filter(fn ($v) => is_int($v) || ctype_digit((string) $v))
+                    ->map(fn ($v) => (int) $v)
+                    ->all();
 
-            $existing = $testCase->requirements()->pluck('requirements.id')->all();
-            $toAttach = array_diff($ids, $existing);
+                $existing = $testCase->requirements()->pluck('requirements.id')->all();
+                $toAttach = array_diff($ids, $existing);
 
-            if ($toAttach) {
-                $testCase->requirements()->attach(
-                    array_fill_keys($toAttach, ['created_by' => Auth::id()]),
-                );
+                if ($toAttach) {
+                    $testCase->requirements()->attach(
+                        array_fill_keys($toAttach, ['created_by' => Auth::id()]),
+                    );
+                }
             }
-        }
+
+            $this->syncCustomValues($testCase, $request->input('custom_values', []));
+
+            return $testCase;
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.created')]);
+
+        // Re-fetch testCase for redirect (created inside transaction)
+        $testCase = $suite->testCases()->latest('id')->first();
 
         if ($request->boolean('add_and_create')) {
             return to_route('suites.cases.create', $suite);
@@ -121,7 +134,7 @@ class TestCaseController extends Controller
     {
         Gate::authorize('edit', $testCase->suite->project);
 
-        $testCase->load(['steps', 'requirements:id,display_id,title,priority,status']);
+        $testCase->load(['steps', 'requirements:id,display_id,title,priority,status', 'customValues.customField']);
 
         $requirements = Requirement::query()
             ->where('project_id', $testCase->suite->project_id)
@@ -129,10 +142,11 @@ class TestCaseController extends Controller
             ->get(['id', 'display_id', 'title', 'priority', 'status']);
 
         return Inertia::render('test-cases/edit', [
-            'testCase'     => $this->transformCase($testCase),
-            'suite'        => $testCase->suite->load('project'),
-            'sections'     => $testCase->suite->sections()->orderBy('display_order')->get(),
-            'requirements' => $requirements,
+            'testCase'      => $this->transformCase($testCase),
+            'suite'         => $testCase->suite->load('project'),
+            'sections'      => $testCase->suite->sections()->orderBy('display_order')->get(),
+            'requirements'  => $requirements,
+            'custom_fields' => $this->loadCaseFields($testCase->suite->project_id),
         ]);
     }
 
@@ -143,25 +157,29 @@ class TestCaseController extends Controller
         $validated = $this->validateCase($request);
         $template  = self::TEMPLATE_MAP[$validated['template']];
 
-        $testCase->update($this->mapAttributes($validated, ['updated_by' => Auth::id()]));
+        DB::transaction(function () use ($request, $testCase, $validated, $template): void {
+            $testCase->update($this->mapAttributes($validated, ['updated_by' => Auth::id()]));
 
-        $testCase->steps()->delete();
-        $testCase->update(['checklist_items' => null, 'bdd_scenario' => null]);
-        $this->syncContent($testCase, $template, $request);
+            $testCase->steps()->delete();
+            $testCase->update(['checklist_items' => null, 'bdd_scenario' => null]);
+            $this->syncContent($testCase, $template, $request);
 
-        if ($request->has('requirement_ids')) {
-            $ids = collect($request->input('requirement_ids', []))
-                ->filter(fn ($v) => is_int($v) || ctype_digit((string) $v))
-                ->map(fn ($v) => (int) $v)
-                ->all();
+            if ($request->has('requirement_ids')) {
+                $ids = collect($request->input('requirement_ids', []))
+                    ->filter(fn ($v) => is_int($v) || ctype_digit((string) $v))
+                    ->map(fn ($v) => (int) $v)
+                    ->all();
 
-            $syncData = array_fill_keys($ids, [
-                'created_by' => Auth::id(),
-                'created_at' => now(),
-            ]);
+                $syncData = array_fill_keys($ids, [
+                    'created_by' => Auth::id(),
+                    'created_at' => now(),
+                ]);
 
-            $testCase->requirements()->sync($syncData);
-        }
+                $testCase->requirements()->sync($syncData);
+            }
+
+            $this->syncCustomValues($testCase, $request->input('custom_values', []));
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.updated')]);
         return to_route('cases.show', $testCase);
@@ -176,6 +194,7 @@ class TestCaseController extends Controller
             'steps',
             'createdBy:id,name',
             'requirements:id,display_id,title,priority,status',
+            'customValues.customField',
         ]);
 
         $suite    = $testCase->suite->load('project');
@@ -238,6 +257,18 @@ class TestCaseController extends Controller
                     'step_index' => $step->step_index,
                     'content'    => $step->content,
                     'expected'   => $step->expected,
+                ]);
+            }
+
+            // Copy custom values
+            foreach ($testCase->customValues()->with('customField')->get() as $cv) {
+                $copy->customValues()->create([
+                    'custom_field_id' => $cv->custom_field_id,
+                    'value_string'    => $cv->value_string,
+                    'value_integer'   => $cv->value_integer,
+                    'value_text'      => $cv->value_text,
+                    'value_boolean'   => $cv->value_boolean,
+                    'value_json'      => $cv->value_json,
                 ]);
             }
 
@@ -321,6 +352,92 @@ class TestCaseController extends Controller
     // Private helpers
     // -------------------------------------------------------------------------
 
+    /**
+     * Load custom fields that apply to cases for a given project.
+     * Returns global fields + fields explicitly assigned to the project.
+     */
+    private function loadCaseFields(int $projectId): \Illuminate\Support\Collection
+    {
+        return CustomField::query()
+            ->where('applies_to', 'cases')
+            ->where(function ($q) use ($projectId) {
+                $q->where('is_global', true)
+                  ->orWhereHas('projects', fn ($q2) => $q2->where('projects.id', $projectId));
+            })
+            ->with('options')
+            ->leftJoin('custom_field_project as cfp', function ($join) use ($projectId) {
+                $join->on('cfp.custom_field_id', '=', 'custom_fields.id')
+                     ->where('cfp.project_id', '=', $projectId);
+            })
+            ->orderByRaw('COALESCE(cfp.display_order, 9999)')
+            ->orderBy('custom_fields.id')
+            ->select('custom_fields.*', 'cfp.is_required', 'cfp.display_order', 'cfp.default_value')
+            ->get()
+            ->map(fn (CustomField $field): array => [
+                'id'            => $field->id,
+                'system_name'   => $field->system_name,
+                'label'         => $field->label,
+                'description'   => $field->description,
+                'field_type'    => $field->field_type,
+                'applies_to'    => $field->applies_to,
+                'is_global'     => $field->is_global,
+                'is_required'   => (bool) ($field->is_required ?? false),
+                'display_order' => $field->display_order ?? 9999,
+                'default_value' => $field->default_value ?? null,
+                'options'       => $field->options->map(fn ($opt) => [
+                    'id'            => $opt->id,
+                    'label'         => $opt->label,
+                    'display_order' => $opt->display_order,
+                ])->all(),
+            ]);
+    }
+
+    /**
+     * Persist custom_values submitted from the form into test_case_custom_values.
+     * Accepts array of [field_id => value] from request input.
+     */
+    private function syncCustomValues(TestCase $testCase, array $rawValues): void
+    {
+        if (empty($rawValues)) {
+            return;
+        }
+
+        $fieldIds = array_keys($rawValues);
+        $fields   = CustomField::whereIn('id', $fieldIds)->get()->keyBy('id');
+
+        foreach ($rawValues as $fieldId => $value) {
+            $field = $fields->get((int) $fieldId);
+            if (! $field) {
+                continue;
+            }
+
+            $row = [
+                'value_string'  => null,
+                'value_integer' => null,
+                'value_text'    => null,
+                'value_boolean' => null,
+                'value_json'    => null,
+            ];
+
+            match ($field->field_type) {
+                'string', 'url'               => $row['value_string']  = (string) $value,
+                'integer'                     => $row['value_integer'] = $value !== '' && $value !== null ? (int) $value : null,
+                'text', 'rich_text'           => $row['value_text']    = (string) $value,
+                'checkbox'                    => $row['value_boolean'] = (bool) $value,
+                'date'                        => $row['value_string']  = (string) $value,
+                'dropdown', 'user', 'milestone' => $row['value_string'] = (string) $value,
+                'multi_select', 'steps',
+                'step_results'                => $row['value_json']    = is_array($value) ? $value : [],
+                default                       => null,
+            };
+
+            TestCaseCustomValue::updateOrCreate(
+                ['test_case_id' => $testCase->id, 'custom_field_id' => (int) $fieldId],
+                $row,
+            );
+        }
+    }
+
     /** @param \Illuminate\Support\Collection<int, TestCase> $cases */
     private function authorizeBulkEdit($cases): void
     {
@@ -340,26 +457,27 @@ class TestCaseController extends Controller
     private function validateCase(Request $request): array
     {
         return $request->validate([
-            'title'                       => ['required', 'string', 'max:255'],
-            'template'                    => ['required', 'integer', 'in:1,2,3,4,5'],
-            'type_id'                     => ['nullable', 'string', 'max:100'],
-            'priority_id'                 => ['nullable', 'integer', 'in:1,2,3,4'],
-            'section_id'                  => ['nullable', 'integer', 'exists:sections,id'],
-            'estimate'                    => ['nullable', 'string', 'max:50'],
-            'references'                  => ['nullable', 'string'],
-            'preconditions'               => ['nullable', 'string'],
-            'body'                        => ['nullable', 'string'],
-            'bdd_scenario'                => ['nullable', 'string'],
-            'checklist_items'             => ['nullable', 'array'],
-            'checklist_items.*.label'     => ['required_with:checklist_items', 'string'],
+            'title'                         => ['required', 'string', 'max:255'],
+            'template'                      => ['required', 'integer', 'in:1,2,3,4,5'],
+            'type_id'                       => ['nullable', 'string', 'max:100'],
+            'priority_id'                   => ['nullable', 'integer', 'in:1,2,3,4'],
+            'section_id'                    => ['nullable', 'integer', 'exists:sections,id'],
+            'estimate'                      => ['nullable', 'string', 'max:50'],
+            'references'                    => ['nullable', 'string'],
+            'preconditions'                 => ['nullable', 'string'],
+            'body'                          => ['nullable', 'string'],
+            'bdd_scenario'                  => ['nullable', 'string'],
+            'checklist_items'               => ['nullable', 'array'],
+            'checklist_items.*.label'       => ['required_with:checklist_items', 'string'],
             'checklist_items.*.is_optional' => ['boolean'],
-            'steps'                       => ['nullable', 'array'],
-            'steps.*.action'              => ['required_with:steps', 'string'],
-            'steps.*.expected'            => ['nullable', 'string'],
-            'steps.*.display_order'       => ['nullable', 'integer'],
-            'requirement_ids'             => ['nullable', 'array'],
-            'requirement_ids.*'           => ['integer', 'exists:requirements,id'],
-            'assigned_to'                 => ['nullable', 'integer', 'exists:users,id'],
+            'steps'                         => ['nullable', 'array'],
+            'steps.*.action'                => ['required_with:steps', 'string'],
+            'steps.*.expected'              => ['nullable', 'string'],
+            'steps.*.display_order'         => ['nullable', 'integer'],
+            'requirement_ids'               => ['nullable', 'array'],
+            'requirement_ids.*'             => ['integer', 'exists:requirements,id'],
+            'assigned_to'                   => ['nullable', 'integer', 'exists:users,id'],
+            'custom_values'                 => ['nullable', 'array'],
         ]);
     }
 
@@ -464,6 +582,25 @@ class TestCaseController extends Controller
         $templateInt = array_search($testCase->template, self::TEMPLATE_MAP, true);
         $priorityInt = array_search($testCase->priority, self::PRIORITY_MAP, true);
 
+        // Build flat custom_values map: field_id => coerced scalar value
+        $customValues = [];
+        if ($testCase->relationLoaded('customValues')) {
+            foreach ($testCase->customValues as $cv) {
+                $field = $cv->customField;
+                if (! $field) {
+                    continue;
+                }
+                $customValues[$cv->custom_field_id] = match ($field->field_type) {
+                    'integer'                         => $cv->value_integer,
+                    'text', 'rich_text'               => $cv->value_text ?? '',
+                    'checkbox'                        => $cv->value_boolean,
+                    'multi_select', 'steps',
+                    'step_results'                    => $cv->value_json ?? [],
+                    default                           => $cv->value_string ?? '',
+                };
+            }
+        }
+
         return [
             'id'              => $testCase->id,
             'suite_id'        => $testCase->suite_id,
@@ -497,6 +634,7 @@ class TestCaseController extends Controller
                     'status'     => $req->status,
                 ])->all()
                 : null,
+            'custom_values'   => $customValues,
             'created_at'      => $testCase->created_at,
             'updated_at'      => $testCase->updated_at,
         ];
