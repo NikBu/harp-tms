@@ -446,22 +446,31 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
                         className="h-7 text-xs max-w-[160px]"
                     />
                 );
-            case 'checkbox':
+            case 'checkbox': {
+                const selectValue = value === '1' ? '1' : value === '0' ? '0' : 'none';
                 return (
                     <Select
-                        value={value === '1' ? '1' : value === '0' ? '0' : ''}
-                        onValueChange={(v) => onChange(v)}
+                        value={selectValue}
+                        onValueChange={(v) => onChange(v === 'none' ? '' : v)}
                     >
                         <SelectTrigger className="h-7 w-[120px] text-xs">
                             <SelectValue placeholder="No default" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">No default</SelectItem>
+                            <SelectItem value="none">No default</SelectItem>
                             <SelectItem value="1">Checked</SelectItem>
                             <SelectItem value="0">Unchecked</SelectItem>
                         </SelectContent>
                     </Select>
                 );
+            }
+            // Types where default is not configurable for now
+            case 'steps':
+            case 'step_results':
+            case 'user':
+            case 'milestone':
+            case 'rich_text':
+                return <span className="text-muted-foreground">—</span>;
             default:
                 return (
                     <Input

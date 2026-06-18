@@ -386,6 +386,64 @@ function ProjectMatrixDialog({
         }, { preserveScroll: true });
     }
 
+    function renderDefaultInputForMatrix(value: string, onChange: (v: string) => void) {
+        switch (field.field_type) {
+            case 'integer':
+                return (
+                    <Input
+                        type="number"
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="Default"
+                        className="h-7 text-xs max-w-[120px]"
+                    />
+                );
+            case 'date':
+                return (
+                    <Input
+                        type="date"
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        className="h-7 text-xs max-w-[160px]"
+                    />
+                );
+            case 'checkbox': {
+                const selectValue = value === '1' ? '1' : value === '0' ? '0' : 'none';
+                return (
+                    <Select
+                        value={selectValue}
+                        onValueChange={(v) => onChange(v === 'none' ? '' : v)}
+                    >
+                        <SelectTrigger className="h-7 w-[120px] text-xs">
+                            <SelectValue placeholder="No default" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">No default</SelectItem>
+                            <SelectItem value="1">Checked</SelectItem>
+                            <SelectItem value="0">Unchecked</SelectItem>
+                        </SelectContent>
+                    </Select>
+                );
+            }
+            // Types where default is not configurable for now
+            case 'steps':
+            case 'step_results':
+            case 'user':
+            case 'milestone':
+            case 'rich_text':
+                return <span className="text-muted-foreground">—</span>;
+            default:
+                return (
+                    <Input
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="Default value"
+                        className="h-7 text-xs max-w-[180px]"
+                    />
+                );
+        }
+    }
+
     return (
         <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
             <DialogContent className="max-w-2xl">
@@ -429,12 +487,7 @@ function ProjectMatrixDialog({
                                         </td>
                                         <td className="p-2 align-top">
                                             {checked ? (
-                                                <Input
-                                                    value={defaultValue}
-                                                    onChange={(e) => updateDefault(p.id, e.target.value)}
-                                                    placeholder="Default value"
-                                                    className="h-7 text-xs max-w-[180px]"
-                                                />
+                                                renderDefaultInputForMatrix(defaultValue, (v) => updateDefault(p.id, v))
                                             ) : (
                                                 <span className="text-muted-foreground">—</span>
                                             )}
