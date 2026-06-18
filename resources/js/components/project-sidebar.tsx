@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     BarChart2,
     Bug,
+    Bug,
     ClipboardList,
     ChevronsUpDown,
     FolderOpen,
@@ -30,6 +31,7 @@ import {
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { useTrans } from '@/hooks/use-trans';
+import { useTrans } from '@/hooks/use-trans';
 import type { ProjectContext } from '@/types/navigation';
 
 interface Props {
@@ -37,6 +39,7 @@ interface Props {
 }
 
 export function ProjectSidebar({ project }: Props) {
+    const t = useTrans();
     const t = useTrans();
     const page = usePage<any>();
     const currentUrl = ((page as any).url as string) ?? '';

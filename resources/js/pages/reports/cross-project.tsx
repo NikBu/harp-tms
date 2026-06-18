@@ -174,10 +174,13 @@ function WorkloadTable({ rows }: { rows: [string, any][] }) {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CrossProjectReport({
+export default function CrossProjectReport({
     results,
     type,
     projects,
+    projects,
 }: {
+    results: Record<string, any>;
     results: Record<string, any>;
     type: string;
     projects: { id: number; name: string }[];
@@ -211,11 +214,13 @@ export default function CrossProjectReport({
                     </h1>
                     <p className="text-sm text-muted-foreground">
                         {typeLabel} · {projects.map((p) => p.name).join(', ')}
+                        {typeLabel} · {projects.map((p) => p.name).join(', ')}
                     </p>
                 </div>
 
                 <Card>
                     <CardHeader>
+                        <CardTitle className="text-base">{typeLabel}</CardTitle>
                         <CardTitle className="text-base">{typeLabel}</CardTitle>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
@@ -239,6 +244,11 @@ export default function CrossProjectReport({
     );
 }
 
+CrossProjectReport.layout = {
+    breadcrumbs: [
+        { title: 'Reports', href: '/reports' },
+        { title: 'Cross-Project' },
+    ],
 CrossProjectReport.layout = {
     breadcrumbs: [
         { title: 'Reports', href: '/reports' },

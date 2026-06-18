@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Integration;
+use App\Models\Integration;
 use App\Models\Project;
 use App\Models\Test;
 use App\Models\TestCase;
@@ -134,9 +135,14 @@ class TestRunController extends Controller
                     'latestResult:id,status,comment,elapsed,version,defect_url,created_by,created_at',
                     'latestResult.createdBy:id,name',
                     'latestResult.defectLinks',
+                    'latestResult.defectLinks',
                 ])->orderBy('id');
             },
         ]);
+
+        $integrations = Integration::where('project_id', $testRun->project_id)
+            ->where('is_active', true)
+            ->get(['id', 'integration_type as provider', 'name']);
 
         $integrations = Integration::where('project_id', $testRun->project_id)
             ->where('is_active', true)
