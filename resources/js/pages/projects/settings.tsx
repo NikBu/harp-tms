@@ -346,6 +346,35 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
         )));
     }
 
+    function updateDefault(field: ProjectField, value: string) {
+        if (!field.is_global && !field.pivot) return;
+
+        const isRequired = field.pivot?.is_required ?? false;
+        const displayOrder = field.pivot?.display_order
+            ?? (field.applies_to === 'cases'
+                ? visibleCaseFields.length
+                : visibleResultFields.length);
+
+        router.post(`/projects/${project.id}/settings/fields`, {
+            custom_field_id: field.id,
+            is_required: isRequired,
+            display_order: displayOrder,
+            default_value: value || null,
+        }, { preserveScroll: true });
+
+        setLocal((prev) => prev.map((f) => (
+            f.id === field.id
+                ? {
+                    ...f,
+                    pivot: {
+                        ...(f.pivot ?? { is_required: isRequired, display_order: displayOrder }),
+                        default_value: value || null,
+                    },
+                }
+                : f
+        )));
+    }
+
     function detach(field: ProjectField) {
         if (field.is_global) return; // cannot detach global fields
         if (!window.confirm(t('common.confirm_delete'))) return;
@@ -399,6 +428,7 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
     function renderFieldRow(field: ProjectField, appliesTo: 'cases' | 'results') {
         const isActive = field.is_global || field.pivot !== null;
         const required = field.pivot?.is_required ?? false;
+        const defaultValue = field.pivot?.default_value ?? '';
 
         return (
             <tr key={field.id} className="border-b last:border-0">
@@ -448,6 +478,18 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
                         />
                         <span>Required</span>
                     </label>
+                </td>
+                <td className="p-3 align-top text-xs">
+                    {isActive ? (
+                        <Input
+                            value={defaultValue}
+                            onChange={(e) => updateDefault(field, e.target.value)}
+                            placeholder="Default value"
+                            className="h-7 text-xs"
+                        />
+                    ) : (
+                        <span className="text-muted-foreground">—</span>
+                    )}
                 </td>
                 <td className="p-3 align-top text-right text-xs">
                     {!field.is_global && isActive && (
@@ -533,6 +575,7 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
                                     <th className="p-2 font-medium">Scope</th>
                                     <th className="p-2 font-medium">Visibility</th>
                                     <th className="p-2 font-medium">Required</th>
+                                    <th className="p-2 font-medium">Default</th>
                                     <th className="w-10 p-2" />
                                 </tr>
                             </thead>

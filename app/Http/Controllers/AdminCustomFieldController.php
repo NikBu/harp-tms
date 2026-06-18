@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CustomField;
 use App\Models\CustomFieldOption;
+use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -51,6 +52,10 @@ class AdminCustomFieldController extends Controller
             ])
             ->values();
 
+        $projects = Project::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         $page = $appliesTo === 'cases'
             ? 'admin/customizations/case-fields'
             : 'admin/customizations/result-fields';
@@ -58,6 +63,7 @@ class AdminCustomFieldController extends Controller
         return Inertia::render($page, [
             'fields'      => $fields,
             'field_types' => self::FIELD_TYPES,
+            'projects'    => $projects,
         ]);
     }
 

@@ -6,7 +6,7 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,6 +48,11 @@ export interface CustomField {
     options: FieldOption[];
 }
 
+export interface ProjectSummary {
+    id: number;
+    name: string;
+}
+
 interface CustomFieldsPageProps {
     appliesTo: 'cases' | 'results';
     title: string;
@@ -57,6 +62,7 @@ interface CustomFieldsPageProps {
     storeUrl: string;
     updateUrl: (id: number) => string;
     destroyUrl: (id: number) => string;
+    projects: ProjectSummary[];
 }
 
 // ── Field type display helper ─────────────────────────────────────────────────
@@ -322,6 +328,94 @@ function FieldDialog({
     );
 }
 
+// ── Project attach dialog ─────────────────────────────────────────────────────
+
+function AttachToProjectDialog({
+    open,
+    onClose,
+    field,
+    projects,
+}: {
+    open: boolean;
+    onClose: () => void;
+    field: CustomField | null;
+    projects: ProjectSummary[];
+}) {
+    const t = useTrans();
+    const [projectId, setProjectId] = useState('');
+
+    function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        if (!field || !projectId) return;
+
+        router.post(`/projects/${projectId}/settings/fields`, {
+            custom_field_id: field.id,
+            is_required: false,
+            display_order: 0,
+            default_value: null,
+        }, {
+            preserveScroll: true,
+            onSuccess: onClose,
+        });
+    }
+
+    const sortedProjects = useMemo(
+        () => [...projects].sort((a, b) => a.name.localeCompare(b.name)),
+        [projects],
+    );
+
+    return (
+        <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+            <DialogContent className="max-w-sm">
+                <form onSubmit={handleSubmit} className="grid gap-4">
+                    <DialogHeader>
+                        <DialogTitle>
+                            Attach field to project
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="grid gap-1.5 text-sm">
+                        <Label>Field</Label>
+                        <div>
+                            <div className="font-medium">{field?.label}</div>
+                            <div className="text-xs text-muted-foreground font-mono">{field?.system_name}</div>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-1.5">
+                        <Label>Project</Label>
+                        <Select
+                            value={projectId || 'none'}
+                            onValueChange={(v) => setProjectId(v === 'none' ? '' : v)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select project" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">—</SelectItem>
+                                {sortedProjects.map((p) => (
+                                    <SelectItem key={p.id} value={String(p.id)}>
+                                        {p.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={onClose}>
+                            {t('common.cancel')}
+                        </Button>
+                        <Button type="submit" disabled={!projectId}>
+                            Attach
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 // ── Main exported page component ──────────────────────────────────────────────
 
 export function CustomFieldsPage({
@@ -333,10 +427,13 @@ export function CustomFieldsPage({
     storeUrl,
     updateUrl,
     destroyUrl,
+    projects,
 }: CustomFieldsPageProps) {
     const t = useTrans();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing]       = useState<CustomField | null>(null);
+    const [attachOpen, setAttachOpen] = useState(false);
+    const [fieldToAttach, setFieldToAttach] = useState<CustomField | null>(null);
 
     function openCreate() {
         setEditing(null);
@@ -351,6 +448,11 @@ export function CustomFieldsPage({
     function handleDelete(field: CustomField) {
         if (!window.confirm(t('common.confirm_delete'))) return;
         router.delete(destroyUrl(field.id), { preserveScroll: true });
+    }
+
+    function openAttach(field: CustomField) {
+        setFieldToAttach(field);
+        setAttachOpen(true);
     }
 
     return (
@@ -427,6 +529,15 @@ export function CustomFieldsPage({
                                         <td className="p-3">
                                             <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-8 px-2 text-xs"
+                                                    onClick={() => openAttach(field)}
+                                                >
+                                                    Attach to project
+                                                </Button>
+                                                <Button
                                                     variant="ghost"
                                                     size="icon"
                                                     className="size-8"
@@ -463,6 +574,14 @@ export function CustomFieldsPage({
                 fieldTypes={fieldTypes}
                 storeUrl={storeUrl}
                 updateUrl={updateUrl}
+            />
+
+            {/* Attach to project dialog */}
+            <AttachToProjectDialog
+                open={attachOpen}
+                onClose={() => setAttachOpen(false)}
+                field={fieldToAttach}
+                projects={projects}
             />
         </div>
     );
