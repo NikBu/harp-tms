@@ -27,6 +27,12 @@ return [
     'select_user' => 'Select a user…',
     'last_admin_error' => 'Project must have at least one admin.',
     'remove_self_error' => 'You cannot remove yourself. Transfer admin first.',
+    'cannot_remove_global_field' => 'This global field cannot be removed from the project.',
+    'field_assigned' => 'Field assigned to project.',
+    'field_removed' => 'Field removed from project.',
+    'fields' => [
+        'empty' => 'No custom fields are assigned to this project yet.',
+    ],
     'danger' => [
         'tab' => 'Danger Zone',
         'complete_title' => 'Mark Project as Completed',
