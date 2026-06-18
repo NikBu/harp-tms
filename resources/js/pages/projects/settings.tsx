@@ -404,22 +404,13 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
             <tr key={field.id} className="border-b last:border-0">
                 <td className="p-3 align-top text-xs text-muted-foreground">
                     {isActive && (
-                        <div className="flex flex-col gap-0.5">
-                            <button
-                                type="button"
-                                className="inline-flex items-center justify-center text-xs text-muted-foreground hover:text-foreground"
-                                onClick={() => handleReorder(appliesTo, 'up', field)}
-                            >
-                                <GripVertical className="size-3 rotate-180" />
-                            </button>
-                            <button
-                                type="button"
-                                className="inline-flex items-center justify-center text-xs text-muted-foreground hover:text-foreground"
-                                onClick={() => handleReorder(appliesTo, 'down', field)}
-                            >
-                                <GripVertical className="size-3" />
-                            </button>
-                        </div>
+                        <button
+                            type="button"
+                            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => handleReorder(appliesTo, 'up', field)}
+                        >
+                            <GripVertical className="size-3 cursor-grab" />
+                        </button>
                     )}
                 </td>
                 <td className="p-3 align-top">
@@ -476,7 +467,10 @@ function FieldsTab({ project, allFields }: { project: Project; allFields: Projec
     }
 
     function renderTable(title: string, items: ProjectField[], appliesTo: 'cases' | 'results') {
-        const visible = items.filter((f) => f.is_global || f.pivot !== null);
+        const visible = items
+            .filter((f) => f.is_global || f.pivot !== null)
+            .slice()
+            .sort((a, b) => (a.pivot?.display_order ?? 0) - (b.pivot?.display_order ?? 0));
 
         return (
             <Card>
