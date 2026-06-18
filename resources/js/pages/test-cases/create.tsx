@@ -13,8 +13,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { CustomFieldRenderer } from '@/components/custom-field-renderer';
 import { useTrans } from '@/hooks/use-trans';
 import type { Project, Section, Suite } from '@/types';
+import type { CustomField, CustomValues } from '@/types/custom-field';
 import {
     TEMPLATE_BDD,
     TEMPLATE_CHECKLIST,
@@ -51,6 +53,7 @@ type TestCaseForm = {
     checklist_items: ChecklistItem[];
     steps: StepInput[];
     requirement_ids: number[];
+    custom_values: CustomValues;
     add_and_create: boolean;
 };
 
@@ -72,7 +75,6 @@ const PRIORITY_OPTIONS = [
 const textareaClass =
     'flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
-// Accepts a plain integer (seconds) or duration tokens like "1h 30m 15s".
 const ESTIMATE_PATTERN = /^(\d+|(\d+\s*h)?\s*(\d+\s*m)?\s*(\d+\s*s)?)$/i;
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -88,12 +90,14 @@ export default function TestCasesCreate({
     sections,
     requirements,
     members = [],
+    custom_fields = [],
 }: {
     suite: (Suite & { project: Project }) | null;
     suites?: { id: number; name: string }[];
     sections: Section[];
     requirements: LinkedRequirement[];
     members?: { id: number; name: string }[];
+    custom_fields?: CustomField[];
 }) {
     const t = useTrans();
 
@@ -104,47 +108,29 @@ export default function TestCasesCreate({
     const [dynamicSections, setDynamicSections] = useState<Section[]>(sections);
 
     useEffect(() => {
-        if (!needsSuitePicker) {
-            return;
-        }
-
-        if (!suiteId) {
-            setDynamicSections([]);
-
-            return;
-        }
+        if (!needsSuitePicker) return;
+        if (!suiteId) { setDynamicSections([]); return; }
 
         let cancelled = false;
-
         fetch(`/api/suites/${suiteId}/sections`)
             .then((r) => r.json())
-            .then((data) => {
-                if (!cancelled) {
-                    setDynamicSections(data as Section[]);
-                }
-            })
-            .catch(() => {
-                if (!cancelled) {
-                    setDynamicSections([]);
-                }
-            });
+            .then((data) => { if (!cancelled) setDynamicSections(data as Section[]); })
+            .catch(() => { if (!cancelled) setDynamicSections([]); });
 
-        return () => {
-            cancelled = true;
-        };
+        return () => { cancelled = true; };
     }, [needsSuitePicker, suiteId]);
 
     const availableSections = needsSuitePicker ? dynamicSections : sections;
 
+    // Build initial custom_values from field defaults
+    const initialCustomValues: CustomValues = {};
+    for (const field of custom_fields) {
+        initialCustomValues[field.id] = field.default_value ?? '';
+    }
+
     const [submitting, setSubmitting] = useState(false);
 
-    const {
-        data,
-        setData,
-        errors,
-        setError,
-        clearErrors,
-    } = useForm<TestCaseForm>({
+    const { data, setData, errors, setError, clearErrors } = useForm<TestCaseForm>({
         title: '',
         template: TEMPLATE_STEPS,
         section_id: '',
@@ -159,17 +145,18 @@ export default function TestCasesCreate({
         checklist_items: [],
         steps: [{ action: '', expected: '', display_order: 1 }],
         requirement_ids: [],
+        custom_values: initialCustomValues,
         add_and_create: false,
     });
+
+    function setCustomValue(fieldId: number, value: unknown) {
+        setData('custom_values', { ...data.custom_values, [fieldId]: value });
+    }
 
     const usesSteps = data.template === TEMPLATE_STEPS;
     const usesBdd = data.template === TEMPLATE_BDD;
     const usesChecklist = data.template === TEMPLATE_CHECKLIST;
-    const usesBody =
-        data.template === TEMPLATE_TEXT ||
-        data.template === TEMPLATE_EXPLORATORY;
-
-    // ── Requirement toggle ────────────────────────────────────────────────────
+    const usesBody = data.template === TEMPLATE_TEXT || data.template === TEMPLATE_EXPLORATORY;
 
     function toggleRequirement(id: number) {
         setData(
@@ -179,8 +166,6 @@ export default function TestCasesCreate({
                 : [...data.requirement_ids, id],
         );
     }
-
-    // ── Step helpers ──────────────────────────────────────────────────────────
 
     function setStep(index: number, key: keyof StepInput, value: string) {
         const next = [...data.steps];
@@ -206,20 +191,11 @@ export default function TestCasesCreate({
 
     function moveStep(index: number, direction: -1 | 1) {
         const target = index + direction;
-
-        if (target < 0 || target >= data.steps.length) {
-            return;
-        }
-
+        if (target < 0 || target >= data.steps.length) return;
         const next = [...data.steps];
         [next[index], next[target]] = [next[target], next[index]];
-        setData(
-            'steps',
-            next.map((step, i) => ({ ...step, display_order: i + 1 })),
-        );
+        setData('steps', next.map((step, i) => ({ ...step, display_order: i + 1 })));
     }
-
-    // ── Checklist helpers ─────────────────────────────────────────────────────
 
     function setChecklistLabel(index: number, label: string) {
         const next = [...data.checklist_items];
@@ -235,13 +211,8 @@ export default function TestCasesCreate({
     }
 
     function removeChecklistItem(index: number) {
-        setData(
-            'checklist_items',
-            data.checklist_items.filter((_, i) => i !== index),
-        );
+        setData('checklist_items', data.checklist_items.filter((_, i) => i !== index));
     }
-
-    // ── Submit ────────────────────────────────────────────────────────────────
 
     const addAndCreateRef = useRef(false);
 
@@ -251,16 +222,11 @@ export default function TestCasesCreate({
 
         if (needsSuitePicker && !suiteId) {
             setError('section_id', t('test_cases.errors.suite_required'));
-
             return;
         }
 
-        if (
-            data.estimate.trim() !== '' &&
-            !ESTIMATE_PATTERN.test(data.estimate.trim())
-        ) {
+        if (data.estimate.trim() !== '' && !ESTIMATE_PATTERN.test(data.estimate.trim())) {
             setError('estimate', t('test_cases.errors.estimate_format'));
-
             return;
         }
 
@@ -269,12 +235,8 @@ export default function TestCasesCreate({
         const payload = {
             ...data,
             add_and_create: addAndCreateRef.current,
-            steps: usesSteps
-                ? data.steps.filter((s) => s.action.trim() !== '')
-                : [],
-            checklist_items: usesChecklist
-                ? data.checklist_items.filter((i) => i.label.trim() !== '')
-                : [],
+            steps: usesSteps ? data.steps.filter((s) => s.action.trim() !== '') : [],
+            checklist_items: usesChecklist ? data.checklist_items.filter((i) => i.label.trim() !== '') : [],
             bdd_scenario: usesBdd ? data.bdd_scenario : '',
             body: usesBody ? data.body : '',
         };
@@ -295,9 +257,7 @@ export default function TestCasesCreate({
                 submit();
             }
         }
-
         window.addEventListener('keydown', onKeyDown);
-
         return () => window.removeEventListener('keydown', onKeyDown);
     });
 
@@ -306,9 +266,7 @@ export default function TestCasesCreate({
             <Head title={t('test_cases.create')} />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4">
-                <h1 className="text-2xl font-semibold">
-                    {t('test_cases.create')}
-                </h1>
+                <h1 className="text-2xl font-semibold">{t('test_cases.create')}</h1>
 
                 <Card className="max-w-3xl">
                     <CardHeader>
@@ -319,9 +277,7 @@ export default function TestCasesCreate({
                             {/* Suite picker (global create only) */}
                             {needsSuitePicker && (
                                 <div className="grid gap-2">
-                                    <Label htmlFor="suite">
-                                        {t('test_cases.fields.suite')} *
-                                    </Label>
+                                    <Label htmlFor="suite">{t('test_cases.fields.suite')} *</Label>
                                     <Select
                                         value={suiteId}
                                         onValueChange={(v) => {
@@ -331,262 +287,150 @@ export default function TestCasesCreate({
                                         }}
                                     >
                                         <SelectTrigger id="suite">
-                                            <SelectValue
-                                                placeholder={t(
-                                                    'test_cases.fields.suite',
-                                                )}
-                                            />
+                                            <SelectValue placeholder={t('test_cases.fields.suite')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {suites.map((s) => (
-                                                <SelectItem
-                                                    key={s.id}
-                                                    value={String(s.id)}
-                                                >
-                                                    {s.name}
-                                                </SelectItem>
+                                                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                     {errors.section_id && !suiteId && (
-                                        <p className="text-sm text-destructive">
-                                            {errors.section_id}
-                                        </p>
+                                        <p className="text-sm text-destructive">{errors.section_id}</p>
                                     )}
                                 </div>
                             )}
 
                             {/* Title */}
                             <div className="grid gap-2">
-                                <Label htmlFor="title">
-                                    {t('test_cases.fields.title')}
-                                </Label>
+                                <Label htmlFor="title">{t('test_cases.fields.title')}</Label>
                                 <Input
                                     id="title"
                                     value={data.title}
-                                    onChange={(e) =>
-                                        setData('title', e.target.value)
-                                    }
+                                    onChange={(e) => setData('title', e.target.value)}
                                     autoFocus
                                 />
-                                {errors.title && (
-                                    <p className="text-sm text-destructive">
-                                        {errors.title}
-                                    </p>
-                                )}
+                                {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
                             </div>
 
                             {/* Template */}
                             <div className="grid gap-2">
-                                <Label htmlFor="template">
-                                    {t('test_cases.fields.template')}
-                                </Label>
+                                <Label htmlFor="template">{t('test_cases.fields.template')}</Label>
                                 <Select
                                     value={String(data.template)}
-                                    onValueChange={(v) =>
-                                        setData('template', Number(v))
-                                    }
+                                    onValueChange={(v) => setData('template', Number(v))}
                                 >
-                                    <SelectTrigger id="template">
-                                        <SelectValue />
-                                    </SelectTrigger>
+                                    <SelectTrigger id="template"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         {TEMPLATE_OPTIONS.map((opt) => (
-                                            <SelectItem
-                                                key={opt.value}
-                                                value={String(opt.value)}
-                                            >
-                                                {t(
-                                                    `test_cases.templates.${opt.key}`,
-                                                )}
+                                            <SelectItem key={opt.value} value={String(opt.value)}>
+                                                {t(`test_cases.templates.${opt.key}`)}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
 
-                            {/* Section / Priority / Type / Estimate */}
+                            {/* Section / Priority / Type / Assigned / Estimate */}
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="section">
-                                        {t('test_cases.fields.section')}
-                                    </Label>
+                                    <Label htmlFor="section">{t('test_cases.fields.section')}</Label>
                                     <Select
                                         value={data.section_id || 'none'}
-                                        onValueChange={(v) =>
-                                            setData(
-                                                'section_id',
-                                                v === 'none' ? '' : v,
-                                            )
-                                        }
+                                        onValueChange={(v) => setData('section_id', v === 'none' ? '' : v)}
                                     >
                                         <SelectTrigger id="section">
-                                            <SelectValue
-                                                placeholder={t(
-                                                    'test_cases.fields.section',
-                                                )}
-                                            />
+                                            <SelectValue placeholder={t('test_cases.fields.section')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">
-                                                —
-                                            </SelectItem>
+                                            <SelectItem value="none">—</SelectItem>
                                             {availableSections.map((s) => (
-                                                <SelectItem
-                                                    key={s.id}
-                                                    value={String(s.id)}
-                                                >
-                                                    {s.name}
-                                                </SelectItem>
+                                                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="priority">
-                                        {t('test_cases.fields.priority')}
-                                    </Label>
+                                    <Label htmlFor="priority">{t('test_cases.fields.priority')}</Label>
                                     <Select
                                         value={data.priority_id || 'none'}
-                                        onValueChange={(v) =>
-                                            setData(
-                                                'priority_id',
-                                                v === 'none' ? '' : v,
-                                            )
-                                        }
+                                        onValueChange={(v) => setData('priority_id', v === 'none' ? '' : v)}
                                     >
                                         <SelectTrigger id="priority">
-                                            <SelectValue
-                                                placeholder={t(
-                                                    'test_cases.fields.priority',
-                                                )}
-                                            />
+                                            <SelectValue placeholder={t('test_cases.fields.priority')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">
-                                                —
-                                            </SelectItem>
+                                            <SelectItem value="none">—</SelectItem>
                                             {PRIORITY_OPTIONS.map((opt) => (
-                                                <SelectItem
-                                                    key={opt.value}
-                                                    value={opt.value}
-                                                >
-                                                    {opt.label}
-                                                </SelectItem>
+                                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="type">
-                                        {t('test_cases.fields.type')}
-                                    </Label>
+                                    <Label htmlFor="type">{t('test_cases.fields.type')}</Label>
                                     <Select
                                         value={data.type_id || 'none'}
-                                        onValueChange={(v) =>
-                                            setData(
-                                                'type_id',
-                                                v === 'none' ? '' : v,
-                                            )
-                                        }
+                                        onValueChange={(v) => setData('type_id', v === 'none' ? '' : v)}
                                     >
                                         <SelectTrigger id="type">
-                                            <SelectValue
-                                                placeholder={t(
-                                                    'test_cases.fields.type_placeholder',
-                                                )}
-                                            />
+                                            <SelectValue placeholder={t('test_cases.fields.type_placeholder')} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">
-                                                —
-                                            </SelectItem>
+                                            <SelectItem value="none">—</SelectItem>
                                             {TEST_CASE_TYPES.map((type) => (
-                                                <SelectItem
-                                                    key={type}
-                                                    value={type}
-                                                    className="capitalize"
-                                                >
-                                                    {type}
-                                                </SelectItem>
+                                                <SelectItem key={type} value={type} className="capitalize">{type}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 {members.length > 0 && (
-                                <div className="grid gap-2">
-                                    <Label htmlFor="assigned_to">
-                                        {t('test_cases.fields.assigned_to')}
-                                    </Label>
-                                    <Select
-                                        value={data.assigned_to || 'none'}
-                                        onValueChange={(v) =>
-                                            setData('assigned_to', v === 'none' ? '' : v)
-                                        }
-                                    >
-                                        <SelectTrigger id="assigned_to">
-                                            <SelectValue placeholder="—" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">—</SelectItem>
-                                            {members.map((m) => (
-                                                <SelectItem key={m.id} value={String(m.id)}>
-                                                    {m.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="assigned_to">{t('test_cases.fields.assigned_to')}</Label>
+                                        <Select
+                                            value={data.assigned_to || 'none'}
+                                            onValueChange={(v) => setData('assigned_to', v === 'none' ? '' : v)}
+                                        >
+                                            <SelectTrigger id="assigned_to"><SelectValue placeholder="—" /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">—</SelectItem>
+                                                {members.map((m) => (
+                                                    <SelectItem key={m.id} value={String(m.id)}>{m.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 )}
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="estimate">
-                                        {t('test_cases.fields.estimate')}
-                                    </Label>
+                                    <Label htmlFor="estimate">{t('test_cases.fields.estimate')}</Label>
                                     <Input
                                         id="estimate"
                                         value={data.estimate}
-                                        onChange={(e) =>
-                                            setData('estimate', e.target.value)
-                                        }
+                                        onChange={(e) => setData('estimate', e.target.value)}
                                         placeholder="e.g. 1h 30m"
                                     />
-                                    {errors.estimate && (
-                                        <p className="text-sm text-destructive">
-                                            {errors.estimate}
-                                        </p>
-                                    )}
+                                    {errors.estimate && <p className="text-sm text-destructive">{errors.estimate}</p>}
                                 </div>
                             </div>
 
                             {/* References */}
                             <div className="grid gap-2">
-                                <Label htmlFor="references">
-                                    {t('test_cases.fields.references')}
-                                </Label>
+                                <Label htmlFor="references">{t('test_cases.fields.references')}</Label>
                                 <Input
                                     id="references"
                                     value={data.references}
-                                    onChange={(e) =>
-                                        setData('references', e.target.value)
-                                    }
+                                    onChange={(e) => setData('references', e.target.value)}
                                 />
                             </div>
 
                             {/* Preconditions */}
                             <div className="grid gap-2">
-                                <Label htmlFor="preconditions">
-                                    {t('test_cases.fields.preconditions')}
-                                </Label>
-                                <RichTextEditor
-                                    value={data.preconditions}
-                                    onChange={(v) =>
-                                        setData('preconditions', v)
-                                    }
-                                />
+                                <Label htmlFor="preconditions">{t('test_cases.fields.preconditions')}</Label>
+                                <RichTextEditor value={data.preconditions} onChange={(v) => setData('preconditions', v)} />
                             </div>
 
                             {/* Body (text / exploratory) */}
@@ -594,39 +438,23 @@ export default function TestCasesCreate({
                                 <div className="grid gap-2">
                                     <Label htmlFor="body">
                                         {data.template === TEMPLATE_EXPLORATORY
-                                            ? t(
-                                                  'test_cases.fields.scenario',
-                                              )
+                                            ? t('test_cases.fields.scenario')
                                             : t('test_cases.fields.body')}
                                     </Label>
-                                    <RichTextEditor
-                                        value={data.body}
-                                        onChange={(v) => setData('body', v)}
-                                    />
+                                    <RichTextEditor value={data.body} onChange={(v) => setData('body', v)} />
                                 </div>
                             )}
 
                             {/* BDD scenario */}
                             {usesBdd && (
                                 <div className="grid gap-2">
-                                    <Label htmlFor="bdd_scenario">
-                                        {t(
-                                            'test_cases.fields.bdd_scenario',
-                                        )}
-                                    </Label>
+                                    <Label htmlFor="bdd_scenario">{t('test_cases.fields.bdd_scenario')}</Label>
                                     <textarea
                                         id="bdd_scenario"
                                         value={data.bdd_scenario}
-                                        onChange={(e) =>
-                                            setData(
-                                                'bdd_scenario',
-                                                e.target.value,
-                                            )
-                                        }
+                                        onChange={(e) => setData('bdd_scenario', e.target.value)}
                                         rows={8}
-                                        placeholder={
-                                            'Given ...\nWhen ...\nThen ...'
-                                        }
+                                        placeholder={'Given ...\nWhen ...\nThen ...'}
                                         className={`${textareaClass} font-mono text-xs`}
                                     />
                                 </div>
@@ -635,84 +463,29 @@ export default function TestCasesCreate({
                             {/* Steps */}
                             {usesSteps && (
                                 <div className="grid gap-3">
-                                    <Label>
-                                        {t('test_cases.fields.steps')}
-                                    </Label>
+                                    <Label>{t('test_cases.fields.steps')}</Label>
                                     {data.steps.map((step, index) => (
-                                        <div
-                                            key={index}
-                                            className="grid gap-2 rounded-md border p-3"
-                                        >
+                                        <div key={index} className="grid gap-2 rounded-md border p-3">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-xs font-medium text-muted-foreground">
-                                                    #{index + 1}
-                                                </span>
+                                                <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
                                                 <div className="flex items-center gap-1">
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            moveStep(index, -1)
-                                                        }
-                                                    >
-                                                        <ArrowUp className="size-4" />
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            moveStep(index, 1)
-                                                        }
-                                                    >
-                                                        <ArrowDown className="size-4" />
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            removeStep(index)
-                                                        }
-                                                    >
-                                                        <Trash2 className="size-4" />
-                                                    </Button>
+                                                    <Button type="button" variant="ghost" size="icon" onClick={() => moveStep(index, -1)}><ArrowUp className="size-4" /></Button>
+                                                    <Button type="button" variant="ghost" size="icon" onClick={() => moveStep(index, 1)}><ArrowDown className="size-4" /></Button>
+                                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeStep(index)}><Trash2 className="size-4" /></Button>
                                                 </div>
                                             </div>
                                             <div className="grid gap-1.5">
-                                                <Label className="text-xs font-medium text-muted-foreground">
-                                                    {t('test_cases.fields.action')}
-                                                </Label>
-                                                <RichTextEditor
-                                                    value={step.action}
-                                                    onChange={(v) =>
-                                                        setStep(index, 'action', v)
-                                                    }
-                                                    placeholder={t('test_cases.fields.action')}
-                                                />
+                                                <Label className="text-xs font-medium text-muted-foreground">{t('test_cases.fields.action')}</Label>
+                                                <RichTextEditor value={step.action} onChange={(v) => setStep(index, 'action', v)} placeholder={t('test_cases.fields.action')} />
                                             </div>
                                             <div className="grid gap-1.5">
-                                                <Label className="text-xs font-medium text-muted-foreground">
-                                                    {t('test_cases.fields.expected')}
-                                                </Label>
-                                                <RichTextEditor
-                                                    value={step.expected}
-                                                    onChange={(v) =>
-                                                        setStep(index, 'expected', v)
-                                                    }
-                                                    placeholder={t('test_cases.fields.expected')}
-                                                />
+                                                <Label className="text-xs font-medium text-muted-foreground">{t('test_cases.fields.expected')}</Label>
+                                                <RichTextEditor value={step.expected} onChange={(v) => setStep(index, 'expected', v)} placeholder={t('test_cases.fields.expected')} />
                                             </div>
                                         </div>
                                     ))}
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={addStep}
-                                    >
-                                        <Plus className="size-4" />
-                                        {t('test_cases.fields.steps')}
+                                    <Button type="button" variant="outline" onClick={addStep}>
+                                        <Plus className="size-4" />{t('test_cases.fields.steps')}
                                     </Button>
                                 </div>
                             )}
@@ -720,52 +493,37 @@ export default function TestCasesCreate({
                             {/* Checklist */}
                             {usesChecklist && (
                                 <div className="grid gap-3">
-                                    <Label>
-                                        {t('test_cases.fields.checklist')}
-                                    </Label>
+                                    <Label>{t('test_cases.fields.checklist')}</Label>
                                     {data.checklist_items.map((item, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex items-center gap-2"
-                                        >
-                                            <span className="w-6 text-xs text-muted-foreground">
-                                                {index + 1}.
-                                            </span>
+                                        <div key={index} className="flex items-center gap-2">
+                                            <span className="w-6 text-xs text-muted-foreground">{index + 1}.</span>
                                             <Input
                                                 value={item.label}
-                                                onChange={(e) =>
-                                                    setChecklistLabel(
-                                                        index,
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder={t(
-                                                    'test_cases.fields.checklist_item',
-                                                )}
+                                                onChange={(e) => setChecklistLabel(index, e.target.value)}
+                                                placeholder={t('test_cases.fields.checklist_item')}
                                                 className="flex-1"
                                             />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() =>
-                                                    removeChecklistItem(index)
-                                                }
-                                            >
-                                                <Trash2 className="size-4" />
-                                            </Button>
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => removeChecklistItem(index)}><Trash2 className="size-4" /></Button>
                                         </div>
                                     ))}
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={addChecklistItem}
-                                    >
-                                        <Plus className="size-4" />
-                                        {t(
-                                            'test_cases.fields.checklist_item',
-                                        )}
+                                    <Button type="button" variant="outline" onClick={addChecklistItem}>
+                                        <Plus className="size-4" />{t('test_cases.fields.checklist_item')}
                                     </Button>
+                                </div>
+                            )}
+
+                            {/* Custom Fields */}
+                            {custom_fields.length > 0 && (
+                                <div className="grid gap-4">
+                                    <h3 className="text-sm font-medium text-muted-foreground">{t('custom_fields.section_title') || 'Custom Fields'}</h3>
+                                    {custom_fields.map((field) => (
+                                        <CustomFieldRenderer
+                                            key={field.id}
+                                            field={field}
+                                            value={data.custom_values[field.id]}
+                                            onChange={setCustomValue}
+                                        />
+                                    ))}
                                 </div>
                             )}
 
@@ -775,75 +533,41 @@ export default function TestCasesCreate({
                                     <Label>{t('requirements.label')}</Label>
                                     <div className="max-h-56 divide-y overflow-y-auto rounded-md border">
                                         {requirements.map((req) => {
-                                            const checked =
-                                                data.requirement_ids.includes(
-                                                    req.id,
-                                                );
-
+                                            const checked = data.requirement_ids.includes(req.id);
                                             return (
-                                                <label
-                                                    key={req.id}
-                                                    className="flex cursor-pointer items-center gap-3 px-3 py-2 select-none hover:bg-muted/40"
-                                                >
+                                                <label key={req.id} className="flex cursor-pointer items-center gap-3 px-3 py-2 select-none hover:bg-muted/40">
                                                     <input
                                                         type="checkbox"
                                                         checked={checked}
-                                                        onChange={() =>
-                                                            toggleRequirement(
-                                                                req.id,
-                                                            )
-                                                        }
+                                                        onChange={() => toggleRequirement(req.id)}
                                                         className="size-4 rounded border-input accent-primary"
                                                     />
-                                                    <span className="w-24 shrink-0 font-mono text-xs text-muted-foreground">
-                                                        {req.display_id}
-                                                    </span>
-                                                    <span className="flex-1 truncate text-sm">
-                                                        {req.title}
-                                                    </span>
+                                                    <span className="w-24 shrink-0 font-mono text-xs text-muted-foreground">{req.display_id}</span>
+                                                    <span className="flex-1 truncate text-sm">{req.title}</span>
                                                     {req.priority && (
-                                                        <span
-                                                            className={`shrink-0 text-xs capitalize ${PRIORITY_COLORS[req.priority] ?? ''}`}
-                                                        >
-                                                            {req.priority}
-                                                        </span>
+                                                        <span className={`shrink-0 text-xs capitalize ${PRIORITY_COLORS[req.priority] ?? ''}`}>{req.priority}</span>
                                                     )}
                                                 </label>
                                             );
                                         })}
                                     </div>
-                                    {errors.requirement_ids && (
-                                        <p className="text-sm text-destructive">
-                                            {errors.requirement_ids}
-                                        </p>
-                                    )}
+                                    {errors.requirement_ids && <p className="text-sm text-destructive">{errors.requirement_ids}</p>}
                                 </div>
                             )}
 
                             {/* Actions */}
                             <div className="flex flex-wrap gap-2">
-                                <Button type="submit" disabled={submitting}>
-                                    {t('test_cases.add_test_case')}
-                                </Button>
+                                <Button type="submit" disabled={submitting}>{t('test_cases.add_test_case')}</Button>
                                 <Button
                                     type="button"
                                     variant="secondary"
                                     disabled={submitting}
-                                    onClick={() => {
-                                        addAndCreateRef.current = true;
-                                        submit();
-                                    }}
+                                    onClick={() => { addAndCreateRef.current = true; submit(); }}
                                 >
                                     {t('test_cases.add_and_create')}
                                 </Button>
                                 <Button variant="outline" asChild>
-                                    <Link
-                                        href={
-                                            suite
-                                                ? casesIndex.url(suite.id)
-                                                : projectsIndex().url
-                                        }
-                                    >
+                                    <Link href={suite ? casesIndex.url(suite.id) : projectsIndex().url}>
                                         {t('common.cancel')}
                                     </Link>
                                 </Button>

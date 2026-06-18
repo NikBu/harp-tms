@@ -1,3 +1,4 @@
+import type { CustomField, CustomValues } from './custom-field';
 import type { Section } from './suite';
 
 export const TEMPLATE_TEXT = 1;
@@ -60,6 +61,10 @@ export interface TestCase {
     steps?: TestCaseStep[];
     /** Linked requirements — only present on show(), null on list views */
     requirements?: LinkedRequirement[] | null;
+    /** Custom field values keyed by field id */
+    custom_values?: CustomValues;
     created_at: string;
     updated_at: string;
 }
+
+export type { CustomField };
