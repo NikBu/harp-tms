@@ -4,6 +4,7 @@ return [
     'save' => 'Save',
     'saving' => 'Saving...',
     'cancel' => 'Cancel',
+    'close' => 'Close',
     'delete' => 'Delete',
     'edit' => 'Edit',
     'create' => 'Create',
