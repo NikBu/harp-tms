@@ -178,14 +178,13 @@ class ReportController extends Controller
         // static stub data when the array is empty.
         $runs = $testCase
             ->results()
-            ->with('testRun:id,name')
-            ->whereHas('testRun', fn ($q) => $q->where('is_automated', true))
+            ->with('run:id,name')
             ->orderByDesc('created_at')
             ->limit(30)
             ->get()
             ->map(fn ($r) => [
                 'id'           => $r->id,
-                'run_name'     => $r->testRun?->name ?? 'Run #'.$r->test_run_id,
+                'run_name'     => $r->run?->name ?? 'Run #'.$r->run_id,
                 'plan_name'    => null,
                 'env'          => 'staging',
                 'branch'       => 'main',
