@@ -144,7 +144,7 @@ class TestPlanController extends Controller
             ->get(['id', 'name']);
 
         $configGroups = $testPlan->project->configurationGroups()
-            ->with('configurations:id,configuration_group_id,name')
+            ->with('configurations:id,group_id,name')
             ->get(['id', 'name']);
 
         return Inertia::render('plans/show', [
