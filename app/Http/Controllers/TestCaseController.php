@@ -659,3 +659,40 @@ class TestCaseController extends Controller
         return implode(' ', $parts);
     }
 }
+
+    // ── History (stub) ─────────────────────────────────────────────────────────
+
+    /**
+     * Show version history for a test case.
+     * Falls back to static stub data when no real history rows exist.
+     */
+    public function history(Request $request, TestCase $testCase): Response
+    {
+        Gate::authorize('view', $testCase->suite->project);
+
+        $history = $testCase
+            ->history()
+            ->with('changedBy:id,name')
+            ->latest('created_at')
+            ->limit(50)
+            ->get()
+            ->map(fn ($h) => [
+                'id'               => $h->id,
+                'changed_at'       => $h->created_at,
+                'changed_by_name'  => $h->changedBy?->name ?? 'System',
+                'change_note'      => $h->change_note,
+                'changed_fields'   => $h->changed_fields ?? [],
+                'snapshot'         => $h->snapshot ?? [],
+            ]);
+
+        return Inertia::render('test-cases/history', [
+            'testCase' => [
+                'id'    => $testCase->id,
+                'title' => $testCase->title,
+                'suite_id' => $testCase->suite_id,
+            ],
+            'history'  => $history,
+            'suiteId'  => $testCase->suite_id,
+        ]);
+    }
+}

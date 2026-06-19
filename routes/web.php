@@ -62,6 +62,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('projects/{project}/reports/{type}/export', [ReportExportController::class, 'export'])
         ->name('projects.reports.export');
 
+    // Autotest history for a specific test case
+    Route::get('projects/{project}/reports/autotest-history/{testCase}', [ReportController::class, 'autotestHistory'])
+        ->name('projects.reports.autotest-history');
+
     // Wildcard show — last among report routes
     Route::get('projects/{project}/reports/{type}', [ReportController::class, 'show'])
         ->name('projects.reports.show');
@@ -107,6 +111,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->shallow()
         ->parameters(['cases' => 'testCase']);
     Route::post('cases/{testCase}/copy', [TestCaseController::class, 'copy'])->name('cases.copy');
+    Route::get('cases/{testCase}/history', [TestCaseController::class, 'history'])->name('cases.history');
 
     // Lightweight JSON endpoints used by dynamic form pickers
     Route::get('api/suites/{suite}/sections', function (Suite $suite) {

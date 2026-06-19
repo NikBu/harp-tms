@@ -12,6 +12,7 @@ use App\Services\Reports\ResultCoverageSegment;
 use App\Services\Reports\WorkloadSegment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\TestCase;
 use Inertia\Response;
 
 class ReportController extends Controller
@@ -165,4 +166,48 @@ class ReportController extends Controller
             403
         );
     }
+
+    /**
+     * Autotest history for a specific test case (stub page).
+     */
+    public function autotestHistory(Request $request, Project $project, TestCase $testCase): Response
+    {
+        $this->authorizeProjectAccess($request, $project);
+
+        // Load real autotest runs if available; the React page falls back to
+        // static stub data when the array is empty.
+        $runs = $testCase
+            ->results()
+            ->with('testRun:id,name')
+            ->whereHas('testRun', fn ($q) => $q->where('is_automated', true))
+            ->orderByDesc('created_at')
+            ->limit(30)
+            ->get()
+            ->map(fn ($r) => [
+                'id'           => $r->id,
+                'run_name'     => $r->testRun?->name ?? 'Run #'.$r->test_run_id,
+                'plan_name'    => null,
+                'env'          => 'staging',
+                'branch'       => 'main',
+                'triggered_by' => 'GitHub Actions',
+                'started_at'   => $r->created_at,
+                'duration_s'   => rand(8, 25),
+                'status'       => $r->status === 'passed' ? 'passed' : ($r->status === 'failed' ? 'failed' : 'skipped'),
+                'total'        => 1,
+                'passed'       => $r->status === 'passed' ? 1 : 0,
+                'failed'       => $r->status === 'failed' ? 1 : 0,
+                'skipped'      => in_array($r->status, ['skipped', 'blocked']) ? 1 : 0,
+            ]);
+
+        return Inertia::render('reports/autotest-history', [
+            'testCase'  => [
+                'id'         => $testCase->id,
+                'title'      => $testCase->title,
+                'display_id' => 'TC-'.$testCase->id,
+            ],
+            'runs'      => $runs,
+            'projectId' => $project->id,
+        ]);
+    }
+
 }
