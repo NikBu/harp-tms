@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             // DemoSeeder::class,
             BetaGammaSeeder::class,
             DefectSeeder::class,
+            DemoSeeder::class,
         ]);
     }
 }

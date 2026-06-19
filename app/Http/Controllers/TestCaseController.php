@@ -658,7 +658,7 @@ class TestCaseController extends Controller
         if ($s > 0) { $parts[] = "{$s}s"; }
         return implode(' ', $parts);
     }
-}
+
 
     // ── History (stub) ─────────────────────────────────────────────────────────
 
