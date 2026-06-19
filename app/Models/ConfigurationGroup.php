@@ -28,6 +28,6 @@ class ConfigurationGroup extends Model
      */
     public function configurations(): HasMany
     {
-        return $this->hasMany(Configuration::class);
+        return $this->hasMany(Configuration::class, 'group_id');
     }
 }
