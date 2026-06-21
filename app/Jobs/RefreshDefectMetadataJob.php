@@ -12,7 +12,7 @@ use Throwable;
 
 class RefreshDefectMetadataJob implements ShouldQueue
 {
-    use Queueable, InteractsWithQueue;
+    use InteractsWithQueue, Queueable;
 
     public int $tries = 3;
 
@@ -32,16 +32,16 @@ class RefreshDefectMetadataJob implements ShouldQueue
         }
 
         $client = $factory->make($integration);
-        $issue  = $client->findIssue($this->defect->external_id);
+        $issue = $client->findIssue($this->defect->external_id);
 
         if ($issue === null) {
             return;
         }
 
         $this->defect->update([
-            'title'              => $issue['title'],
-            'status'             => $issue['status'],
-            'cached_metadata'    => $issue,
+            'title' => $issue['title'],
+            'status' => $issue['status'],
+            'cached_metadata' => $issue,
             'cache_refreshed_at' => now(),
         ]);
     }

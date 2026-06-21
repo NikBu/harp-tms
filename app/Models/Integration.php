@@ -24,9 +24,9 @@ class Integration extends Model
     protected function casts(): array
     {
         return [
-            'config'      => 'array',
+            'config' => 'array',
             'credentials' => 'encrypted:array',
-            'is_active'   => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 

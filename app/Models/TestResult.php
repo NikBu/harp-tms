@@ -27,7 +27,7 @@ class TestResult extends Model
     protected function casts(): array
     {
         return [
-            'elapsed'    => 'integer',
+            'elapsed' => 'integer',
             'created_at' => 'datetime',
         ];
     }

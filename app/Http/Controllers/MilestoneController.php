@@ -26,9 +26,9 @@ class MilestoneController extends Controller
             ->get();
 
         return Inertia::render('milestones/index', [
-            'project'    => $project,
+            'project' => $project,
             'milestones' => $milestones,
-            'statuses'   => Milestone::STATUSES,
+            'statuses' => Milestone::STATUSES,
         ]);
     }
 
@@ -43,9 +43,9 @@ class MilestoneController extends Controller
             ->get(['id', 'name']);
 
         return Inertia::render('milestones/form', [
-            'project'   => $project,
-            'parents'   => $parents,
-            'statuses'  => Milestone::STATUSES,
+            'project' => $project,
+            'parents' => $parents,
+            'statuses' => Milestone::STATUSES,
             'milestone' => null,
         ]);
     }
@@ -62,6 +62,7 @@ class MilestoneController extends Controller
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('milestones.created')]);
+
         return to_route('milestones.show', $milestone);
     }
 
@@ -72,9 +73,9 @@ class MilestoneController extends Controller
         $milestone->load([
             'project',
             'parent:id,name',
-            'children'  => fn ($q) => $q->withCount(['testRuns', 'testPlans']),
+            'children' => fn ($q) => $q->withCount(['testRuns', 'testPlans']),
             'createdBy:id,name',
-            'testRuns'  => fn ($q) => $q->select(
+            'testRuns' => fn ($q) => $q->select(
                 'id', 'milestone_id', 'name', 'is_completed',
                 'passed_count', 'failed_count', 'blocked_count',
                 'untested_count', 'retest_count', 'skipped_count'
@@ -83,7 +84,7 @@ class MilestoneController extends Controller
 
         return Inertia::render('milestones/show', [
             'milestone' => $milestone,
-            'statuses'  => Milestone::STATUSES,
+            'statuses' => Milestone::STATUSES,
         ]);
     }
 
@@ -99,10 +100,10 @@ class MilestoneController extends Controller
             ->get(['id', 'name']);
 
         return Inertia::render('milestones/form', [
-            'project'   => $milestone->project,
+            'project' => $milestone->project,
             'milestone' => $milestone,
-            'parents'   => $parents,
-            'statuses'  => Milestone::STATUSES,
+            'parents' => $parents,
+            'statuses' => Milestone::STATUSES,
         ]);
     }
 
@@ -114,6 +115,7 @@ class MilestoneController extends Controller
         $milestone->update($validated);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('milestones.updated')]);
+
         return to_route('milestones.show', $milestone);
     }
 
@@ -125,6 +127,7 @@ class MilestoneController extends Controller
         $milestone->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('milestones.deleted')]);
+
         return to_route('projects.milestones.index', $projectId);
     }
 
@@ -136,10 +139,11 @@ class MilestoneController extends Controller
         $milestone->update([
             'is_completed' => true,
             'completed_at' => now(),
-            'status'       => 'completed',
+            'status' => 'completed',
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('milestones.completed')]);
+
         return back();
     }
 
@@ -151,10 +155,11 @@ class MilestoneController extends Controller
         $milestone->update([
             'is_completed' => false,
             'completed_at' => null,
-            'status'       => 'active',
+            'status' => 'active',
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('milestones.reopened')]);
+
         return back();
     }
 
@@ -165,13 +170,13 @@ class MilestoneController extends Controller
     private function validateMilestone(Request $request): array
     {
         return $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'refs'        => ['nullable', 'string', 'max:255'],
-            'status'      => ['required', 'string', 'in:'.implode(',', Milestone::STATUSES)],
-            'start_on'    => ['nullable', 'date'],
-            'due_on'      => ['nullable', 'date', 'after_or_equal:start_on'],
-            'parent_id'   => ['nullable', 'integer', 'exists:milestones,id'],
+            'refs' => ['nullable', 'string', 'max:255'],
+            'status' => ['required', 'string', 'in:'.implode(',', Milestone::STATUSES)],
+            'start_on' => ['nullable', 'date'],
+            'due_on' => ['nullable', 'date', 'after_or_equal:start_on'],
+            'parent_id' => ['nullable', 'integer', 'exists:milestones,id'],
         ]);
     }
 }

@@ -35,23 +35,23 @@ class ProjectDefectsController extends Controller
                 'test_cases.title as test_title',
             ])
             ->join('test_results', 'test_results.id', '=', 'defect_links.test_result_id')
-            ->join('test_runs',    'test_runs.id',    '=', 'test_results.run_id')
-            ->join('test_cases',   'test_cases.id',   '=', 'test_results.case_id')
+            ->join('test_runs', 'test_runs.id', '=', 'test_results.run_id')
+            ->join('test_cases', 'test_cases.id', '=', 'test_results.case_id')
             ->where('test_runs.project_id', $project->id)
             ->orderByDesc('defect_links.created_at')
             ->get()
             ->map(fn ($row) => [
-                'id'                 => $row->id,
-                'tracker_type'       => $row->tracker_type,
-                'external_id'        => $row->external_id,
-                'external_url'       => $row->external_url,
-                'title'              => $row->title,
-                'status'             => $row->status,
+                'id' => $row->id,
+                'tracker_type' => $row->tracker_type,
+                'external_id' => $row->external_id,
+                'external_url' => $row->external_url,
+                'title' => $row->title,
+                'status' => $row->status,
                 'cache_refreshed_at' => $row->cache_refreshed_at,
-                'test_result_id'     => $row->test_result_id,
-                'run_id'             => $row->run_id,
-                'run_title'          => $row->run_title,
-                'test_title'         => $row->test_title,
+                'test_result_id' => $row->test_result_id,
+                'run_id' => $row->run_id,
+                'run_title' => $row->run_title,
+                'test_title' => $row->test_title,
             ]);
 
         return Inertia::render('projects/defects/index', [

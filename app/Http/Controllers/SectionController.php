@@ -18,8 +18,8 @@ class SectionController extends Controller
         Gate::authorize('edit', $suite->project);
 
         $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'parent_id'   => ['nullable', 'integer', 'exists:sections,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'parent_id' => ['nullable', 'integer', 'exists:sections,id'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -39,7 +39,7 @@ class SectionController extends Controller
         Gate::authorize('edit', $section->suite->project);
 
         $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -62,8 +62,8 @@ class SectionController extends Controller
         Gate::authorize('edit', $project);
 
         $validated = $request->validate([
-            'items'            => ['required', 'array'],
-            'items.*.id'       => ['required', 'integer', 'exists:sections,id'],
+            'items' => ['required', 'array'],
+            'items.*.id' => ['required', 'integer', 'exists:sections,id'],
             'items.*.position' => ['required', 'integer'],
         ]);
 

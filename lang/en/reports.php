@@ -29,9 +29,9 @@ return [
     ],
     'export' => [
         'button' => 'Export',
-        'csv'  => 'Export as CSV',
+        'csv' => 'Export as CSV',
         'xlsx' => 'Export as XLSX',
-        'pdf'  => 'Export as PDF',
+        'pdf' => 'Export as PDF',
     ],
     'dashboard' => [
         'run_summary' => 'Test Run Summary',

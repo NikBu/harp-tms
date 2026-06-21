@@ -30,7 +30,7 @@ class TestPlanController extends Controller
 
         return Inertia::render('plans/index', [
             'project' => $project,
-            'plans'   => $plans,
+            'plans' => $plans,
         ]);
     }
 
@@ -39,11 +39,11 @@ class TestPlanController extends Controller
         Gate::authorize('manageRuns', $project);
 
         return Inertia::render('plans/form', [
-            'project'    => $project,
-            'plan'       => null,
+            'project' => $project,
+            'plan' => null,
             'milestones' => $project->milestones()->where('is_completed', false)->orderBy('due_on')->get(['id', 'name']),
-            'suites'     => $project->suites()->orderBy('name')->get(['id', 'name']),
-            'members'    => $project->members()->get(['users.id', 'users.name']),
+            'suites' => $project->suites()->orderBy('name')->get(['id', 'name']),
+            'members' => $project->members()->get(['users.id', 'users.name']),
         ]);
     }
 
@@ -54,16 +54,16 @@ class TestPlanController extends Controller
         $validated = $this->validatePlan($request);
 
         $entries = $request->validate([
-            'entries'                   => ['nullable', 'array'],
-            'entries.*.suite_id'        => ['required', 'integer', 'exists:suites,id'],
-            'entries.*.include_all'     => ['boolean'],
-            'entries.*.assigned_to'     => ['nullable', 'integer', 'exists:users,id'],
-            'entries.*.refs'            => ['nullable', 'string', 'max:255'],
-            'entries.*.description'     => ['nullable', 'string'],
-            'entries.*.start_on'        => ['nullable', 'date'],
-            'entries.*.end_on'          => ['nullable', 'date'],
-            'entries.*.case_ids'        => ['nullable', 'array'],
-            'entries.*.case_ids.*'      => ['integer', 'exists:test_cases,id'],
+            'entries' => ['nullable', 'array'],
+            'entries.*.suite_id' => ['required', 'integer', 'exists:suites,id'],
+            'entries.*.include_all' => ['boolean'],
+            'entries.*.assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'entries.*.refs' => ['nullable', 'string', 'max:255'],
+            'entries.*.description' => ['nullable', 'string'],
+            'entries.*.start_on' => ['nullable', 'date'],
+            'entries.*.end_on' => ['nullable', 'date'],
+            'entries.*.case_ids' => ['nullable', 'array'],
+            'entries.*.case_ids.*' => ['integer', 'exists:test_cases,id'],
         ])['entries'] ?? [];
 
         $plan = DB::transaction(function () use ($project, $validated, $entries): TestPlan {
@@ -76,22 +76,22 @@ class TestPlanController extends Controller
                 $includeAll = $entry['include_all'] ?? true;
 
                 $run = $project->testRuns()->create([
-                    'suite_id'    => $entry['suite_id'],
-                    'plan_id'     => $plan->id,
-                    'name'        => $plan->name,
+                    'suite_id' => $entry['suite_id'],
+                    'plan_id' => $plan->id,
+                    'name' => $plan->name,
                     'description' => $entry['description'] ?? null,
-                    'refs'        => $entry['refs'] ?? null,
+                    'refs' => $entry['refs'] ?? null,
                     'include_all' => $includeAll,
                     'assigned_to' => $entry['assigned_to'] ?? null,
-                    'created_by'  => Auth::id(),
+                    'created_by' => Auth::id(),
                     ...(Schema::hasColumn('test_runs', 'start_on') ? [
                         'start_on' => $entry['start_on'] ?? null,
-                        'end_on'   => $entry['end_on']   ?? null,
+                        'end_on' => $entry['end_on'] ?? null,
                     ] : []),
                 ]);
 
                 $plan->entries()->create([
-                    'run_id'      => $run->id,
+                    'run_id' => $run->id,
                     'assigned_to' => $entry['assigned_to'] ?? null,
                 ]);
 
@@ -110,6 +110,7 @@ class TestPlanController extends Controller
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('plans.created')]);
+
         return to_route('plans.show', $plan);
     }
 
@@ -137,7 +138,7 @@ class TestPlanController extends Controller
         ]);
 
         $attachedRunIds = $testPlan->entries->pluck('run_id');
-        $availableRuns  = $testPlan->project->testRuns()
+        $availableRuns = $testPlan->project->testRuns()
             ->whereNotIn('id', $attachedRunIds)
             ->where('is_completed', false)
             ->orderBy('name')
@@ -148,10 +149,10 @@ class TestPlanController extends Controller
             ->get(['id', 'name']);
 
         return Inertia::render('plans/show', [
-            'plan'          => $testPlan,
+            'plan' => $testPlan,
             'availableRuns' => $availableRuns,
-            'configGroups'  => $configGroups,
-            'members'       => $testPlan->project->members()->get(['users.id', 'users.name']),
+            'configGroups' => $configGroups,
+            'members' => $testPlan->project->members()->get(['users.id', 'users.name']),
         ]);
     }
 
@@ -160,11 +161,11 @@ class TestPlanController extends Controller
         Gate::authorize('manageRuns', $testPlan->project);
 
         return Inertia::render('plans/form', [
-            'project'    => $testPlan->project,
-            'plan'       => $testPlan,
+            'project' => $testPlan->project,
+            'plan' => $testPlan,
             'milestones' => $testPlan->project->milestones()->where('is_completed', false)->orderBy('due_on')->get(['id', 'name']),
-            'suites'     => $testPlan->project->suites()->orderBy('name')->get(['id', 'name']),
-            'members'    => $testPlan->project->members()->get(['users.id', 'users.name']),
+            'suites' => $testPlan->project->suites()->orderBy('name')->get(['id', 'name']),
+            'members' => $testPlan->project->members()->get(['users.id', 'users.name']),
         ]);
     }
 
@@ -175,6 +176,7 @@ class TestPlanController extends Controller
         $testPlan->update($this->validatePlan($request));
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('plans.updated')]);
+
         return to_route('plans.show', $testPlan);
     }
 
@@ -186,6 +188,7 @@ class TestPlanController extends Controller
         $testPlan->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('plans.deleted')]);
+
         return to_route('projects.plans.index', $projectId);
     }
 
@@ -197,6 +200,7 @@ class TestPlanController extends Controller
         $testPlan->update(['is_completed' => true, 'completed_at' => now()]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('plans.closed')]);
+
         return back();
     }
 
@@ -208,6 +212,7 @@ class TestPlanController extends Controller
         $testPlan->update(['is_completed' => false, 'completed_at' => null]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('plans.reopened')]);
+
         return back();
     }
 
@@ -217,9 +222,9 @@ class TestPlanController extends Controller
         abort_if($testPlan->is_completed, 422, __('plans.closed_error'));
 
         $validated = $request->validate([
-            'run_id'              => ['required', 'integer', 'exists:test_runs,id'],
-            'assigned_to'         => ['nullable', 'integer', 'exists:users,id'],
-            'configuration_ids'   => ['nullable', 'array'],
+            'run_id' => ['required', 'integer', 'exists:test_runs,id'],
+            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'configuration_ids' => ['nullable', 'array'],
             'configuration_ids.*' => ['integer', 'exists:configurations,id'],
         ]);
 
@@ -234,7 +239,7 @@ class TestPlanController extends Controller
 
         DB::transaction(function () use ($testPlan, $validated, $run): void {
             $entry = $testPlan->entries()->create([
-                'run_id'      => $validated['run_id'],
+                'run_id' => $validated['run_id'],
                 'assigned_to' => $validated['assigned_to'] ?? null,
             ]);
 
@@ -268,12 +273,12 @@ class TestPlanController extends Controller
     private function validatePlan(Request $request): array
     {
         return $request->validate([
-            'name'         => ['required', 'string', 'max:255'],
-            'description'  => ['nullable', 'string'],
-            'refs'         => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'refs' => ['nullable', 'string', 'max:255'],
             'milestone_id' => ['nullable', 'integer', 'exists:milestones,id'],
-            'start_on'     => ['nullable', 'date'],
-            'end_on'       => ['nullable', 'date', 'after_or_equal:start_on'],
+            'start_on' => ['nullable', 'date'],
+            'end_on' => ['nullable', 'date', 'after_or_equal:start_on'],
         ]);
     }
 }

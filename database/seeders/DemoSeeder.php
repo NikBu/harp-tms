@@ -16,6 +16,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -932,7 +933,7 @@ class DemoSeeder extends Seeder
      */
     private function finalizeRun(TestRun $run, bool $isCompleted): void
     {
-        /** @var \Illuminate\Support\Collection<string, int> $counts */
+        /** @var Collection<string, int> $counts */
         $counts = Test::where('run_id', $run->id)
             ->selectRaw('status, count(*) as cnt')
             ->groupBy('status')

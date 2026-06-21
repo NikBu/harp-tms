@@ -29,7 +29,7 @@ class SuiteController extends Controller
 
         return Inertia::render('suites/index', [
             'project' => $project,
-            'suites'  => $project->suites()->latest()->paginate(20),
+            'suites' => $project->suites()->latest()->paginate(20),
         ]);
     }
 
@@ -39,7 +39,7 @@ class SuiteController extends Controller
 
         if ($this->suiteCapReached($project)) {
             Inertia::flash('toast', [
-                'type'    => 'error',
+                'type' => 'error',
                 'message' => __('suites.single_mode_limit'),
             ]);
 
@@ -58,7 +58,7 @@ class SuiteController extends Controller
         abort_if($this->suiteCapReached($project), 422, __('suites.single_mode_limit'));
 
         $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -79,8 +79,8 @@ class SuiteController extends Controller
             ->whereNull('parent_id')
             ->orderBy('display_order')
             ->with([
-                'children'  => fn ($q) => $q->orderBy('display_order')
-                                            ->with(['testCases' => fn ($q2) => $q2->withCount('requirements')->with('assignedTo:id,name')]),
+                'children' => fn ($q) => $q->orderBy('display_order')
+                    ->with(['testCases' => fn ($q2) => $q2->withCount('requirements')->with('assignedTo:id,name')]),
                 'testCases' => fn ($q) => $q->withCount('requirements')->with('assignedTo:id,name'),
             ])
             ->get();
@@ -97,23 +97,23 @@ class SuiteController extends Controller
 
         if ($unsectionedCases->isNotEmpty()) {
             $virtualSection = [
-                'id'          => 0,
-                'suite_id'    => $suite->id,
-                'parent_id'   => null,
-                'name'        => __('sections.default_name'),
+                'id' => 0,
+                'suite_id' => $suite->id,
+                'parent_id' => null,
+                'name' => __('sections.default_name'),
                 'description' => null,
-                'testCases'   => $unsectionedCases->map(fn (TestCase $tc) => $this->transformSuiteCase($tc))->values()->all(),
-                'children'    => [],
+                'testCases' => $unsectionedCases->map(fn (TestCase $tc) => $this->transformSuiteCase($tc))->values()->all(),
+                'children' => [],
             ];
 
             $serialized = collect([$virtualSection])->concat($serialized);
         }
 
         return Inertia::render('suites/show', [
-            'project'  => $suite->project,
-            'suite'    => $suite,
+            'project' => $suite->project,
+            'suite' => $suite,
             'sections' => $serialized->values()->all(),
-            'members'  => $suite->project->members()->get(['users.id', 'users.name']),
+            'members' => $suite->project->members()->get(['users.id', 'users.name']),
         ]);
     }
 
@@ -123,7 +123,7 @@ class SuiteController extends Controller
 
         return Inertia::render('suites/edit', [
             'project' => $suite->project,
-            'suite'   => $suite,
+            'suite' => $suite,
         ]);
     }
 
@@ -132,7 +132,7 @@ class SuiteController extends Controller
         Gate::authorize('edit', $suite->project);
 
         $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -177,16 +177,16 @@ class SuiteController extends Controller
     private function serializeSection(Section $section): array
     {
         return [
-            'id'          => $section->id,
-            'suite_id'    => $section->suite_id,
-            'parent_id'   => $section->parent_id,
-            'name'        => $section->name,
+            'id' => $section->id,
+            'suite_id' => $section->suite_id,
+            'parent_id' => $section->parent_id,
+            'name' => $section->name,
             'description' => $section->description,
-            'testCases'   => $section->testCases
+            'testCases' => $section->testCases
                 ->map(fn (TestCase $tc) => $this->transformSuiteCase($tc))
                 ->values()
                 ->all(),
-            'children'    => $section->children
+            'children' => $section->children
                 ->map(fn (Section $child) => $this->serializeSection($child))
                 ->values()
                 ->all(),
@@ -199,18 +199,18 @@ class SuiteController extends Controller
         $priorityInt = array_search($testCase->priority, TestCaseController::PRIORITY_MAP, true);
 
         return [
-            'id'               => $testCase->id,
-            'suite_id'         => $testCase->suite_id,
-            'section_id'       => $testCase->section_id,
-            'title'            => $testCase->title,
-            'template'         => $templateInt === false ? 2 : (int) $templateInt,
-            'type_id'          => $testCase->case_type,
-            'priority_id'      => $priorityInt === false ? null : (int) $priorityInt,
-            'estimate'         => $testCase->estimate,
-            'references'       => $testCase->refs,
+            'id' => $testCase->id,
+            'suite_id' => $testCase->suite_id,
+            'section_id' => $testCase->section_id,
+            'title' => $testCase->title,
+            'template' => $templateInt === false ? 2 : (int) $templateInt,
+            'type_id' => $testCase->case_type,
+            'priority_id' => $priorityInt === false ? null : (int) $priorityInt,
+            'estimate' => $testCase->estimate,
+            'references' => $testCase->refs,
             'has_requirements' => ($testCase->requirements_count ?? 0) > 0,
-            'assigned_to_id'   => $testCase->assigned_to,
-            'assignee_name'    => $testCase->assignedTo?->name,
+            'assigned_to_id' => $testCase->assigned_to,
+            'assignee_name' => $testCase->assignedTo?->name,
         ];
     }
 }

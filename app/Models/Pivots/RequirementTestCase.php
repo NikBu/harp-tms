@@ -48,7 +48,7 @@ class RequirementTestCase extends Pivot
     /**
      * @return BelongsTo<TestCase, $this>
      */
-    public function testCase(): BelongsTo
+    public function test_case(): BelongsTo
     {
         return $this->belongsTo(TestCase::class);
     }

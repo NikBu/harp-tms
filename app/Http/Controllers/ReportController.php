@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\TestCase;
 use App\Services\Reports\ActivitySummarySegment;
 use App\Services\Reports\CaseDistributionSegment;
 use App\Services\Reports\CrossProjectSegment;
@@ -12,7 +13,6 @@ use App\Services\Reports\ResultCoverageSegment;
 use App\Services\Reports\WorkloadSegment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\TestCase;
 use Inertia\Response;
 
 class ReportController extends Controller
@@ -31,13 +31,13 @@ class ReportController extends Controller
     ];
 
     public function __construct(
-        private readonly DashboardSegment         $dashboard,
-        private readonly ActivitySummarySegment   $activity,
-        private readonly ResultCoverageSegment    $coverage,
-        private readonly CaseDistributionSegment  $distribution,
+        private readonly DashboardSegment $dashboard,
+        private readonly ActivitySummarySegment $activity,
+        private readonly ResultCoverageSegment $coverage,
+        private readonly CaseDistributionSegment $distribution,
         private readonly MilestoneProgressSegment $milestones,
-        private readonly WorkloadSegment          $workload,
-        private readonly CrossProjectSegment      $crossProject,
+        private readonly WorkloadSegment $workload,
+        private readonly CrossProjectSegment $crossProject,
     ) {}
 
     /**
@@ -56,11 +56,11 @@ class ReportController extends Controller
             : $user->projects()->orderBy('name')->get(['projects.id', 'projects.name']);
 
         return Inertia::render('reports/index', [
-            'project'     => $project->only(['id', 'name']),
-            'projects'    => $projects,
+            'project' => $project->only(['id', 'name']),
+            'projects' => $projects,
             'reportTypes' => self::REPORT_TYPES,
-            'isGlobal'    => false,
-            'dashboard'   => $this->dashboard->compute(collect([$project])),
+            'isGlobal' => false,
+            'dashboard' => $this->dashboard->compute(collect([$project])),
         ]);
     }
 
@@ -76,11 +76,11 @@ class ReportController extends Controller
             : $user->projects()->orderBy('name')->get(['projects.id', 'projects.name']);
 
         return Inertia::render('reports/index', [
-            'project'     => null,
-            'projects'    => $projects,
+            'project' => null,
+            'projects' => $projects,
             'reportTypes' => self::REPORT_TYPES,
-            'isGlobal'    => true,
-            'dashboard'   => $this->dashboard->compute($projects),
+            'isGlobal' => true,
+            'dashboard' => $this->dashboard->compute($projects),
         ]);
     }
 
@@ -96,8 +96,8 @@ class ReportController extends Controller
 
         return Inertia::render('reports/show', [
             'project' => $project->only(['id', 'name']),
-            'type'    => $type,
-            'data'    => $this->computeReport([$project->id], $type),
+            'type' => $type,
+            'data' => $this->computeReport([$project->id], $type),
         ]);
     }
 
@@ -109,9 +109,9 @@ class ReportController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'project_ids'   => ['required', 'array', 'min:1'],
+            'project_ids' => ['required', 'array', 'min:1'],
             'project_ids.*' => ['integer', 'exists:projects,id'],
-            'type'          => ['required', 'string'],
+            'type' => ['required', 'string'],
         ]);
 
         abort_if(collect(self::REPORT_TYPES)->firstWhere('key', $validated['type']) === null, 404);
@@ -126,8 +126,8 @@ class ReportController extends Controller
         $results = $this->crossProject->compute($accessible, $validated['type']);
 
         return Inertia::render('reports/cross-project', [
-            'results'  => $results,
-            'type'     => $validated['type'],
+            'results' => $results,
+            'type' => $validated['type'],
             'projects' => $accessible->map->only(['id', 'name'])->values(),
         ]);
     }
@@ -141,12 +141,12 @@ class ReportController extends Controller
     private function computeReport(array $projectIds, string $type): ?array
     {
         return match ($type) {
-            'activity_summary'   => $this->activity->compute($projectIds),
-            'result_coverage'    => $this->coverage->compute($projectIds),
-            'case_distribution'  => $this->distribution->compute($projectIds),
+            'activity_summary' => $this->activity->compute($projectIds),
+            'result_coverage' => $this->coverage->compute($projectIds),
+            'case_distribution' => $this->distribution->compute($projectIds),
             'milestone_progress' => $this->milestones->compute($projectIds),
-            'workload'           => $this->workload->compute($projectIds),
-            default              => null,
+            'workload' => $this->workload->compute($projectIds),
+            default => null,
         };
     }
 
@@ -183,30 +183,29 @@ class ReportController extends Controller
             ->limit(30)
             ->get()
             ->map(fn ($r) => [
-                'id'           => $r->id,
-                'run_name'     => $r->run?->name ?? 'Run #'.$r->run_id,
-                'plan_name'    => null,
-                'env'          => 'staging',
-                'branch'       => 'main',
+                'id' => $r->id,
+                'run_name' => $r->run?->name ?? 'Run #'.$r->run_id,
+                'plan_name' => null,
+                'env' => 'staging',
+                'branch' => 'main',
                 'triggered_by' => 'GitHub Actions',
-                'started_at'   => $r->created_at,
-                'duration_s'   => rand(8, 25),
-                'status'       => $r->status === 'passed' ? 'passed' : ($r->status === 'failed' ? 'failed' : 'skipped'),
-                'total'        => 1,
-                'passed'       => $r->status === 'passed' ? 1 : 0,
-                'failed'       => $r->status === 'failed' ? 1 : 0,
-                'skipped'      => in_array($r->status, ['skipped', 'blocked']) ? 1 : 0,
+                'started_at' => $r->created_at,
+                'duration_s' => rand(8, 25),
+                'status' => $r->status === 'passed' ? 'passed' : ($r->status === 'failed' ? 'failed' : 'skipped'),
+                'total' => 1,
+                'passed' => $r->status === 'passed' ? 1 : 0,
+                'failed' => $r->status === 'failed' ? 1 : 0,
+                'skipped' => in_array($r->status, ['skipped', 'blocked']) ? 1 : 0,
             ]);
 
         return Inertia::render('reports/autotest-history', [
-            'testCase'  => [
-                'id'         => $testCase->id,
-                'title'      => $testCase->title,
+            'testCase' => [
+                'id' => $testCase->id,
+                'title' => $testCase->title,
                 'display_id' => 'TC-'.$testCase->id,
             ],
-            'runs'      => $runs,
+            'runs' => $runs,
             'projectId' => $project->id,
         ]);
     }
-
 }

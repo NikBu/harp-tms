@@ -25,26 +25,26 @@ class DefectLinkController extends Controller
 
         $data = $request->validate([
             'integration_id' => ['required', 'integer', 'exists:integrations,id'],
-            'external_id'    => ['required', 'string', 'max:255'],
+            'external_id' => ['required', 'string', 'max:255'],
         ]);
 
         $integration = Integration::findOrFail($data['integration_id']);
-        $client      = $this->factory->make($integration);
-        $issue       = $client->findIssue($data['external_id']);
+        $client = $this->factory->make($integration);
+        $issue = $client->findIssue($data['external_id']);
 
         if ($issue === null) {
             return response()->json(['message' => __('defects.issue_not_found')], 422);
         }
 
         $link = $result->defectLinks()->create([
-            'tracker_type'       => $integration->provider,
-            'external_id'        => $issue['id'],
-            'external_url'       => $issue['url'],
-            'title'              => $issue['title'],
-            'status'             => $issue['status'],
-            'cached_metadata'    => $issue,
+            'tracker_type' => $integration->provider,
+            'external_id' => $issue['id'],
+            'external_url' => $issue['url'],
+            'title' => $issue['title'],
+            'status' => $issue['status'],
+            'cached_metadata' => $issue,
             'cache_refreshed_at' => now(),
-            'created_by'         => $request->user()->id,
+            'created_by' => $request->user()->id,
         ]);
 
         return response()->json($link, 201);
@@ -60,29 +60,29 @@ class DefectLinkController extends Controller
 
         $data = $request->validate([
             'integration_id' => ['required', 'integer', 'exists:integrations,id'],
-            'title'          => ['required', 'string', 'max:500'],
-            'description'    => ['nullable', 'string'],
-            'priority'       => ['nullable', 'string', 'max:64'],
+            'title' => ['required', 'string', 'max:500'],
+            'description' => ['nullable', 'string'],
+            'priority' => ['nullable', 'string', 'max:64'],
         ]);
 
         $integration = Integration::findOrFail($data['integration_id']);
-        $client      = $this->factory->make($integration);
+        $client = $this->factory->make($integration);
 
         $issue = $client->createIssue([
-            'title'       => $data['title'],
+            'title' => $data['title'],
             'description' => $data['description'] ?? '',
-            'priority'    => $data['priority'] ?? null,
+            'priority' => $data['priority'] ?? null,
         ]);
 
         $link = $result->defectLinks()->create([
-            'tracker_type'       => $integration->provider,
-            'external_id'        => $issue['id'],
-            'external_url'       => $issue['url'],
-            'title'              => $issue['title'],
-            'status'             => $issue['status'],
-            'cached_metadata'    => $issue,
+            'tracker_type' => $integration->provider,
+            'external_id' => $issue['id'],
+            'external_url' => $issue['url'],
+            'title' => $issue['title'],
+            'status' => $issue['status'],
+            'cached_metadata' => $issue,
             'cache_refreshed_at' => now(),
-            'created_by'         => $request->user()->id,
+            'created_by' => $request->user()->id,
         ]);
 
         return response()->json($link, 201);
@@ -126,7 +126,7 @@ class DefectLinkController extends Controller
         Gate::authorize('view', $integration->project);
 
         $client = $this->factory->make($integration);
-        $issue  = $client->findIssue($issueId);
+        $issue = $client->findIssue($issueId);
 
         if ($issue === null) {
             return response()->json(['message' => __('defects.issue_not_found')], 404);

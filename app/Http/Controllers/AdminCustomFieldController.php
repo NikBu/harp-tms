@@ -40,23 +40,23 @@ class AdminCustomFieldController extends Controller
             ->orderBy('label')
             ->get()
             ->map(fn (CustomField $f) => [
-                'id'          => $f->id,
+                'id' => $f->id,
                 'system_name' => $f->system_name,
-                'label'       => $f->label,
+                'label' => $f->label,
                 'description' => $f->description,
-                'field_type'  => $f->field_type,
-                'applies_to'  => $f->applies_to,
-                'is_global'   => $f->is_global,
-                'options'     => $f->options->map(fn (CustomFieldOption $o) => [
-                    'id'            => $o->id,
-                    'option_key'    => $o->option_key,
-                    'option_label'  => $o->option_label,
+                'field_type' => $f->field_type,
+                'applies_to' => $f->applies_to,
+                'is_global' => $f->is_global,
+                'options' => $f->options->map(fn (CustomFieldOption $o) => [
+                    'id' => $o->id,
+                    'option_key' => $o->option_key,
+                    'option_label' => $o->option_label,
                     'display_order' => $o->display_order,
                 ])->values(),
-                'projects'    => $f->projects->map(fn (Project $p) => [
-                    'id'            => $p->id,
-                    'name'          => $p->name,
-                    'is_required'   => (bool) $p->pivot->is_required,
+                'projects' => $f->projects->map(fn (Project $p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'is_required' => (bool) $p->pivot->is_required,
                     'display_order' => $p->pivot->display_order,
                     'default_value' => $p->pivot->default_value,
                 ])->values(),
@@ -68,9 +68,9 @@ class AdminCustomFieldController extends Controller
             : 'admin/customizations/result-fields';
 
         return Inertia::render($page, [
-            'fields'      => $fields,
+            'fields' => $fields,
             'field_types' => self::FIELD_TYPES,
-            'projects'    => $projects,
+            'projects' => $projects,
         ]);
     }
 
@@ -94,23 +94,23 @@ class AdminCustomFieldController extends Controller
 
         $data = $request->validate([
             'system_name' => ['required', 'string', 'max:64', 'regex:/^[a-z][a-z0-9_]*$/', 'unique:custom_fields,system_name'],
-            'label'       => ['required', 'string', 'max:120'],
+            'label' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string', 'max:500'],
-            'field_type'  => ['required', Rule::in(self::FIELD_TYPES)],
-            'applies_to'  => ['required', Rule::in(['cases', 'results'])],
-            'is_global'   => ['boolean'],
-            'options'     => ['nullable', 'array'],
+            'field_type' => ['required', Rule::in(self::FIELD_TYPES)],
+            'applies_to' => ['required', Rule::in(['cases', 'results'])],
+            'is_global' => ['boolean'],
+            'options' => ['nullable', 'array'],
             'options.*.option_label' => ['required', 'string', 'max:120'],
         ]);
 
         $field = CustomField::create([
             'system_name' => $data['system_name'],
-            'label'       => $data['label'],
+            'label' => $data['label'],
             'description' => $data['description'] ?? null,
-            'field_type'  => $data['field_type'],
-            'applies_to'  => $data['applies_to'],
-            'is_global'   => $data['is_global'] ?? false,
-            'created_by'  => $request->user()->getKey(),
+            'field_type' => $data['field_type'],
+            'applies_to' => $data['applies_to'],
+            'is_global' => $data['is_global'] ?? false,
+            'created_by' => $request->user()->getKey(),
         ]);
 
         $this->syncOptions($field, $data['options'] ?? []);
@@ -125,18 +125,18 @@ class AdminCustomFieldController extends Controller
         $this->authorizeAdmin($request);
 
         $data = $request->validate([
-            'label'       => ['required', 'string', 'max:120'],
+            'label' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string', 'max:500'],
-            'is_global'   => ['boolean'],
-            'options'     => ['nullable', 'array'],
-            'options.*.id'           => ['nullable', 'integer'],
+            'is_global' => ['boolean'],
+            'options' => ['nullable', 'array'],
+            'options.*.id' => ['nullable', 'integer'],
             'options.*.option_label' => ['required', 'string', 'max:120'],
         ]);
 
         $customField->update([
-            'label'       => $data['label'],
+            'label' => $data['label'],
             'description' => $data['description'] ?? null,
-            'is_global'   => $data['is_global'] ?? $customField->is_global,
+            'is_global' => $data['is_global'] ?? $customField->is_global,
         ]);
 
         $this->syncOptions($customField, $data['options'] ?? []);
@@ -166,6 +166,7 @@ class AdminCustomFieldController extends Controller
     {
         if (! in_array($field->field_type, ['dropdown', 'multi_select'], true)) {
             $field->options()->delete();
+
             return;
         }
 
@@ -176,17 +177,18 @@ class AdminCustomFieldController extends Controller
                 $opt = CustomFieldOption::find($item['id']);
                 if ($opt && $opt->custom_field_id === $field->id) {
                     $opt->update([
-                        'option_label'  => $item['option_label'],
+                        'option_label' => $item['option_label'],
                         'display_order' => $order,
                     ]);
                     $keepIds[] = $opt->id;
+
                     continue;
                 }
             }
 
             $opt = $field->options()->create([
-                'option_key'    => $order + 1,
-                'option_label'  => $item['option_label'],
+                'option_key' => $order + 1,
+                'option_label' => $item['option_label'],
                 'display_order' => $order,
             ]);
             $keepIds[] = $opt->id;

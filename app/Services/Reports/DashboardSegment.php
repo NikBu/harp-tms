@@ -2,6 +2,7 @@
 
 namespace App\Services\Reports;
 
+use App\Models\Project;
 use App\Models\TestCase;
 use App\Models\TestResult;
 use Illuminate\Support\Carbon;
@@ -14,14 +15,14 @@ use Illuminate\Support\Facades\DB;
 class DashboardSegment
 {
     public function __construct(
-        private readonly ActivitySummarySegment  $activity,
-        private readonly ResultCoverageSegment   $coverage,
+        private readonly ActivitySummarySegment $activity,
+        private readonly ResultCoverageSegment $coverage,
         private readonly MilestoneProgressSegment $milestones,
-        private readonly WorkloadSegment          $workload,
+        private readonly WorkloadSegment $workload,
     ) {}
 
     /**
-     * @param  Collection<int, \App\Models\Project>  $projects
+     * @param  Collection<int, Project>  $projects
      * @return array<string, mixed>
      */
     public function compute(Collection $projects): array
@@ -45,33 +46,33 @@ class DashboardSegment
             ]);
 
         $statusTotals = [
-            'passed'   => (int) $runs->sum('passed_count'),
-            'failed'   => (int) $runs->sum('failed_count'),
-            'blocked'  => (int) $runs->sum('blocked_count'),
+            'passed' => (int) $runs->sum('passed_count'),
+            'failed' => (int) $runs->sum('failed_count'),
+            'blocked' => (int) $runs->sum('blocked_count'),
             'untested' => (int) $runs->sum('untested_count'),
-            'retest'   => (int) $runs->sum('retest_count'),
-            'skipped'  => (int) $runs->sum('skipped_count'),
+            'retest' => (int) $runs->sum('retest_count'),
+            'skipped' => (int) $runs->sum('skipped_count'),
         ];
 
         $runRows = $runs->map(function ($run): array {
             $breakdown = [
-                'passed'   => (int) $run->passed_count,
-                'failed'   => (int) $run->failed_count,
-                'blocked'  => (int) $run->blocked_count,
+                'passed' => (int) $run->passed_count,
+                'failed' => (int) $run->failed_count,
+                'blocked' => (int) $run->blocked_count,
                 'untested' => (int) $run->untested_count,
-                'retest'   => (int) $run->retest_count,
-                'skipped'  => (int) $run->skipped_count,
+                'retest' => (int) $run->retest_count,
+                'skipped' => (int) $run->skipped_count,
             ];
             $total = array_sum($breakdown);
 
             return [
-                'id'           => $run->id,
-                'name'         => $run->name,
+                'id' => $run->id,
+                'name' => $run->name,
                 'is_completed' => (bool) $run->is_completed,
-                'created_at'   => $run->created_at,
-                'total'        => $total,
-                'breakdown'    => $breakdown,
-                'pct_passed'   => $total > 0 ? round(($breakdown['passed'] / $total) * 100, 1) : 0.0,
+                'created_at' => $run->created_at,
+                'total' => $total,
+                'breakdown' => $breakdown,
+                'pct_passed' => $total > 0 ? round(($breakdown['passed'] / $total) * 100, 1) : 0.0,
             ];
         })->values()->all();
 
@@ -96,7 +97,7 @@ class DashboardSegment
             $activity[$day] = $row;
         }
         foreach ($activityRaw as $entry) {
-            $day    = (string) $entry->day;
+            $day = (string) $entry->day;
             $status = (string) $entry->status;
             if (isset($activity[$day]) && in_array($status, $statuses, true)) {
                 $activity[$day][$status] = (int) $entry->cnt;
@@ -134,7 +135,7 @@ class DashboardSegment
             ->get(['test_cases.id as case_id', 'sections.name as section_name']);
 
         $sectionCoverage = [];
-        $defaultSection  = __('sections.default_name');
+        $defaultSection = __('sections.default_name');
         foreach ($sectionRaw as $r) {
             $name = $r->section_name ?? $defaultSection;
             if (! isset($sectionCoverage[$name])) {
@@ -158,26 +159,26 @@ class DashboardSegment
         // ── Workload ─────────────────────────────────────────────────────────
         $workloadData = $this->workload->compute($projectIds);
         $workload = array_map(fn ($m) => [
-            'user_id'        => $m['user_id'],
-            'name'           => $m['name'],
+            'user_id' => $m['user_id'],
+            'name' => $m['name'],
             'assigned_cases' => $m['assigned_cases'],
             'results_logged' => $m['results_logged'],
         ], $workloadData['members']);
 
         return [
-            'statusTotals'    => $statusTotals,
-            'runs'            => $runRows,
-            'activity'        => $activity,
-            'coverage'        => [
-                'total'    => $totalCases,
-                'run'      => $casesRun,
+            'statusTotals' => $statusTotals,
+            'runs' => $runRows,
+            'activity' => $activity,
+            'coverage' => [
+                'total' => $totalCases,
+                'run' => $casesRun,
                 'untested' => $neverRun,
-                'pct'      => $totalCases > 0 ? round(($casesRun / $totalCases) * 100, 1) : 0.0,
+                'pct' => $totalCases > 0 ? round(($casesRun / $totalCases) * 100, 1) : 0.0,
             ],
             'sectionCoverage' => $sectionCoverage,
-            'milestones'      => $milestoneData['milestones'],
-            'workload'        => $workload,
-            'hasMilestones'   => count($milestoneData['milestones']) > 0,
+            'milestones' => $milestoneData['milestones'],
+            'workload' => $workload,
+            'hasMilestones' => count($milestoneData['milestones']) > 0,
         ];
     }
 
@@ -185,14 +186,14 @@ class DashboardSegment
     private function empty(): array
     {
         return [
-            'statusTotals'    => ['passed' => 0, 'failed' => 0, 'blocked' => 0, 'untested' => 0, 'retest' => 0, 'skipped' => 0],
-            'runs'            => [],
-            'activity'        => [],
-            'coverage'        => ['total' => 0, 'run' => 0, 'untested' => 0, 'pct' => 0.0],
+            'statusTotals' => ['passed' => 0, 'failed' => 0, 'blocked' => 0, 'untested' => 0, 'retest' => 0, 'skipped' => 0],
+            'runs' => [],
+            'activity' => [],
+            'coverage' => ['total' => 0, 'run' => 0, 'untested' => 0, 'pct' => 0.0],
             'sectionCoverage' => [],
-            'milestones'      => [],
-            'workload'        => [],
-            'hasMilestones'   => false,
+            'milestones' => [],
+            'workload' => [],
+            'hasMilestones' => false,
         ];
     }
 }
