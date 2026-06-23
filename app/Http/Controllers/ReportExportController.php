@@ -12,7 +12,6 @@ use App\Services\Reports\WorkloadSegment;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -29,12 +28,12 @@ class ReportExportController extends Controller
     ];
 
     public function __construct(
-        private readonly ActivitySummarySegment   $activity,
-        private readonly ResultCoverageSegment    $coverage,
-        private readonly CaseDistributionSegment  $distribution,
+        private readonly ActivitySummarySegment $activity,
+        private readonly ResultCoverageSegment $coverage,
+        private readonly CaseDistributionSegment $distribution,
         private readonly MilestoneProgressSegment $milestones,
-        private readonly WorkloadSegment          $workload,
-        private readonly DashboardSegment         $dashboard,
+        private readonly WorkloadSegment $workload,
+        private readonly DashboardSegment $dashboard,
     ) {}
 
     // ── Per-report export ─────────────────────────────────────────────────
@@ -51,16 +50,16 @@ class ReportExportController extends Controller
         $format = strtolower($request->query('format', 'csv'));
         abort_unless(in_array($format, ['csv', 'xlsx', 'pdf'], true), 422);
 
-        $data   = $this->compute([$project->id], $type);
-        $rows   = $this->flatten($type, $data);
-        $title  = $this->reportTitle($type);
-        $stamp  = Carbon::now()->format('Ymd_His');
-        $name   = "{$project->name}_{$type}_{$stamp}";
+        $data = $this->compute([$project->id], $type);
+        $rows = $this->flatten($type, $data);
+        $title = $this->reportTitle($type);
+        $stamp = Carbon::now()->format('Ymd_His');
+        $name = "{$project->name}_{$type}_{$stamp}";
 
         return match ($format) {
-            'csv'  => $this->csv($rows, $title, $name),
+            'csv' => $this->csv($rows, $title, $name),
             'xlsx' => $this->xlsx($rows, $title, $name),
-            'pdf'  => $this->pdf($rows, $title, $project->name, $name),
+            'pdf' => $this->pdf($rows, $title, $project->name, $name),
         };
     }
 
@@ -75,10 +74,10 @@ class ReportExportController extends Controller
                 abort_unless($project->members()->whereKey($user->getKey())->exists(), 403);
             }
             $projects = collect([$project]);
-            $scope    = $project->name;
+            $scope = $project->name;
         } else {
             $projects = $user->hasRole('admin')
-                ? \App\Models\Project::orderBy('name')->get()
+                ? Project::orderBy('name')->get()
                 : $user->projects()->orderBy('name')->get();
             $scope = 'Global';
         }
@@ -86,13 +85,13 @@ class ReportExportController extends Controller
         $format = strtolower($request->query('format', 'xlsx'));
         abort_unless(in_array($format, ['xlsx', 'pdf'], true), 422);
 
-        $data  = $this->dashboard->compute($projects);
+        $data = $this->dashboard->compute($projects);
         $stamp = Carbon::now()->format('Ymd_His');
-        $name  = "{$scope}_dashboard_{$stamp}";
+        $name = "{$scope}_dashboard_{$stamp}";
 
         return match ($format) {
             'xlsx' => $this->dashboardXlsx($data, $scope, $name),
-            'pdf'  => $this->dashboardPdf($data, $scope, $name),
+            'pdf' => $this->dashboardPdf($data, $scope, $name),
         };
     }
 
@@ -101,11 +100,11 @@ class ReportExportController extends Controller
     private function compute(array $ids, string $type): array
     {
         return match ($type) {
-            'activity_summary'   => $this->activity->compute($ids),
-            'result_coverage'    => $this->coverage->compute($ids),
-            'case_distribution'  => $this->distribution->compute($ids),
+            'activity_summary' => $this->activity->compute($ids),
+            'result_coverage' => $this->coverage->compute($ids),
+            'case_distribution' => $this->distribution->compute($ids),
             'milestone_progress' => $this->milestones->compute($ids),
-            'workload'           => $this->workload->compute($ids),
+            'workload' => $this->workload->compute($ids),
         };
     }
 
@@ -118,12 +117,12 @@ class ReportExportController extends Controller
     private function flatten(string $type, array $data): array
     {
         return match ($type) {
-            'activity_summary'   => $this->flattenActivity($data),
-            'result_coverage'    => $this->flattenCoverage($data),
-            'case_distribution'  => $this->flattenDistribution($data),
+            'activity_summary' => $this->flattenActivity($data),
+            'result_coverage' => $this->flattenCoverage($data),
+            'case_distribution' => $this->flattenDistribution($data),
             'milestone_progress' => $this->flattenMilestones($data),
-            'workload'           => $this->flattenWorkload($data),
-            default              => [[]],
+            'workload' => $this->flattenWorkload($data),
+            default => [[]],
         };
     }
 
@@ -135,6 +134,7 @@ class ReportExportController extends Controller
         }
         $rows[] = [];
         $rows[] = ['Totals', $d['totals']['new_cases'] ?? 0, $d['totals']['updated_cases'] ?? 0, $d['totals']['new_results'] ?? 0];
+
         return $rows;
     }
 
@@ -146,14 +146,15 @@ class ReportExportController extends Controller
         }
         $rows[] = [];
         $rows[] = ['Total Cases', $d['coverage']['total'] ?? 0];
-        $rows[] = ['Cases Run',   $d['coverage']['run']   ?? 0];
+        $rows[] = ['Cases Run',   $d['coverage']['run'] ?? 0];
         $rows[] = ['Never Run',   $d['coverage']['untested'] ?? 0];
-        $rows[] = ['Coverage %',  ($d['coverage']['pct'] ?? 0) . '%'];
+        $rows[] = ['Coverage %',  ($d['coverage']['pct'] ?? 0).'%'];
         $rows[] = [];
         $rows[] = ['Priority', 'Passed', 'Total', 'Pass Rate %'];
         foreach ($d['by_priority'] ?? [] as $prio => $v) {
-            $rows[] = [ucfirst($prio), $v['passed'] ?? 0, $v['total'] ?? 0, ($v['pct'] ?? 0) . '%'];
+            $rows[] = [ucfirst($prio), $v['passed'] ?? 0, $v['total'] ?? 0, ($v['pct'] ?? 0).'%'];
         }
+
         return $rows;
     }
 
@@ -173,6 +174,7 @@ class ReportExportController extends Controller
         foreach ($d['byType'] ?? [] as $item) {
             $rows[] = ['Type', $item['type'], $item['count']];
         }
+
         return $rows;
     }
 
@@ -184,7 +186,7 @@ class ReportExportController extends Controller
                 $m['name'],
                 $m['due_on'] ?? '',
                 $m['run_count'],
-                $m['pct_done'] . '%',
+                $m['pct_done'].'%',
                 $m['is_completed'] ? 'Yes' : 'No',
             ];
         }
@@ -193,7 +195,8 @@ class ReportExportController extends Controller
         $rows[] = ['Total Milestones', $t['total'] ?? 0, '', '', ''];
         $rows[] = ['Completed',        $t['completed'] ?? 0, '', '', ''];
         $rows[] = ['Active',           $t['active'] ?? 0, '', '', ''];
-        $rows[] = ['Overall Done %',   ($t['pct_done'] ?? 0) . '%', '', '', ''];
+        $rows[] = ['Overall Done %',   ($t['pct_done'] ?? 0).'%', '', '', ''];
+
         return $rows;
     }
 
@@ -206,15 +209,16 @@ class ReportExportController extends Controller
                 $m['name'],
                 $m['assigned_cases'],
                 $m['results_logged'],
-                $m['pass_rate'] . '%',
-                $s['passed']   ?? 0,
-                $s['failed']   ?? 0,
-                $s['blocked']  ?? 0,
-                $s['retest']   ?? 0,
-                $s['skipped']  ?? 0,
+                $m['pass_rate'].'%',
+                $s['passed'] ?? 0,
+                $s['failed'] ?? 0,
+                $s['blocked'] ?? 0,
+                $s['retest'] ?? 0,
+                $s['skipped'] ?? 0,
                 $s['untested'] ?? 0,
             ];
         }
+
         return $rows;
     }
 
@@ -232,7 +236,7 @@ class ReportExportController extends Controller
                 $r['name'],
                 $b['passed'], $b['failed'], $b['blocked'],
                 $b['retest'], $b['skipped'], $b['untested'],
-                $r['total'], $r['pct_passed'] . '%',
+                $r['total'], $r['pct_passed'].'%',
                 $r['is_completed'] ? 'Yes' : 'No',
                 $r['created_at'] ? Carbon::parse($r['created_at'])->format('Y-m-d') : '',
             ];
@@ -255,7 +259,7 @@ class ReportExportController extends Controller
             ['Total Cases',   $d['coverage']['total']],
             ['Cases Run',     $d['coverage']['run']],
             ['Never Run',     $d['coverage']['untested']],
-            ['Coverage %',    $d['coverage']['pct'] . '%'],
+            ['Coverage %',    $d['coverage']['pct'].'%'],
             [],
             ['Section', 'Tested', 'Untested'],
         ];
@@ -271,7 +275,7 @@ class ReportExportController extends Controller
                 $m['name'],
                 $m['due_on'] ?? '',
                 $m['run_count'],
-                $m['pct_done'] . '%',
+                $m['pct_done'].'%',
                 $m['is_completed'] ? 'Yes' : 'No',
             ];
         }
@@ -290,12 +294,12 @@ class ReportExportController extends Controller
     private function dashboardXlsx(array $data, string $scope, string $name): StreamedResponse
     {
         $sheets = $this->dashboardSheets($data);
-        $xml    = $this->buildMultiSheetXlsx($sheets);
+        $xml = $this->buildMultiSheetXlsx($sheets);
 
         return response()->streamDownload(function () use ($xml) {
             echo $xml;
         }, "{$name}.xlsx", [
-            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => "attachment; filename=\"{$name}.xlsx\"",
         ]);
     }
@@ -303,24 +307,27 @@ class ReportExportController extends Controller
     private function dashboardPdf(array $data, string $scope, string $name): StreamedResponse
     {
         $sheets = $this->dashboardSheets($data);
-        $date   = Carbon::now()->format('d M Y, H:i');
+        $date = Carbon::now()->format('d M Y, H:i');
 
         $sections = '';
         foreach ($sheets as $title => $rows) {
-            if (empty($rows)) continue;
+            if (empty($rows)) {
+                continue;
+            }
             $thead = '';
             $tbody = '';
             foreach ($rows as $i => $row) {
                 if ($row === []) {
                     $tbody .= '<tr class="spacer"><td colspan="99"></td></tr>';
+
                     continue;
                 }
-                $cells = array_map(fn($v) => '<td>' . htmlspecialchars((string)$v, ENT_HTML5) . '</td>', $row);
+                $cells = array_map(fn ($v) => '<td>'.htmlspecialchars((string) $v, ENT_HTML5).'</td>', $row);
                 if ($i === 0) {
-                    $hcells = array_map(fn($v) => '<th>' . htmlspecialchars((string)$v, ENT_HTML5) . '</th>', $row);
-                    $thead  = '<thead><tr>' . implode('', $hcells) . '</tr></thead>';
+                    $hcells = array_map(fn ($v) => '<th>'.htmlspecialchars((string) $v, ENT_HTML5).'</th>', $row);
+                    $thead = '<thead><tr>'.implode('', $hcells).'</tr></thead>';
                 } else {
-                    $tbody .= '<tr>' . implode('', $cells) . '</tr>';
+                    $tbody .= '<tr>'.implode('', $cells).'</tr>';
                 }
             }
             $sections .= "<h2>{$title}</h2><table>{$thead}<tbody>{$tbody}</tbody></table>";
@@ -366,21 +373,21 @@ HTML;
         return response()->streamDownload(function () use ($html) {
             echo $html;
         }, "{$name}.html", [
-            'Content-Type'        => 'text/html; charset=UTF-8',
+            'Content-Type' => 'text/html; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$name}.html\"",
-            'X-Export-Note'       => 'Open in browser and use Print > Save as PDF',
+            'X-Export-Note' => 'Open in browser and use Print > Save as PDF',
         ]);
     }
 
     private function reportTitle(string $type): string
     {
         return match ($type) {
-            'activity_summary'   => 'Activity Summary',
-            'result_coverage'    => 'Result Coverage',
-            'case_distribution'  => 'Case Distribution',
+            'activity_summary' => 'Activity Summary',
+            'result_coverage' => 'Result Coverage',
+            'case_distribution' => 'Case Distribution',
             'milestone_progress' => 'Milestone Progress',
-            'workload'           => 'Workload',
-            default              => ucwords(str_replace('_', ' ', $type)),
+            'workload' => 'Workload',
+            default => ucwords(str_replace('_', ' ', $type)),
         };
     }
 
@@ -396,7 +403,7 @@ HTML;
             }
             fclose($out);
         }, "{$name}.csv", [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$name}.csv\"",
         ]);
     }
@@ -408,7 +415,7 @@ HTML;
         return response()->streamDownload(function () use ($xml) {
             echo $xml;
         }, "{$name}.xlsx", [
-            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Content-Disposition' => "attachment; filename=\"{$name}.xlsx\"",
         ]);
     }
@@ -420,9 +427,9 @@ HTML;
         return response()->streamDownload(function () use ($html) {
             echo $html;
         }, "{$name}.html", [
-            'Content-Type'        => 'text/html; charset=UTF-8',
+            'Content-Type' => 'text/html; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$name}.html\"",
-            'X-Export-Note'       => 'Open in browser and use Print > Save as PDF',
+            'X-Export-Note' => 'Open in browser and use Print > Save as PDF',
         ]);
     }
 
@@ -437,8 +444,8 @@ HTML;
 
     private function buildMultiSheetXlsx(array $sheets): string
     {
-        $strings   = [];
-        $strIndex  = [];
+        $strings = [];
+        $strIndex = [];
         $sheetXmls = [];
         $sheetNames = array_keys($sheets);
 
@@ -448,15 +455,17 @@ HTML;
                 $cellRow = [];
                 foreach ($row as $ci => $val) {
                     $col = $this->xlsxColLetter($ci);
-                    $ref = $col . ($ri + 1);
+                    $ref = $col.($ri + 1);
                     if ($val === '' || $val === null) {
-                        $cellRow[] = "<c r=\"{$ref}\"/>"; continue;
+                        $cellRow[] = "<c r=\"{$ref}\"/>";
+
+                        continue;
                     }
-                    if (is_numeric($val) && !str_starts_with((string)$val, '0')) {
+                    if (is_numeric($val) && ! str_starts_with((string) $val, '0')) {
                         $cellRow[] = "<c r=\"{$ref}\" t=\"n\"><v>{$val}</v></c>";
                     } else {
-                        $s = (string)$val;
-                        if (!isset($strIndex[$s])) {
+                        $s = (string) $val;
+                        if (! isset($strIndex[$s])) {
                             $strIndex[$s] = count($strings);
                             $strings[] = htmlspecialchars($s, ENT_XML1);
                         }
@@ -465,70 +474,70 @@ HTML;
                     }
                 }
                 $rNum = $ri + 1;
-                $cellRows[] = '<row r="' . $rNum . '">' . implode('', $cellRow) . '</row>';
+                $cellRows[] = '<row r="'.$rNum.'">'.implode('', $cellRow).'</row>';
             }
             $sheetXmls[$sheetName] = implode('', $cellRows);
         }
 
-        $sharedStrings = implode('', array_map(fn($s) => "<si><t>{$s}</t></si>", $strings));
+        $sharedStrings = implode('', array_map(fn ($s) => "<si><t>{$s}</t></si>", $strings));
         $ssCount = count($strings);
 
         $tmp = tempnam(sys_get_temp_dir(), 'xlsx');
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         $zip->open($tmp, \ZipArchive::OVERWRITE);
 
         // Build sheet entries
-        $sheetEntries  = '';
-        $sheetRels     = '';
-        $overrides     = '';
+        $sheetEntries = '';
+        $sheetRels = '';
+        $overrides = '';
         $i = 1;
         foreach ($sheetNames as $name) {
             $safe = htmlspecialchars($name, ENT_XML1);
             $sheetEntries .= "<sheet name=\"{$safe}\" sheetId=\"{$i}\" r:id=\"rId{$i}\"/>";
-            $sheetRels    .= "<Relationship Id=\"rId{$i}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet{$i}.xml\"/>";
-            $overrides    .= "<Override PartName=\"/xl/worksheets/sheet{$i}.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>";
+            $sheetRels .= "<Relationship Id=\"rId{$i}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet{$i}.xml\"/>";
+            $overrides .= "<Override PartName=\"/xl/worksheets/sheet{$i}.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>";
             $i++;
         }
         $ssRel = "<Relationship Id=\"rId{$i}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings\" Target=\"sharedStrings.xml\"/>";
 
         $zip->addFromString('[Content_Types].xml',
-            '<?xml version="1.0" encoding="UTF-8"?>' .
-            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' .
-            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' .
-            '<Default Extension="xml" ContentType="application/xml"/>' .
-            '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' .
-            '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>' .
-            $overrides .
+            '<?xml version="1.0" encoding="UTF-8"?>'.
+            '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'.
+            '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'.
+            '<Default Extension="xml" ContentType="application/xml"/>'.
+            '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'.
+            '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'.
+            $overrides.
             '</Types>');
 
         $zip->addFromString('_rels/.rels',
-            '<?xml version="1.0" encoding="UTF-8"?>' .
-            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' .
-            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' .
+            '<?xml version="1.0" encoding="UTF-8"?>'.
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'.
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'.
             '</Relationships>');
 
         $zip->addFromString('xl/_rels/workbook.xml.rels',
-            '<?xml version="1.0" encoding="UTF-8"?>' .
-            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' .
-            $sheetRels . $ssRel .
+            '<?xml version="1.0" encoding="UTF-8"?>'.
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'.
+            $sheetRels.$ssRel.
             '</Relationships>');
 
         $zip->addFromString('xl/workbook.xml',
-            '<?xml version="1.0" encoding="UTF-8"?>' .
-            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' .
-            "<sheets>{$sheetEntries}</sheets>" .
+            '<?xml version="1.0" encoding="UTF-8"?>'.
+            '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'.
+            "<sheets>{$sheetEntries}</sheets>".
             '</workbook>');
 
         $zip->addFromString('xl/sharedStrings.xml',
-            '<?xml version="1.0" encoding="UTF-8"?>' .
+            '<?xml version="1.0" encoding="UTF-8"?>'.
             "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"{$ssCount}\" uniqueCount=\"{$ssCount}\">{$sharedStrings}</sst>");
 
         $sheetIdx = 1;
         foreach ($sheetXmls as $sheetData) {
             $zip->addFromString("xl/worksheets/sheet{$sheetIdx}.xml",
-                '<?xml version="1.0" encoding="UTF-8"?>' .
-                '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' .
-                "<sheetData>{$sheetData}</sheetData>" .
+                '<?xml version="1.0" encoding="UTF-8"?>'.
+                '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'.
+                "<sheetData>{$sheetData}</sheetData>".
                 '</worksheet>');
             $sheetIdx++;
         }
@@ -536,6 +545,7 @@ HTML;
         $zip->close();
         $content = file_get_contents($tmp);
         unlink($tmp);
+
         return $content;
     }
 
@@ -544,9 +554,10 @@ HTML;
         $letter = '';
         $n++;
         while ($n > 0) {
-            $letter = chr(65 + ($n - 1) % 26) . $letter;
+            $letter = chr(65 + ($n - 1) % 26).$letter;
             $n = intdiv($n - 1, 26);
         }
+
         return $letter;
     }
 
@@ -561,13 +572,14 @@ HTML;
         foreach ($rows as $i => $row) {
             if ($row === []) {
                 $tbody .= '<tr class="spacer"><td colspan="99"></td></tr>';
+
                 continue;
             }
-            $cells = array_map(fn($v) => '<td>' . htmlspecialchars((string)$v, ENT_HTML5) . '</td>', $row);
-            $line  = '<tr>' . implode('', $cells) . '</tr>';
+            $cells = array_map(fn ($v) => '<td>'.htmlspecialchars((string) $v, ENT_HTML5).'</td>', $row);
+            $line = '<tr>'.implode('', $cells).'</tr>';
             if ($i === 0) {
-                $hcells = array_map(fn($v) => '<th>' . htmlspecialchars((string)$v, ENT_HTML5) . '</th>', $row);
-                $thead  = '<thead><tr>' . implode('', $hcells) . '</tr></thead>';
+                $hcells = array_map(fn ($v) => '<th>'.htmlspecialchars((string) $v, ENT_HTML5).'</th>', $row);
+                $thead = '<thead><tr>'.implode('', $hcells).'</tr></thead>';
             } else {
                 $tbody .= $line;
             }

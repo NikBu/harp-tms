@@ -31,7 +31,7 @@ class TestRunController extends Controller
 
         return Inertia::render('runs/index', [
             'project' => $project,
-            'runs'    => $runs,
+            'runs' => $runs,
         ]);
     }
 
@@ -40,10 +40,10 @@ class TestRunController extends Controller
         Gate::authorize('manageRuns', $project);
 
         return Inertia::render('runs/create', [
-            'project'       => $project,
-            'suites'        => $project->suites()->orderBy('name')->get(['id', 'name']),
-            'milestones'    => $project->milestones()->where('is_completed', false)->orderBy('due_on')->get(['id', 'name']),
-            'members'       => $project->members()->get(['users.id', 'users.name']),
+            'project' => $project,
+            'suites' => $project->suites()->orderBy('name')->get(['id', 'name']),
+            'milestones' => $project->milestones()->where('is_completed', false)->orderBy('due_on')->get(['id', 'name']),
+            'members' => $project->members()->get(['users.id', 'users.name']),
             'currentUserId' => Auth::id(),
         ]);
     }
@@ -53,34 +53,34 @@ class TestRunController extends Controller
         Gate::authorize('manageRuns', $project);
 
         $validated = $request->validate([
-            'name'            => ['required', 'string', 'max:255'],
-            'description'     => ['nullable', 'string'],
-            'refs'            => ['nullable', 'string', 'max:255'],
-            'suite_id'        => ['nullable', 'integer', 'exists:suites,id'],
-            'milestone_id'    => ['nullable', 'integer', 'exists:milestones,id'],
-            'assigned_to'     => ['nullable', 'integer', 'exists:users,id'],
-            'start_on'        => ['nullable', 'date'],
-            'end_on'          => ['nullable', 'date', 'after_or_equal:start_on'],
-            'include_all'     => ['boolean'],
-            'case_ids'        => ['nullable', 'array'],
-            'case_ids.*'      => ['integer', 'exists:test_cases,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'refs' => ['nullable', 'string', 'max:255'],
+            'suite_id' => ['nullable', 'integer', 'exists:suites,id'],
+            'milestone_id' => ['nullable', 'integer', 'exists:milestones,id'],
+            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'start_on' => ['nullable', 'date'],
+            'end_on' => ['nullable', 'date', 'after_or_equal:start_on'],
+            'include_all' => ['boolean'],
+            'case_ids' => ['nullable', 'array'],
+            'case_ids.*' => ['integer', 'exists:test_cases,id'],
             'filter_priority' => ['nullable', 'string'],
-            'filter_type'     => ['nullable', 'string'],
+            'filter_type' => ['nullable', 'string'],
         ]);
 
         $run = DB::transaction(function () use ($project, $validated): TestRun {
             $run = $project->testRuns()->create([
-                'suite_id'     => $validated['suite_id'] ?? null,
+                'suite_id' => $validated['suite_id'] ?? null,
                 'milestone_id' => $validated['milestone_id'] ?? null,
-                'name'         => $validated['name'],
-                'description'  => $validated['description'] ?? null,
-                'refs'         => $validated['refs'] ?? null,
-                'include_all'  => $validated['include_all'] ?? false,
-                'assigned_to'  => $validated['assigned_to'] ?? null,
-                'created_by'   => Auth::id(),
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'refs' => $validated['refs'] ?? null,
+                'include_all' => $validated['include_all'] ?? false,
+                'assigned_to' => $validated['assigned_to'] ?? null,
+                'created_by' => Auth::id(),
                 ...(Schema::hasColumn('test_runs', 'start_on') ? [
                     'start_on' => $validated['start_on'] ?? null,
-                    'end_on'   => $validated['end_on'] ?? null,
+                    'end_on' => $validated['end_on'] ?? null,
                 ] : []),
             ]);
 
@@ -112,10 +112,12 @@ class TestRunController extends Controller
 
         if ($request->boolean('add_and_create')) {
             Inertia::flash('toast', ['type' => 'success', 'message' => __('runs.created')]);
+
             return to_route('projects.runs.create', $project);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('runs.created')]);
+
         return to_route('runs.show', $run);
     }
 
@@ -149,8 +151,8 @@ class TestRunController extends Controller
             ->get(['id', 'integration_type as provider', 'name']);
 
         return Inertia::render('runs/show', [
-            'run'          => $testRun,
-            'statuses'     => Test::STATUSES,
+            'run' => $testRun,
+            'statuses' => Test::STATUSES,
             'integrations' => $integrations,
         ]);
     }
@@ -163,6 +165,7 @@ class TestRunController extends Controller
         $testRun->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('runs.deleted')]);
+
         return to_route('projects.runs.index', $projectId);
     }
 
@@ -178,6 +181,7 @@ class TestRunController extends Controller
         $testRun->update(['is_completed' => true, 'completed_at' => now()]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('runs.closed')]);
+
         return back();
     }
 
@@ -189,6 +193,7 @@ class TestRunController extends Controller
         $testRun->update(['is_completed' => false, 'completed_at' => null]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('runs.reopened')]);
+
         return back();
     }
 
@@ -200,10 +205,10 @@ class TestRunController extends Controller
         abort_unless($test->run_id === $testRun->id, 404);
 
         $validated = $request->validate([
-            'status'     => ['required', 'string', 'in:'.implode(',', Test::STATUSES)],
-            'comment'    => ['nullable', 'string'],
-            'elapsed'    => ['nullable', 'string', 'max:50'],
-            'version'    => ['nullable', 'string', 'max:100'],
+            'status' => ['required', 'string', 'in:'.implode(',', Test::STATUSES)],
+            'comment' => ['nullable', 'string'],
+            'elapsed' => ['nullable', 'string', 'max:50'],
+            'version' => ['nullable', 'string', 'max:100'],
             'defect_url' => ['nullable', 'url', 'max:2048'],
         ]);
 
@@ -211,12 +216,12 @@ class TestRunController extends Controller
 
         DB::transaction(function () use ($test, $testRun, $validated, $elapsedSeconds): void {
             $test->results()->create([
-                'run_id'     => $testRun->id,
-                'case_id'    => $test->case_id,
-                'status'     => $validated['status'],
-                'comment'    => $validated['comment'] ?? null,
-                'elapsed'    => $elapsedSeconds,
-                'version'    => $validated['version'] ?? null,
+                'run_id' => $testRun->id,
+                'case_id' => $test->case_id,
+                'status' => $validated['status'],
+                'comment' => $validated['comment'] ?? null,
+                'elapsed' => $elapsedSeconds,
+                'version' => $validated['version'] ?? null,
                 'defect_url' => $validated['defect_url'] ?? null,
                 'created_by' => Auth::id(),
             ]);
@@ -235,16 +240,16 @@ class TestRunController extends Controller
         abort_if($testRun->is_completed, 422, __('runs.closed_error'));
 
         $validated = $request->validate([
-            'results'              => ['required', 'array', 'min:1', 'max:500'],
-            'results.*.test_id'    => ['required', 'integer', 'exists:tests,id'],
-            'results.*.status'     => ['required', 'string', 'in:'.implode(',', Test::STATUSES)],
-            'results.*.comment'    => ['nullable', 'string'],
-            'results.*.elapsed'    => ['nullable', 'string', 'max:50'],
-            'results.*.version'    => ['nullable', 'string', 'max:100'],
+            'results' => ['required', 'array', 'min:1', 'max:500'],
+            'results.*.test_id' => ['required', 'integer', 'exists:tests,id'],
+            'results.*.status' => ['required', 'string', 'in:'.implode(',', Test::STATUSES)],
+            'results.*.comment' => ['nullable', 'string'],
+            'results.*.elapsed' => ['nullable', 'string', 'max:50'],
+            'results.*.version' => ['nullable', 'string', 'max:100'],
             'results.*.defect_url' => ['nullable', 'url', 'max:2048'],
         ]);
 
-        $testIds  = collect($validated['results'])->pluck('test_id')->unique();
+        $testIds = collect($validated['results'])->pluck('test_id')->unique();
         $testsMap = Test::whereIn('id', $testIds)->where('run_id', $testRun->id)->get()->keyBy('id');
 
         $foreignIds = $testIds->diff($testsMap->keys());
@@ -252,16 +257,16 @@ class TestRunController extends Controller
 
         DB::transaction(function () use ($validated, $testRun, $testsMap): void {
             foreach ($validated['results'] as $item) {
-                $test    = $testsMap[$item['test_id']];
+                $test = $testsMap[$item['test_id']];
                 $elapsed = $this->parseElapsed($item['elapsed'] ?? null);
 
                 $test->results()->create([
-                    'run_id'     => $testRun->id,
-                    'case_id'    => $test->case_id,
-                    'status'     => $item['status'],
-                    'comment'    => $item['comment'] ?? null,
-                    'elapsed'    => $elapsed,
-                    'version'    => $item['version'] ?? null,
+                    'run_id' => $testRun->id,
+                    'case_id' => $test->case_id,
+                    'status' => $item['status'],
+                    'comment' => $item['comment'] ?? null,
+                    'elapsed' => $elapsed,
+                    'version' => $item['version'] ?? null,
                     'defect_url' => $item['defect_url'] ?? null,
                     'created_by' => Auth::id(),
                 ]);
@@ -273,6 +278,7 @@ class TestRunController extends Controller
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('runs.bulk_results_saved')]);
+
         return back();
     }
 
@@ -302,11 +308,11 @@ class TestRunController extends Controller
                 }
 
                 $test->results()->create([
-                    'run_id'     => $testRun->id,
-                    'case_id'    => $test->case_id,
-                    'status'     => $status,
-                    'comment'    => $item['comment'] ?? null,
-                    'version'    => $item['version'] ?? null,
+                    'run_id' => $testRun->id,
+                    'case_id' => $test->case_id,
+                    'status' => $status,
+                    'comment' => $item['comment'] ?? null,
+                    'version' => $item['version'] ?? null,
                     'created_by' => Auth::id(),
                 ]);
 
@@ -331,12 +337,12 @@ class TestRunController extends Controller
             ->pluck('cnt', 'status');
 
         $testRun->update([
-            'passed_count'   => $counts['passed']   ?? 0,
-            'failed_count'   => $counts['failed']   ?? 0,
-            'blocked_count'  => $counts['blocked']  ?? 0,
+            'passed_count' => $counts['passed'] ?? 0,
+            'failed_count' => $counts['failed'] ?? 0,
+            'blocked_count' => $counts['blocked'] ?? 0,
             'untested_count' => $counts['untested'] ?? 0,
-            'retest_count'   => $counts['retest']   ?? 0,
-            'skipped_count'  => $counts['skipped']  ?? 0,
+            'retest_count' => $counts['retest'] ?? 0,
+            'skipped_count' => $counts['skipped'] ?? 0,
         ]);
     }
 
@@ -355,12 +361,12 @@ class TestRunController extends Controller
 
         if (preg_match('/(\d+)\s*h/i', $value, $m)) {
             $seconds += (int) $m[1] * 3600;
-            $matched   = true;
+            $matched = true;
         }
 
         if (preg_match('/(\d+)\s*m/i', $value, $m)) {
             $seconds += (int) $m[1] * 60;
-            $matched   = true;
+            $matched = true;
         }
 
         return $matched ? $seconds : null;

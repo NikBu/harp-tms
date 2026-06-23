@@ -3,11 +3,10 @@
 namespace App\Providers;
 
 use App\Models\Project;
-use App\Models\User;
 use App\Models\Requirement;
+use App\Models\User;
 use App\Observers\RequirementObserver;
 use App\Policies\ProjectPolicy;
-
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;

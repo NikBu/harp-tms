@@ -15,6 +15,7 @@ class ProjectSettingsTest extends TestCase
     {
         $project = Project::factory()->create();
         $project->members()->attach($admin->id, ['role' => 'project_admin']);
+
         return $project;
     }
 
@@ -22,7 +23,7 @@ class ProjectSettingsTest extends TestCase
 
     public function test_project_admin_can_view_settings(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $project = $this->makeProject($user);
 
         $this->actingAs($user)
@@ -33,10 +34,10 @@ class ProjectSettingsTest extends TestCase
 
     public function test_non_admin_member_cannot_view_settings(): void
     {
-        $owner  = User::factory()->create();
+        $owner = User::factory()->create();
         $member = User::factory()->create();
         $project = Project::factory()->create();
-        $project->members()->attach($owner->id,  ['role' => 'project_admin']);
+        $project->members()->attach($owner->id, ['role' => 'project_admin']);
         $project->members()->attach($member->id, ['role' => 'tester']);
 
         $this->actingAs($member)
@@ -47,7 +48,7 @@ class ProjectSettingsTest extends TestCase
     public function test_non_member_cannot_view_settings(): void
     {
         $project = Project::factory()->create();
-        $other   = User::factory()->create();
+        $other = User::factory()->create();
 
         $this->actingAs($other)
             ->get("/projects/{$project->id}/settings")
@@ -58,13 +59,13 @@ class ProjectSettingsTest extends TestCase
 
     public function test_admin_can_update_general_settings(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $project = $this->makeProject($user);
 
         $this->actingAs($user)
             ->patch("/projects/{$project->id}/settings/general", [
-                'name'              => 'Renamed Project',
-                'description'       => 'New desc',
+                'name' => 'Renamed Project',
+                'description' => 'New desc',
                 'show_announcement' => false,
             ])
             ->assertRedirect();
@@ -74,7 +75,7 @@ class ProjectSettingsTest extends TestCase
 
     public function test_general_settings_requires_name(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $project = $this->makeProject($user);
 
         $this->actingAs($user)
@@ -86,30 +87,30 @@ class ProjectSettingsTest extends TestCase
 
     public function test_admin_can_add_member(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $project = $this->makeProject($user);
         $newUser = User::factory()->create();
 
         $this->actingAs($user)
             ->patch("/projects/{$project->id}/settings/members", [
                 'user_id' => $newUser->id,
-                'role'    => 'tester',
+                'role' => 'tester',
             ])
             ->assertRedirect();
 
         $this->assertDatabaseHas('project_user', [
             'project_id' => $project->id,
-            'user_id'    => $newUser->id,
-            'role'       => 'tester',
+            'user_id' => $newUser->id,
+            'role' => 'tester',
         ]);
     }
 
     public function test_admin_can_change_member_role(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $project = Project::factory()->create();
-        $project->members()->attach($admin->id,  ['role' => 'project_admin']);
+        $project->members()->attach($admin->id, ['role' => 'project_admin']);
         $project->members()->attach($member->id, ['role' => 'tester']);
 
         $this->actingAs($admin)
@@ -120,14 +121,14 @@ class ProjectSettingsTest extends TestCase
 
         $this->assertDatabaseHas('project_user', [
             'project_id' => $project->id,
-            'user_id'    => $member->id,
-            'role'       => 'lead',
+            'user_id' => $member->id,
+            'role' => 'lead',
         ]);
     }
 
     public function test_cannot_demote_last_admin(): void
     {
-        $admin   = User::factory()->create();
+        $admin = User::factory()->create();
         $project = $this->makeProject($admin);
 
         $this->actingAs($admin)
@@ -139,10 +140,10 @@ class ProjectSettingsTest extends TestCase
 
     public function test_admin_can_remove_member(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $project = Project::factory()->create();
-        $project->members()->attach($admin->id,  ['role' => 'project_admin']);
+        $project->members()->attach($admin->id, ['role' => 'project_admin']);
         $project->members()->attach($member->id, ['role' => 'tester']);
 
         $this->actingAs($admin)
@@ -151,13 +152,13 @@ class ProjectSettingsTest extends TestCase
 
         $this->assertDatabaseMissing('project_user', [
             'project_id' => $project->id,
-            'user_id'    => $member->id,
+            'user_id' => $member->id,
         ]);
     }
 
     public function test_cannot_remove_last_admin(): void
     {
-        $admin   = User::factory()->create();
+        $admin = User::factory()->create();
         $project = $this->makeProject($admin);
         // Add a second non-admin so admin isn't the only member
         $member = User::factory()->create();
@@ -184,10 +185,10 @@ class ProjectSettingsTest extends TestCase
 
     public function test_role_must_be_valid(): void
     {
-        $admin  = User::factory()->create();
+        $admin = User::factory()->create();
         $member = User::factory()->create();
         $project = Project::factory()->create();
-        $project->members()->attach($admin->id,  ['role' => 'project_admin']);
+        $project->members()->attach($admin->id, ['role' => 'project_admin']);
         $project->members()->attach($member->id, ['role' => 'tester']);
 
         $this->actingAs($admin)

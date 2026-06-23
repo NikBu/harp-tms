@@ -11,6 +11,7 @@ use App\Models\TestCase;
 use App\Models\TestCaseCustomValue;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -41,6 +42,7 @@ class TestCaseController extends Controller
     public function index(Request $request, Suite $suite): RedirectResponse
     {
         Gate::authorize('view', $suite->project);
+
         return to_route('suites.show', $suite);
     }
 
@@ -54,11 +56,11 @@ class TestCaseController extends Controller
             ->get(['id', 'display_id', 'title', 'priority', 'status']);
 
         return Inertia::render('test-cases/create', [
-            'suite'         => $suite->load('project'),
-            'suites'        => $suite->project->suites()->orderBy('name')->get(['id', 'name']),
-            'sections'      => $suite->sections()->orderBy('display_order')->get(),
-            'requirements'  => $requirements,
-            'members'       => $suite->project->members()->get(['users.id', 'users.name']),
+            'suite' => $suite->load('project'),
+            'suites' => $suite->project->suites()->orderBy('name')->get(['id', 'name']),
+            'sections' => $suite->sections()->orderBy('display_order')->get(),
+            'requirements' => $requirements,
+            'members' => $suite->project->members()->get(['users.id', 'users.name']),
             'custom_fields' => $this->loadCaseFields($suite->project_id),
         ]);
     }
@@ -73,12 +75,12 @@ class TestCaseController extends Controller
             ->get(['id', 'display_id', 'title', 'priority', 'status']);
 
         return Inertia::render('test-cases/create', [
-            'suite'         => null,
-            'suites'        => $project->suites()->orderBy('name')->get(['id', 'name']),
-            'project'       => $project->only(['id', 'name']),
-            'sections'      => [],
-            'requirements'  => $requirements,
-            'members'       => $project->members()->get(['users.id', 'users.name']),
+            'suite' => null,
+            'suites' => $project->suites()->orderBy('name')->get(['id', 'name']),
+            'project' => $project->only(['id', 'name']),
+            'sections' => [],
+            'requirements' => $requirements,
+            'members' => $project->members()->get(['users.id', 'users.name']),
             'custom_fields' => $this->loadCaseFields($project->id),
         ]);
     }
@@ -88,7 +90,7 @@ class TestCaseController extends Controller
         Gate::authorize('edit', $suite->project);
 
         $validated = $this->validateCase($request);
-        $template  = self::TEMPLATE_MAP[$validated['template']];
+        $template = self::TEMPLATE_MAP[$validated['template']];
 
         DB::transaction(function () use ($request, $suite, $validated, $template): TestCase {
             $testCase = $suite->testCases()->create($this->mapAttributes($validated, [
@@ -145,10 +147,10 @@ class TestCaseController extends Controller
             ->get(['id', 'display_id', 'title', 'priority', 'status']);
 
         return Inertia::render('test-cases/edit', [
-            'testCase'      => $this->transformCase($testCase),
-            'suite'         => $testCase->suite->load('project'),
-            'sections'      => $testCase->suite->sections()->orderBy('display_order')->get(),
-            'requirements'  => $requirements,
+            'testCase' => $this->transformCase($testCase),
+            'suite' => $testCase->suite->load('project'),
+            'sections' => $testCase->suite->sections()->orderBy('display_order')->get(),
+            'requirements' => $requirements,
             'custom_fields' => $this->loadCaseFields($testCase->suite->project_id),
         ]);
     }
@@ -158,7 +160,7 @@ class TestCaseController extends Controller
         Gate::authorize('edit', $testCase->suite->project);
 
         $validated = $this->validateCase($request);
-        $template  = self::TEMPLATE_MAP[$validated['template']];
+        $template = self::TEMPLATE_MAP[$validated['template']];
 
         DB::transaction(function () use ($request, $testCase, $validated, $template): void {
             $testCase->update($this->mapAttributes($validated, ['updated_by' => Auth::id()]));
@@ -186,6 +188,7 @@ class TestCaseController extends Controller
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.updated')]);
+
         return to_route('cases.show', $testCase);
     }
 
@@ -201,7 +204,7 @@ class TestCaseController extends Controller
             'customValues.customField',
         ]);
 
-        $suite    = $testCase->suite->load('project');
+        $suite = $testCase->suite->load('project');
         $siblings = $testCase->section_id !== null
             ? $suite->testCases()->where('section_id', $testCase->section_id)->orderBy('display_order')->orderBy('id')->pluck('id')->all()
             : $suite->testCases()->orderBy('display_order')->orderBy('id')->pluck('id')->all();
@@ -209,11 +212,11 @@ class TestCaseController extends Controller
         $position = array_search($testCase->id, $siblings, true);
 
         return Inertia::render('test-cases/show', [
-            'testCase'      => $this->transformCase($testCase),
-            'suite'         => $suite,
-            'suiteId'       => $suite->id,
-            'prevCaseId'    => $position !== false ? ($siblings[$position - 1] ?? null) : null,
-            'nextCaseId'    => $position !== false ? ($siblings[$position + 1] ?? null) : null,
+            'testCase' => $this->transformCase($testCase),
+            'suite' => $suite,
+            'suiteId' => $suite->id,
+            'prevCaseId' => $position !== false ? ($siblings[$position - 1] ?? null) : null,
+            'nextCaseId' => $position !== false ? ($siblings[$position + 1] ?? null) : null,
             'projectSuites' => $suite->project->suites()->orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -226,6 +229,7 @@ class TestCaseController extends Controller
         $testCase->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.deleted')]);
+
         return to_route('suites.cases.index', $suite);
     }
 
@@ -234,7 +238,7 @@ class TestCaseController extends Controller
         Gate::authorize('edit', $testCase->suite->project);
 
         $validated = $request->validate([
-            'suite_id'   => ['required', 'integer', 'exists:suites,id'],
+            'suite_id' => ['required', 'integer', 'exists:suites,id'],
             'section_id' => ['nullable', 'integer', 'exists:sections,id'],
         ]);
 
@@ -242,14 +246,14 @@ class TestCaseController extends Controller
         abort_unless($targetSuite->project_id === $testCase->suite->project_id, 422);
 
         DB::transaction(function () use ($testCase, $targetSuite, $validated): TestCase {
-            $attributes            = $testCase->only([
+            $attributes = $testCase->only([
                 'title', 'template', 'case_type', 'priority', 'estimate',
                 'estimate_forecast', 'preconditions', 'expected_result', 'refs',
                 'automation_type', 'automation_id', 'status',
                 'checklist_items', 'bdd_scenario', 'display_order',
             ]);
-            $attributes['title']      = $testCase->title.' (Copy)';
-            $attributes['suite_id']   = $targetSuite->id;
+            $attributes['title'] = $testCase->title.' (Copy)';
+            $attributes['suite_id'] = $targetSuite->id;
             $attributes['section_id'] = $validated['section_id'] ?? null;
             $attributes['created_by'] = Auth::id();
             $attributes['updated_by'] = null;
@@ -259,8 +263,8 @@ class TestCaseController extends Controller
             foreach ($testCase->steps()->get() as $step) {
                 $copy->steps()->create([
                     'step_index' => $step->step_index,
-                    'content'    => $step->content,
-                    'expected'   => $step->expected,
+                    'content' => $step->content,
+                    'expected' => $step->expected,
                 ]);
             }
 
@@ -268,11 +272,11 @@ class TestCaseController extends Controller
             foreach ($testCase->customValues()->with('customField')->get() as $cv) {
                 $copy->customValues()->create([
                     'custom_field_id' => $cv->custom_field_id,
-                    'value_string'    => $cv->value_string,
-                    'value_integer'   => $cv->value_integer,
-                    'value_text'      => $cv->value_text,
-                    'value_boolean'   => $cv->value_boolean,
-                    'value_json'      => $cv->value_json,
+                    'value_string' => $cv->value_string,
+                    'value_integer' => $cv->value_integer,
+                    'value_text' => $cv->value_text,
+                    'value_boolean' => $cv->value_boolean,
+                    'value_json' => $cv->value_json,
                 ]);
             }
 
@@ -280,24 +284,25 @@ class TestCaseController extends Controller
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.copied')]);
+
         return back();
     }
 
     public function bulkUpdate(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'ids'        => ['required', 'array'],
-            'ids.*'      => ['integer', 'exists:test_cases,id'],
-            'priority'   => ['nullable', 'in:critical,high,medium,low'],
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:test_cases,id'],
+            'priority' => ['nullable', 'in:critical,high,medium,low'],
             'section_id' => ['nullable', 'integer'],
-            'case_type'  => ['nullable', 'string', 'max:100'],
+            'case_type' => ['nullable', 'string', 'max:100'],
         ]);
 
         $cases = TestCase::query()->whereIn('id', $validated['ids'])->with('suite.project')->get();
         $this->authorizeBulkEdit($cases);
 
         $update = array_filter([
-            'priority'  => $validated['priority'] ?? null,
+            'priority' => $validated['priority'] ?? null,
             'case_type' => $validated['case_type'] ?? null,
         ], fn ($value): bool => $value !== null && $value !== '');
 
@@ -316,13 +321,14 @@ class TestCaseController extends Controller
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.bulk_updated')]);
+
         return back();
     }
 
     public function bulkDestroy(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'ids'   => ['required', 'array'],
+            'ids' => ['required', 'array'],
             'ids.*' => ['integer', 'exists:test_cases,id'],
         ]);
 
@@ -332,14 +338,15 @@ class TestCaseController extends Controller
         TestCase::query()->whereIn('id', $validated['ids'])->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.bulk_deleted')]);
+
         return back();
     }
 
     public function bulkAssign(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'ids'            => ['required', 'array'],
-            'ids.*'          => ['integer', 'exists:test_cases,id'],
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:test_cases,id'],
             'assigned_to_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
@@ -349,6 +356,7 @@ class TestCaseController extends Controller
         TestCase::query()->whereIn('id', $validated['ids'])->update(['assigned_to' => $validated['assigned_to_id'] ?? null]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('test_cases.bulk_updated')]);
+
         return back();
     }
 
@@ -360,37 +368,37 @@ class TestCaseController extends Controller
      * Load custom fields that apply to cases for a given project.
      * Returns global fields + fields explicitly assigned to the project.
      */
-    private function loadCaseFields(int $projectId): \Illuminate\Support\Collection
+    private function loadCaseFields(int $projectId): Collection
     {
         return CustomField::query()
             ->where('applies_to', 'cases')
             ->where(function ($q) use ($projectId) {
                 $q->where('is_global', true)
-                  ->orWhereHas('projects', fn ($q2) => $q2->where('projects.id', $projectId));
+                    ->orWhereHas('projects', fn ($q2) => $q2->where('projects.id', $projectId));
             })
             ->with('options')
             ->leftJoin('custom_field_project as cfp', function ($join) use ($projectId) {
                 $join->on('cfp.custom_field_id', '=', 'custom_fields.id')
-                     ->where('cfp.project_id', '=', $projectId);
+                    ->where('cfp.project_id', '=', $projectId);
             })
             ->orderByRaw('COALESCE(cfp.display_order, 9999)')
             ->orderBy('custom_fields.id')
             ->select('custom_fields.*', 'cfp.is_required', 'cfp.display_order', 'cfp.default_value')
             ->get()
             ->map(fn (CustomField $field): array => [
-                'id'            => $field->id,
-                'system_name'   => $field->system_name,
-                'label'         => $field->label,
-                'description'   => $field->description,
-                'field_type'    => $field->field_type,
-                'applies_to'    => $field->applies_to,
-                'is_global'     => $field->is_global,
-                'is_required'   => (bool) ($field->is_required ?? false),
+                'id' => $field->id,
+                'system_name' => $field->system_name,
+                'label' => $field->label,
+                'description' => $field->description,
+                'field_type' => $field->field_type,
+                'applies_to' => $field->applies_to,
+                'is_global' => $field->is_global,
+                'is_required' => (bool) ($field->is_required ?? false),
                 'display_order' => $field->display_order ?? 9999,
                 'default_value' => $field->default_value ?? null,
-                'options'       => $field->options->map(fn ($opt) => [
-                    'id'            => $opt->id,
-                    'label'         => $opt->label,
+                'options' => $field->options->map(fn ($opt) => [
+                    'id' => $opt->id,
+                    'label' => $opt->label,
                     'display_order' => $opt->display_order,
                 ])->all(),
             ]);
@@ -407,7 +415,7 @@ class TestCaseController extends Controller
         }
 
         $fieldIds = array_keys($rawValues);
-        $fields   = CustomField::whereIn('id', $fieldIds)->get()->keyBy('id');
+        $fields = CustomField::whereIn('id', $fieldIds)->get()->keyBy('id');
 
         foreach ($rawValues as $fieldId => $value) {
             $field = $fields->get((int) $fieldId);
@@ -416,23 +424,23 @@ class TestCaseController extends Controller
             }
 
             $row = [
-                'value_string'  => null,
+                'value_string' => null,
                 'value_integer' => null,
-                'value_text'    => null,
+                'value_text' => null,
                 'value_boolean' => null,
-                'value_json'    => null,
+                'value_json' => null,
             ];
 
             match ($field->field_type) {
-                'string', 'url'               => $row['value_string']  = (string) $value,
-                'integer'                     => $row['value_integer'] = $value !== '' && $value !== null ? (int) $value : null,
-                'text', 'rich_text'           => $row['value_text']    = (string) $value,
-                'checkbox'                    => $row['value_boolean'] = (bool) $value,
-                'date'                        => $row['value_string']  = (string) $value,
+                'string', 'url' => $row['value_string'] = (string) $value,
+                'integer' => $row['value_integer'] = $value !== '' && $value !== null ? (int) $value : null,
+                'text', 'rich_text' => $row['value_text'] = (string) $value,
+                'checkbox' => $row['value_boolean'] = (bool) $value,
+                'date' => $row['value_string'] = (string) $value,
                 'dropdown', 'user', 'milestone' => $row['value_string'] = (string) $value,
                 'multi_select', 'steps',
-                'step_results'                => $row['value_json']    = is_array($value) ? $value : [],
-                default                       => null,
+                'step_results' => $row['value_json'] = is_array($value) ? $value : [],
+                default => null,
             };
 
             TestCaseCustomValue::updateOrCreate(
@@ -442,7 +450,7 @@ class TestCaseController extends Controller
         }
     }
 
-    /** @param \Illuminate\Support\Collection<int, TestCase> $cases */
+    /** @param Collection<int, TestCase> $cases */
     private function authorizeBulkEdit($cases): void
     {
         foreach ($cases->pluck('suite.project')->filter()->unique('id') as $project) {
@@ -450,7 +458,7 @@ class TestCaseController extends Controller
         }
     }
 
-    /** @param \Illuminate\Support\Collection<int, TestCase> $cases */
+    /** @param Collection<int, TestCase> $cases */
     private function authorizeBulkDelete($cases): void
     {
         foreach ($cases->pluck('suite.project')->filter()->unique('id') as $project) {
@@ -461,45 +469,45 @@ class TestCaseController extends Controller
     private function validateCase(Request $request): array
     {
         return $request->validate([
-            'title'                         => ['required', 'string', 'max:255'],
-            'template'                      => ['required', 'integer', 'in:1,2,3,4,5'],
-            'type_id'                       => ['nullable', 'string', 'max:100'],
-            'priority_id'                   => ['nullable', 'integer', 'in:1,2,3,4'],
-            'section_id'                    => ['nullable', 'integer', 'exists:sections,id'],
-            'estimate'                      => ['nullable', 'string', 'max:50'],
-            'references'                    => ['nullable', 'string'],
-            'preconditions'                 => ['nullable', 'string'],
-            'body'                          => ['nullable', 'string'],
-            'bdd_scenario'                  => ['nullable', 'string'],
-            'checklist_items'               => ['nullable', 'array'],
-            'checklist_items.*.label'       => ['required_with:checklist_items', 'string'],
+            'title' => ['required', 'string', 'max:255'],
+            'template' => ['required', 'integer', 'in:1,2,3,4,5'],
+            'type_id' => ['nullable', 'string', 'max:100'],
+            'priority_id' => ['nullable', 'integer', 'in:1,2,3,4'],
+            'section_id' => ['nullable', 'integer', 'exists:sections,id'],
+            'estimate' => ['nullable', 'string', 'max:50'],
+            'references' => ['nullable', 'string'],
+            'preconditions' => ['nullable', 'string'],
+            'body' => ['nullable', 'string'],
+            'bdd_scenario' => ['nullable', 'string'],
+            'checklist_items' => ['nullable', 'array'],
+            'checklist_items.*.label' => ['required_with:checklist_items', 'string'],
             'checklist_items.*.is_optional' => ['boolean'],
-            'steps'                         => ['nullable', 'array'],
-            'steps.*.action'                => ['required_with:steps', 'string'],
-            'steps.*.expected'              => ['nullable', 'string'],
-            'steps.*.display_order'         => ['nullable', 'integer'],
-            'requirement_ids'               => ['nullable', 'array'],
-            'requirement_ids.*'             => ['integer', 'exists:requirements,id'],
-            'assigned_to'                   => ['nullable', 'integer', 'exists:users,id'],
-            'custom_values'                 => ['nullable', 'array'],
+            'steps' => ['nullable', 'array'],
+            'steps.*.action' => ['required_with:steps', 'string'],
+            'steps.*.expected' => ['nullable', 'string'],
+            'steps.*.display_order' => ['nullable', 'integer'],
+            'requirement_ids' => ['nullable', 'array'],
+            'requirement_ids.*' => ['integer', 'exists:requirements,id'],
+            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'custom_values' => ['nullable', 'array'],
         ]);
     }
 
     private function mapAttributes(array $validated, array $extra = []): array
     {
         return array_merge([
-            'title'           => $validated['title'],
-            'template'        => self::TEMPLATE_MAP[$validated['template']],
-            'case_type'       => $validated['type_id'] ?? null,
-            'priority'        => isset($validated['priority_id'])
+            'title' => $validated['title'],
+            'template' => self::TEMPLATE_MAP[$validated['template']],
+            'case_type' => $validated['type_id'] ?? null,
+            'priority' => isset($validated['priority_id'])
                 ? (self::PRIORITY_MAP[$validated['priority_id']] ?? null)
                 : null,
-            'section_id'      => $validated['section_id'] ?? null,
-            'estimate'        => self::parseEstimate($validated['estimate'] ?? null),
-            'refs'            => $validated['references'] ?? null,
-            'preconditions'   => $validated['preconditions'] ?? null,
+            'section_id' => $validated['section_id'] ?? null,
+            'estimate' => self::parseEstimate($validated['estimate'] ?? null),
+            'refs' => $validated['references'] ?? null,
+            'preconditions' => $validated['preconditions'] ?? null,
             'expected_result' => $validated['body'] ?? null,
-            'assigned_to'     => $validated['assigned_to'] ?? null,
+            'assigned_to' => $validated['assigned_to'] ?? null,
         ], $extra);
     }
 
@@ -507,9 +515,9 @@ class TestCaseController extends Controller
     {
         match ($template) {
             'steps', 'exploratory' => $this->syncSteps($testCase, $request),
-            'bdd'                  => $this->syncBdd($testCase, $request),
-            'checklist'            => $this->syncChecklist($testCase, $request),
-            default                => null,
+            'bdd' => $this->syncBdd($testCase, $request),
+            'checklist' => $this->syncChecklist($testCase, $request),
+            default => null,
         };
     }
 
@@ -520,9 +528,9 @@ class TestCaseController extends Controller
         }
         foreach ($request->input('steps') as $index => $step) {
             $testCase->steps()->create([
-                'content'     => $step['action'],
-                'expected'    => $step['expected'] ?? null,
-                'step_index'  => $step['display_order'] ?? ($index + 1),
+                'content' => $step['action'],
+                'expected' => $step['expected'] ?? null,
+                'step_index' => $step['display_order'] ?? ($index + 1),
             ]);
         }
     }
@@ -540,7 +548,7 @@ class TestCaseController extends Controller
         if ($request->filled('checklist_items')) {
             $items = array_map(
                 fn (array $item): array => [
-                    'label'       => $item['label'],
+                    'label' => $item['label'],
                     'is_optional' => (bool) ($item['is_optional'] ?? false),
                 ],
                 $request->input('checklist_items'),
@@ -572,12 +580,13 @@ class TestCaseController extends Controller
         $matched = false;
         if (preg_match('/(\d+)\s*h/i', $value, $m)) {
             $seconds += (int) $m[1] * 3600;
-            $matched  = true;
+            $matched = true;
         }
         if (preg_match('/(\d+)\s*m/i', $value, $m)) {
             $seconds += (int) $m[1] * 60;
-            $matched  = true;
+            $matched = true;
         }
+
         return $matched ? $seconds : null;
     }
 
@@ -595,52 +604,52 @@ class TestCaseController extends Controller
                     continue;
                 }
                 $customValues[$cv->custom_field_id] = match ($field->field_type) {
-                    'integer'                         => $cv->value_integer,
-                    'text', 'rich_text'               => $cv->value_text ?? '',
-                    'checkbox'                        => $cv->value_boolean,
+                    'integer' => $cv->value_integer,
+                    'text', 'rich_text' => $cv->value_text ?? '',
+                    'checkbox' => $cv->value_boolean,
                     'multi_select', 'steps',
-                    'step_results'                    => $cv->value_json ?? [],
-                    default                           => $cv->value_string ?? '',
+                    'step_results' => $cv->value_json ?? [],
+                    default => $cv->value_string ?? '',
                 };
             }
         }
 
         return [
-            'id'              => $testCase->id,
-            'suite_id'        => $testCase->suite_id,
-            'section_id'      => $testCase->section_id,
-            'section'         => $testCase->relationLoaded('section') ? $testCase->section : null,
-            'title'           => $testCase->title,
-            'template'        => $templateInt === false ? 2 : $templateInt,
-            'type_id'         => $testCase->case_type,
-            'priority_id'     => $priorityInt === false ? null : $priorityInt,
-            'estimate'        => $testCase->estimate !== null ? self::formatEstimate($testCase->estimate) : null,
-            'references'      => $testCase->refs,
-            'preconditions'   => $testCase->preconditions,
-            'body'            => $testCase->expected_result,
-            'bdd_scenario'    => $testCase->bdd_scenario,
+            'id' => $testCase->id,
+            'suite_id' => $testCase->suite_id,
+            'section_id' => $testCase->section_id,
+            'section' => $testCase->relationLoaded('section') ? $testCase->section : null,
+            'title' => $testCase->title,
+            'template' => $templateInt === false ? 2 : $templateInt,
+            'type_id' => $testCase->case_type,
+            'priority_id' => $priorityInt === false ? null : $priorityInt,
+            'estimate' => $testCase->estimate !== null ? self::formatEstimate($testCase->estimate) : null,
+            'references' => $testCase->refs,
+            'preconditions' => $testCase->preconditions,
+            'body' => $testCase->expected_result,
+            'bdd_scenario' => $testCase->bdd_scenario,
             'checklist_items' => $testCase->checklist_items,
-            'steps'           => $testCase->relationLoaded('steps')
+            'steps' => $testCase->relationLoaded('steps')
                 ? $testCase->steps->map(fn ($step): array => [
-                    'id'            => $step->id,
-                    'test_case_id'  => $step->test_case_id,
-                    'action'        => $step->content,
-                    'expected'      => $step->expected,
+                    'id' => $step->id,
+                    'test_case_id' => $step->test_case_id,
+                    'action' => $step->content,
+                    'expected' => $step->expected,
                     'display_order' => $step->step_index,
                 ])->all()
                 : null,
-            'requirements'    => $testCase->relationLoaded('requirements')
+            'requirements' => $testCase->relationLoaded('requirements')
                 ? $testCase->requirements->map(fn ($req): array => [
-                    'id'         => $req->id,
+                    'id' => $req->id,
                     'display_id' => $req->display_id,
-                    'title'      => $req->title,
-                    'priority'   => $req->priority,
-                    'status'     => $req->status,
+                    'title' => $req->title,
+                    'priority' => $req->priority,
+                    'status' => $req->status,
                 ])->all()
                 : null,
-            'custom_values'   => $customValues,
-            'created_at'      => $testCase->created_at,
-            'updated_at'      => $testCase->updated_at,
+            'custom_values' => $customValues,
+            'created_at' => $testCase->created_at,
+            'updated_at' => $testCase->updated_at,
         ];
     }
 
@@ -653,9 +662,52 @@ class TestCaseController extends Controller
         $m = intdiv($seconds % 3600, 60);
         $s = $seconds % 60;
         $parts = [];
-        if ($h > 0) { $parts[] = "{$h}h"; }
-        if ($m > 0) { $parts[] = "{$m}m"; }
-        if ($s > 0) { $parts[] = "{$s}s"; }
+        if ($h > 0) {
+            $parts[] = "{$h}h";
+        }
+        if ($m > 0) {
+            $parts[] = "{$m}m";
+        }
+        if ($s > 0) {
+            $parts[] = "{$s}s";
+        }
+
         return implode(' ', $parts);
+    }
+
+    // ── History (stub) ─────────────────────────────────────────────────────────
+
+    /**
+     * Show version history for a test case.
+     * Falls back to static stub data when no real history rows exist.
+     */
+    public function history(Request $request, TestCase $testCase): Response
+    {
+        Gate::authorize('view', $testCase->suite->project);
+
+        $history = $testCase
+            ->history()
+            ->with('changedBy:id,name')
+            ->latest('created_at')
+            ->limit(50)
+            ->get()
+            ->map(fn ($h) => [
+                'id' => $h->id,
+                'changed_at' => $h->created_at,
+                'changed_by_name' => $h->changedBy?->name ?? 'System',
+                'change_note' => $h->change_note,
+                'changed_fields' => $h->changed_fields ?? [],
+                'snapshot' => $h->snapshot ?? [],
+            ]);
+
+        return Inertia::render('test-cases/history', [
+            'testCase' => [
+                'id' => $testCase->id,
+                'title' => $testCase->title,
+                'suite_id' => $testCase->suite_id,
+            ],
+            'history' => $history,
+            'suiteId' => $testCase->suite_id,
+        ]);
     }
 }

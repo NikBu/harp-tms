@@ -47,7 +47,7 @@ class ProjectSettingsController extends Controller
 
         // All users not yet in this project — for the "Add member" dropdown
         $existingIds = $project->members->pluck('id');
-        $available   = User::whereNotIn('id', $existingIds)
+        $available = User::whereNotIn('id', $existingIds)
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
 
@@ -58,18 +58,18 @@ class ProjectSettingsController extends Controller
             ->orderBy('label')
             ->get()
             ->map(fn (CustomField $f) => [
-                'id'          => $f->id,
+                'id' => $f->id,
                 'system_name' => $f->system_name,
-                'label'       => $f->label,
+                'label' => $f->label,
                 'description' => $f->description,
-                'field_type'  => $f->field_type,
-                'applies_to'  => $f->applies_to,
-                'is_global'   => $f->is_global,
+                'field_type' => $f->field_type,
+                'applies_to' => $f->applies_to,
+                'is_global' => $f->is_global,
                 // Pivot data if this field is explicitly assigned to this project
-                'pivot'       => $f->projects->first()
+                'pivot' => $f->projects->first()
                     ? [
-                        'is_required'   => (bool) $f->projects->first()->pivot->is_required,
-                        'display_order' => (int)  $f->projects->first()->pivot->display_order,
+                        'is_required' => (bool) $f->projects->first()->pivot->is_required,
+                        'display_order' => (int) $f->projects->first()->pivot->display_order,
                         'default_value' => $f->projects->first()->pivot->default_value,
                     ]
                     : null,
@@ -77,10 +77,10 @@ class ProjectSettingsController extends Controller
             ->values();
 
         return Inertia::render('projects/settings', [
-            'project'    => $project,
-            'available'  => $available,
-            'roles'      => ['viewer', 'tester', 'author', 'lead', 'project_admin'],
-            'allFields'  => $allFields,
+            'project' => $project,
+            'available' => $available,
+            'roles' => ['viewer', 'tester', 'author', 'lead', 'project_admin'],
+            'allFields' => $allFields,
         ]);
     }
 
@@ -93,9 +93,9 @@ class ProjectSettingsController extends Controller
         $this->authorizeAdmin($request, $project);
 
         $validated = $request->validate([
-            'name'              => ['required', 'string', 'max:255'],
-            'description'       => ['nullable', 'string'],
-            'announcement'      => ['nullable', 'string'],
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'announcement' => ['nullable', 'string'],
             'show_announcement' => ['boolean'],
         ]);
 
@@ -116,7 +116,7 @@ class ProjectSettingsController extends Controller
 
         $validated = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
-            'role'    => ['required', 'string', Rule::in(['viewer', 'tester', 'author', 'lead', 'project_admin'])],
+            'role' => ['required', 'string', Rule::in(['viewer', 'tester', 'author', 'lead', 'project_admin'])],
         ]);
 
         // Idempotent: if already a member just update their role
@@ -199,14 +199,14 @@ class ProjectSettingsController extends Controller
 
         $validated = $request->validate([
             'custom_field_id' => ['required', 'integer', 'exists:custom_fields,id'],
-            'is_required'     => ['boolean'],
-            'display_order'   => ['integer', 'min:0'],
-            'default_value'   => ['nullable', 'string', 'max:255'],
+            'is_required' => ['boolean'],
+            'display_order' => ['integer', 'min:0'],
+            'default_value' => ['nullable', 'string', 'max:255'],
         ]);
 
         $project->customFields()->syncWithoutDetaching([
             $validated['custom_field_id'] => [
-                'is_required'   => $validated['is_required']   ?? false,
+                'is_required' => $validated['is_required'] ?? false,
                 'display_order' => $validated['display_order'] ?? 0,
                 'default_value' => $validated['default_value'] ?? null,
             ],
@@ -243,18 +243,18 @@ class ProjectSettingsController extends Controller
         $this->authorizeAdmin($request, $project);
 
         $validated = $request->validate([
-            'fields'                   => ['required', 'array'],
+            'fields' => ['required', 'array'],
             'fields.*.custom_field_id' => ['required', 'integer', 'exists:custom_fields,id'],
-            'fields.*.display_order'   => ['required', 'integer', 'min:0'],
-            'fields.*.is_required'     => ['boolean'],
-            'fields.*.default_value'   => ['nullable', 'string', 'max:255'],
+            'fields.*.display_order' => ['required', 'integer', 'min:0'],
+            'fields.*.is_required' => ['boolean'],
+            'fields.*.default_value' => ['nullable', 'string', 'max:255'],
         ]);
 
         foreach ($validated['fields'] as $row) {
             $project->customFields()->syncWithoutDetaching([
                 $row['custom_field_id'] => [
                     'display_order' => $row['display_order'],
-                    'is_required'   => $row['is_required'] ?? false,
+                    'is_required' => $row['is_required'] ?? false,
                     'default_value' => $row['default_value'] ?? null,
                 ],
             ]);

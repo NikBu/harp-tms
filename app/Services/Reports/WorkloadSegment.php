@@ -68,14 +68,14 @@ class WorkloadSegment
             }
 
             return [
-                'user_id'        => (int) $id,
-                'name'           => $userNames[$id] ?? '—',
+                'user_id' => (int) $id,
+                'name' => $userNames[$id] ?? '—',
                 'assigned_cases' => (int) ($assignedCounts[$id] ?? 0),
                 'results_logged' => $totalResults,
-                'pass_rate'      => $totalResults > 0
+                'pass_rate' => $totalResults > 0
                     ? round(($passedResults / $totalResults) * 100, 1)
                     : 0.0,
-                'statuses'       => $breakdown,
+                'statuses' => $breakdown,
             ];
         })
             ->sortByDesc(fn ($w) => $w['assigned_cases'] + $w['results_logged'])

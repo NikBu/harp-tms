@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\RefreshDefectMetadataJob;
 use App\Models\DefectLink;
-use App\Models\Integration;
+use App\Models\Integration;     
 use App\Models\TestResult;
 use App\Services\Integrations\TrackerClientFactory;
 use Illuminate\Http\JsonResponse;
@@ -25,41 +25,26 @@ class DefectLinkController extends Controller
 
         $data = $request->validate([
             'integration_id' => ['required', 'integer', 'exists:integrations,id'],
-            'external_id'    => ['required', 'string', 'max:255'],
+            'external_id' => ['required', 'string', 'max:255'],
         ]);
-
+      
         $integration = Integration::findOrFail($data['integration_id']);
-        $client      = $this->factory->make($integration);
-        $issue       = $client->findIssue($data['external_id']);
+        $client = $this->factory->make($integration);
+        $issue = $client->findIssue($data['external_id']);
 
         if ($issue === null) {
-<<<<<<< HEAD
             return response()->json(['message' => __('defects.issue_not_found')], 422);
         }
 
         $link = $result->defectLinks()->create([
-            'tracker_type'       => $integration->provider,
-            'external_id'        => $issue['id'],
-            'external_url'       => $issue['url'],
-            'title'              => $issue['title'],
-            'status'             => $issue['status'],
-            'cached_metadata'    => $issue,
+            'tracker_type' => $integration->provider,
+            'external_id' => $issue['id'],
+            'external_url' => $issue['url'],
+            'title' => $issue['title'],
+            'status' => $issue['status'],
+            'cached_metadata' => $issue,
             'cache_refreshed_at' => now(),
-            'created_by'         => $request->user()->id,
-=======
-            return response()->json(['message' => __('app.defects.issue_not_found')], 422);
-        }
-
-        $link = $result->defectLinks()->create([
-            'tracker_type'     => $integration->provider,
-            'external_id'      => $issue['id'],
-            'external_url'     => $issue['url'],
-            'title'            => $issue['title'],
-            'status'           => $issue['status'],
-            'cached_metadata'  => $issue,
-            'cache_refreshed_at' => now(),
-            'created_by'       => $request->user()->id,
->>>>>>> 7ebfc308a7064464cea3405a871801ae4207ba2d
+            'created_by' => $request->user()->id,
         ]);
 
         return response()->json($link, 201);
@@ -75,29 +60,29 @@ class DefectLinkController extends Controller
 
         $data = $request->validate([
             'integration_id' => ['required', 'integer', 'exists:integrations,id'],
-            'title'          => ['required', 'string', 'max:500'],
-            'description'    => ['nullable', 'string'],
-            'priority'       => ['nullable', 'string', 'max:64'],
+            'title' => ['required', 'string', 'max:500'],
+            'description' => ['nullable', 'string'],
+            'priority' => ['nullable', 'string', 'max:64'],
         ]);
 
         $integration = Integration::findOrFail($data['integration_id']);
-        $client      = $this->factory->make($integration);
+        $client = $this->factory->make($integration);
 
         $issue = $client->createIssue([
-            'title'       => $data['title'],
+            'title' => $data['title'],
             'description' => $data['description'] ?? '',
-            'priority'    => $data['priority'] ?? null,
+            'priority' => $data['priority'] ?? null,
         ]);
 
         $link = $result->defectLinks()->create([
-            'tracker_type'       => $integration->provider,
-            'external_id'        => $issue['id'],
-            'external_url'       => $issue['url'],
-            'title'              => $issue['title'],
-            'status'             => $issue['status'],
-            'cached_metadata'    => $issue,
+            'tracker_type' => $integration->provider,
+            'external_id' => $issue['id'],
+            'external_url' => $issue['url'],
+            'title' => $issue['title'],
+            'status' => $issue['status'],
+            'cached_metadata' => $issue,
             'cache_refreshed_at' => now(),
-            'created_by'         => $request->user()->id,
+            'created_by' => $request->user()->id,
         ]);
 
         return response()->json($link, 201);
@@ -114,11 +99,7 @@ class DefectLinkController extends Controller
 
         $defect->delete();
 
-<<<<<<< HEAD
         return response()->json(['message' => __('defects.unlinked')]);
-=======
-        return response()->json(['message' => __('app.defects.unlinked')]);
->>>>>>> 7ebfc308a7064464cea3405a871801ae4207ba2d
     }
 
     /**
@@ -145,20 +126,15 @@ class DefectLinkController extends Controller
         Gate::authorize('view', $integration->project);
 
         $client = $this->factory->make($integration);
-        $issue  = $client->findIssue($issueId);
+        $issue = $client->findIssue($issueId);
 
         if ($issue === null) {
-<<<<<<< HEAD
             return response()->json(['message' => __('defects.issue_not_found')], 404);
-=======
-            return response()->json(['message' => __('app.defects.issue_not_found')], 404);
->>>>>>> 7ebfc308a7064464cea3405a871801ae4207ba2d
         }
 
         return response()->json($issue);
     }
 
-<<<<<<< HEAD
     /**
      * The result must belong to an open run and the user must be able to submit results.
      */
@@ -167,12 +143,5 @@ class DefectLinkController extends Controller
         $run = $result->run;
         abort_if($run->is_completed, 403, __('runs.closed_error'));
         Gate::authorize('submitResults', $run->project);
-=======
-    private function authorizeResult(TestResult $result): void
-    {
-        $run = $result->run;
-        abort_if($run->is_closed, 403, __('app.runs.closed_error'));
-        Gate::authorize('view', $run->project);
->>>>>>> 7ebfc308a7064464cea3405a871801ae4207ba2d
     }
 }

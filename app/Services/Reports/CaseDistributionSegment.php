@@ -37,10 +37,10 @@ class CaseDistributionSegment
 
         $byPriority = [
             'critical' => (int) ($byPriorityRaw['critical'] ?? 0),
-            'high'     => (int) ($byPriorityRaw['high']     ?? 0),
-            'medium'   => (int) ($byPriorityRaw['medium']   ?? 0),
-            'low'      => (int) ($byPriorityRaw['low']      ?? 0),
-            'total'    => (int) $byPriorityRaw->sum(),
+            'high' => (int) ($byPriorityRaw['high'] ?? 0),
+            'medium' => (int) ($byPriorityRaw['medium'] ?? 0),
+            'low' => (int) ($byPriorityRaw['low'] ?? 0),
+            'total' => (int) $byPriorityRaw->sum(),
         ];
 
         // By case_type (the actual column name in the DB)
@@ -55,7 +55,7 @@ class CaseDistributionSegment
             ->get();
 
         $byType = $byTypeRaw->map(fn ($r) => [
-            'type'  => (string) $r->type,
+            'type' => (string) $r->type,
             'count' => (int) $r->cnt,
         ])->values()->all();
 
@@ -73,7 +73,7 @@ class CaseDistributionSegment
 
         $bySection = $bySectionRaw->map(fn ($r) => [
             'section' => (string) $r->section_name,
-            'count'   => (int) $r->cnt,
+            'count' => (int) $r->cnt,
         ])->values()->all();
 
         // By template
@@ -86,11 +86,11 @@ class CaseDistributionSegment
             ->pluck('cnt', 'template');
 
         $byTemplate = [
-            'text'         => (int) ($byTemplateRaw['text']         ?? 0),
-            'steps'        => (int) ($byTemplateRaw['steps']        ?? 0),
-            'exploratory'  => (int) ($byTemplateRaw['exploratory']  ?? 0),
-            'bdd'          => (int) ($byTemplateRaw['bdd']          ?? 0),
-            'checklist'    => (int) ($byTemplateRaw['checklist']    ?? 0),
+            'text' => (int) ($byTemplateRaw['text'] ?? 0),
+            'steps' => (int) ($byTemplateRaw['steps'] ?? 0),
+            'exploratory' => (int) ($byTemplateRaw['exploratory'] ?? 0),
+            'bdd' => (int) ($byTemplateRaw['bdd'] ?? 0),
+            'checklist' => (int) ($byTemplateRaw['checklist'] ?? 0),
         ];
 
         return compact('byPriority', 'byType', 'bySection', 'byTemplate');
@@ -101,8 +101,8 @@ class CaseDistributionSegment
     {
         return [
             'byPriority' => ['critical' => 0, 'high' => 0, 'medium' => 0, 'low' => 0, 'total' => 0],
-            'byType'     => [],
-            'bySection'  => [],
+            'byType' => [],
+            'bySection' => [],
             'byTemplate' => ['text' => 0, 'steps' => 0, 'exploratory' => 0, 'bdd' => 0, 'checklist' => 0],
         ];
     }

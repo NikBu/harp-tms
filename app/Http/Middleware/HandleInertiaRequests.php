@@ -2,8 +2,12 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\Suite;
+use App\Models\TestCase;
+use App\Models\TestPlan;
+use App\Models\TestRun;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -20,8 +24,8 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            'name'         => config('app.name'),
-            'auth'         => [
+            'name' => config('app.name'),
+            'auth' => [
                 'user' => $request->user()
                     ? array_merge($request->user()->toArray(), [
                         // Spatie roles as a flat string array — e.g. ['admin'] or ['project_admin']
@@ -29,9 +33,9 @@ class HandleInertiaRequests extends Middleware
                     ])
                     : null,
             ],
-            'sidebarOpen'  => ! $request->hasCookie('sidebar_state')
+            'sidebarOpen' => ! $request->hasCookie('sidebar_state')
                 || $request->cookie('sidebar_state') === 'true',
-            'locale'       => app()->getLocale(),
+            'locale' => app()->getLocale(),
             'translations' => $this->loadTranslations(),
 
             // Current project context — injected when URL matches /projects/{id}/*
@@ -53,11 +57,15 @@ class HandleInertiaRequests extends Middleware
 
     private function resolveCurrentProject(Request $request): ?array
     {
-        if (! $request->user()) return null;
+        if (! $request->user()) {
+            return null;
+        }
 
         $project = $this->findProjectFromRoute($request);
 
-        if (! $project) return null;
+        if (! $project) {
+            return null;
+        }
 
         $user = $request->user();
         if (! $user->hasRole('admin') && ! $project->members()->where('user_id', $user->id)->exists()) {
@@ -65,8 +73,8 @@ class HandleInertiaRequests extends Middleware
         }
 
         return [
-            'id'         => $project->id,
-            'name'       => $project->name,
+            'id' => $project->id,
+            'name' => $project->name,
             'suite_mode' => $project->suite_mode,
         ];
     }
@@ -106,42 +114,47 @@ class HandleInertiaRequests extends Middleware
         }
         if ($suite) {
             $s = Suite::find((int) $suite);
+
             return $s?->project;
         }
 
         // 4 — shallow test-case route: /cases/{testCase} or /suites/{suite}/cases/{testCase}
         $testCase = $request->route('testCase');
         if ($testCase) {
-            $tc = $testCase instanceof \App\Models\TestCase
+            $tc = $testCase instanceof TestCase
                 ? $testCase
-                : \App\Models\TestCase::find((int) $testCase);
+                : TestCase::find((int) $testCase);
+
             return $tc?->suite?->project;
         }
 
         // 5 — shallow test-run route: /runs/{testRun}
         $testRun = $request->route('testRun');
         if ($testRun) {
-            $run = $testRun instanceof \App\Models\TestRun
+            $run = $testRun instanceof TestRun
                 ? $testRun
-                : \App\Models\TestRun::find((int) $testRun);
+                : TestRun::find((int) $testRun);
+
             return $run?->project;
         }
 
         // 6 — shallow milestone route: /milestones/{milestone}
         $milestone = $request->route('milestone');
         if ($milestone) {
-            $ms = $milestone instanceof \App\Models\Milestone
+            $ms = $milestone instanceof Milestone
                 ? $milestone
-                : \App\Models\Milestone::find((int) $milestone);
+                : Milestone::find((int) $milestone);
+
             return $ms?->project;
         }
 
         // 7 — shallow test-plan route: /plans/{testPlan}
         $testPlan = $request->route('testPlan');
         if ($testPlan) {
-            $plan = $testPlan instanceof \App\Models\TestPlan
+            $plan = $testPlan instanceof TestPlan
                 ? $testPlan
-                : \App\Models\TestPlan::find((int) $testPlan);
+                : TestPlan::find((int) $testPlan);
+
             return $plan?->project;
         }
 
@@ -150,7 +163,9 @@ class HandleInertiaRequests extends Middleware
 
     private function resolveAccessibleProjects(Request $request): array
     {
-        if (! $request->user()) return [];
+        if (! $request->user()) {
+            return [];
+        }
 
         $user = $request->user();
 
@@ -174,15 +189,18 @@ class HandleInertiaRequests extends Middleware
     private function loadTranslations(): array
     {
         $locale = app()->getLocale();
-        $path   = lang_path($locale);
+        $path = lang_path($locale);
 
-        if (! is_dir($path)) return [];
+        if (! is_dir($path)) {
+            return [];
+        }
 
         $translations = [];
         foreach (glob("{$path}/*.php") as $file) {
             $key = basename($file, '.php');
             $translations[$key] = require $file;
         }
+
         return $translations;
     }
 }

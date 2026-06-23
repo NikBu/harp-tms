@@ -2,6 +2,7 @@
 
 namespace App\Services\Reports;
 
+use App\Models\Project;
 use App\Models\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 class ActivitySummarySegment
 {
     /**
-     * @param  Collection<int, \App\Models\Project>|list<int>  $projectIds
+     * @param  Collection<int, Project>|list<int>  $projectIds
      * @return array<string, mixed>
      */
     public function compute(array $projectIds): array
@@ -60,16 +61,16 @@ class ActivitySummarySegment
         for ($i = 0; $i < 30; $i++) {
             $day = $since->copy()->addDays($i)->toDateString();
             $daily[] = [
-                'date'          => $day,
-                'new_cases'     => (int) ($newCasesRaw[$day] ?? 0),
-                'new_results'   => (int) ($newResultsRaw[$day] ?? 0),
+                'date' => $day,
+                'new_cases' => (int) ($newCasesRaw[$day] ?? 0),
+                'new_results' => (int) ($newResultsRaw[$day] ?? 0),
                 'updated_cases' => (int) ($updatedCasesRaw[$day] ?? 0),
             ];
         }
 
         $totals = [
-            'new_cases'     => (int) $newCasesRaw->sum(),
-            'new_results'   => (int) $newResultsRaw->sum(),
+            'new_cases' => (int) $newCasesRaw->sum(),
+            'new_results' => (int) $newResultsRaw->sum(),
             'updated_cases' => (int) $updatedCasesRaw->sum(),
         ];
 
@@ -80,7 +81,7 @@ class ActivitySummarySegment
     private function empty(): array
     {
         return [
-            'daily'  => [],
+            'daily' => [],
             'totals' => ['new_cases' => 0, 'new_results' => 0, 'updated_cases' => 0],
         ];
     }

@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * Project-scoped RBAC policy.
@@ -28,7 +29,7 @@ class ProjectPolicy
      */
     private function role(User $user, Project $project): ?string
     {
-        /** @var \Illuminate\Database\Eloquent\Relations\BelongsToMany $rel */
+        /** @var BelongsToMany $rel */
         $rel = $project->members()->whereKey($user->getKey());
 
         return $rel->first()?->pivot?->role;

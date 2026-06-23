@@ -23,7 +23,7 @@ class AdminDefectPluginsController extends Controller
         ['key' => 'github',       'name' => 'GitHub',      'live' => true],
         ['key' => 'gitlab',       'name' => 'GitLab',      'live' => false],
         ['key' => 'youtrack',     'name' => 'YouTrack',    'live' => false],
-        ['key' => 'azure_devops', 'name' => 'Azure DevOps','live' => false],
+        ['key' => 'azure_devops', 'name' => 'Azure DevOps', 'live' => false],
         ['key' => 'bugzilla',     'name' => 'Bugzilla',    'live' => false],
         ['key' => 'linear',       'name' => 'Linear',      'live' => false],
     ];
@@ -42,17 +42,17 @@ class AdminDefectPluginsController extends Controller
             ->whereIn('integration_type', self::LIVE_KEYS)
             ->get(['id', 'integration_type', 'name', 'config', 'is_active'])
             ->map(fn (Integration $i) => [
-                'id'               => $i->id,
+                'id' => $i->id,
                 'integration_type' => $i->integration_type,
-                'name'             => $i->name,
-                'config'           => $i->config ?? [],
-                'is_active'        => $i->is_active,
+                'name' => $i->name,
+                'config' => $i->config ?? [],
+                'is_active' => $i->is_active,
             ])
             ->values();
 
         return Inertia::render('admin/integration/defect-plugins', [
             'plugins' => self::PLUGINS,
-            'saved'   => $saved,
+            'saved' => $saved,
         ]);
     }
 
@@ -64,10 +64,10 @@ class AdminDefectPluginsController extends Controller
 
         $data = $request->validate([
             'integration_type' => ['required', 'string', Rule::in(self::LIVE_KEYS)],
-            'name'             => ['nullable', 'string', 'max:120'],
-            'config'           => ['nullable', 'array'],
-            'credentials'      => ['nullable', 'array'],
-            'is_active'        => ['boolean'],
+            'name' => ['nullable', 'string', 'max:120'],
+            'config' => ['nullable', 'array'],
+            'credentials' => ['nullable', 'array'],
+            'is_active' => ['boolean'],
         ]);
 
         // One instance-level row per integration type.
@@ -76,12 +76,12 @@ class AdminDefectPluginsController extends Controller
             ->firstOrNew(['integration_type' => $data['integration_type']]);
 
         $integration->fill([
-            'project_id'  => null,
-            'name'        => $data['name'] ?? $data['integration_type'],
-            'config'      => $data['config']      ?? [],
+            'project_id' => null,
+            'name' => $data['name'] ?? $data['integration_type'],
+            'config' => $data['config'] ?? [],
             'credentials' => $data['credentials'] ?? [],
-            'is_active'   => $data['is_active']   ?? false,
-            'created_by'  => $request->user()->getKey(),
+            'is_active' => $data['is_active'] ?? false,
+            'created_by' => $request->user()->getKey(),
         ])->save();
 
         return back()->with('success', __('integrations.saved'));
@@ -95,17 +95,17 @@ class AdminDefectPluginsController extends Controller
         abort_unless(is_null($integration->project_id), 404);
 
         $data = $request->validate([
-            'name'        => ['nullable', 'string', 'max:120'],
-            'config'      => ['nullable', 'array'],
+            'name' => ['nullable', 'string', 'max:120'],
+            'config' => ['nullable', 'array'],
             'credentials' => ['nullable', 'array'],
-            'is_active'   => ['boolean'],
+            'is_active' => ['boolean'],
         ]);
 
         $integration->fill([
-            'name'        => $data['name']        ?? $integration->name,
-            'config'      => $data['config']      ?? $integration->config,
+            'name' => $data['name'] ?? $integration->name,
+            'config' => $data['config'] ?? $integration->config,
             'credentials' => $data['credentials'] ?? [],
-            'is_active'   => $data['is_active']   ?? $integration->is_active,
+            'is_active' => $data['is_active'] ?? $integration->is_active,
         ])->save();
 
         return back()->with('success', __('integrations.saved'));

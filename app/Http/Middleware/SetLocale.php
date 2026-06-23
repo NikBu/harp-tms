@@ -20,6 +20,7 @@ class SetLocale
             ?? config('app.locale');
 
         app()->setLocale($locale);
+
         return $next($request);
     }
 }

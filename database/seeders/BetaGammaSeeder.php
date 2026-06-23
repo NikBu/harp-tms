@@ -14,7 +14,6 @@ use App\Models\TestPlanEntry;
 use App\Models\TestResult;
 use App\Models\TestRun;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -29,14 +28,21 @@ use Illuminate\Support\Facades\DB;
 class BetaGammaSeeder extends Seeder
 {
     // ── resolved models ───────────────────────────────────────────────
-    private array $users    = [];
+    private array $users = [];
+
     private array $projects = [];
-    private array $suites   = [];
+
+    private array $suites = [];
+
     private array $sections = [];
-    private array $cases    = [];
-    private array $miles    = [];
-    private array $runs     = [];
-    private array $tests    = [];
+
+    private array $cases = [];
+
+    private array $miles = [];
+
+    private array $runs = [];
+
+    private array $tests = [];
 
     public function run(): void
     {
@@ -54,9 +60,9 @@ class BetaGammaSeeder extends Seeder
     private function loadSharedFixtures(): void
     {
         $emails = [
-            'admin'   => 'admin@harp.test',
-            'lead1'   => 'lead1@harp.test',
-            'lead2'   => 'lead2@harp.test',
+            'admin' => 'admin@harp.test',
+            'lead1' => 'lead1@harp.test',
+            'lead2' => 'lead2@harp.test',
             'tester1' => 'tester1@harp.test',
             'tester2' => 'tester2@harp.test',
             'tester3' => 'tester3@harp.test',
@@ -78,16 +84,16 @@ class BetaGammaSeeder extends Seeder
 
     private function seedBeta(): void
     {
-        $beta  = $this->projects['project-beta'];
+        $beta = $this->projects['project-beta'];
         $suite = Suite::where('project_id', $beta->id)->where('name', 'Baseline Suite')->firstOrFail();
         $this->suites['Baseline Suite'] = $suite;
 
         // ── Sections ──────────────────────────────────────────────────
-        $auth  = $this->makeSection($suite, null,  'Authentication',  0, 0);
-        $pay   = $this->makeSection($suite, null,  'Payments',        0, 1);
-        $notif = $this->makeSection($suite, null,  'Notifications',   0, 2);
-        $reg   = $this->makeSection($suite, $auth, 'Biometric Login', 1, 0);
-        $pin   = $this->makeSection($suite, $auth, 'PIN Login',       1, 1);
+        $auth = $this->makeSection($suite, null, 'Authentication', 0, 0);
+        $pay = $this->makeSection($suite, null, 'Payments', 0, 1);
+        $notif = $this->makeSection($suite, null, 'Notifications', 0, 2);
+        $reg = $this->makeSection($suite, $auth, 'Biometric Login', 1, 0);
+        $pin = $this->makeSection($suite, $auth, 'PIN Login', 1, 1);
 
         // ── Test Cases ─────────────────────────────────────────────────
         // Authentication — Biometric
@@ -155,9 +161,9 @@ class BetaGammaSeeder extends Seeder
         $v2 = Milestone::updateOrCreate(
             ['project_id' => $beta->id, 'parent_id' => null, 'name' => 'v2.0 Mobile Release'],
             [
-                'status'     => 'active',
-                'start_on'   => $today->toDateString(),
-                'due_on'     => $today->copy()->addDays(45)->toDateString(),
+                'status' => 'active',
+                'start_on' => $today->toDateString(),
+                'due_on' => $today->copy()->addDays(45)->toDateString(),
                 'created_by' => $this->users['lead1']->id,
             ],
         );
@@ -166,11 +172,11 @@ class BetaGammaSeeder extends Seeder
         $sprint1 = Milestone::updateOrCreate(
             ['project_id' => $beta->id, 'parent_id' => $v2->id, 'name' => 'Beta Sprint 1'],
             [
-                'status'       => 'completed',
-                'due_on'       => $today->copy()->subDays(5)->toDateString(),
+                'status' => 'completed',
+                'due_on' => $today->copy()->subDays(5)->toDateString(),
                 'is_completed' => true,
                 'completed_at' => now()->subDays(5),
-                'created_by'   => $this->users['lead1']->id,
+                'created_by' => $this->users['lead1']->id,
             ],
         );
         $this->miles['Beta Sprint 1'] = $sprint1;
@@ -178,8 +184,8 @@ class BetaGammaSeeder extends Seeder
         $sprint2 = Milestone::updateOrCreate(
             ['project_id' => $beta->id, 'parent_id' => $v2->id, 'name' => 'Beta Sprint 2'],
             [
-                'status'     => 'active',
-                'due_on'     => $today->copy()->addDays(10)->toDateString(),
+                'status' => 'active',
+                'due_on' => $today->copy()->addDays(10)->toDateString(),
                 'created_by' => $this->users['lead1']->id,
             ],
         );
@@ -190,21 +196,21 @@ class BetaGammaSeeder extends Seeder
             ['project_id' => $beta->id, 'name' => 'v2.0 Regression Plan'],
             [
                 'milestone_id' => $v2->id,
-                'created_by'   => $this->users['lead1']->id,
-                'start_on'     => $today->toDateString(),
-                'end_on'       => $today->copy()->addDays(14)->toDateString(),
+                'created_by' => $this->users['lead1']->id,
+                'start_on' => $today->toDateString(),
+                'end_on' => $today->copy()->addDays(14)->toDateString(),
             ],
         );
 
         $authRun = TestRun::updateOrCreate(
             ['project_id' => $beta->id, 'name' => 'Auth & PIN Run'],
             [
-                'suite_id'     => $suite->id,
-                'plan_id'      => $plan->id,
+                'suite_id' => $suite->id,
+                'plan_id' => $plan->id,
                 'milestone_id' => $sprint2->id,
-                'include_all'  => false,
-                'created_by'   => $this->users['lead1']->id,
-                'assigned_to'  => $this->users['tester1']->id,
+                'include_all' => false,
+                'created_by' => $this->users['lead1']->id,
+                'assigned_to' => $this->users['tester1']->id,
             ],
         );
         $this->runs['auth-run'] = $authRun;
@@ -213,12 +219,12 @@ class BetaGammaSeeder extends Seeder
         $payRun = TestRun::updateOrCreate(
             ['project_id' => $beta->id, 'name' => 'Payments Run'],
             [
-                'suite_id'     => $suite->id,
-                'plan_id'      => $plan->id,
+                'suite_id' => $suite->id,
+                'plan_id' => $plan->id,
                 'milestone_id' => $sprint2->id,
-                'include_all'  => false,
-                'created_by'   => $this->users['lead1']->id,
-                'assigned_to'  => $this->users['tester3']->id,
+                'include_all' => false,
+                'created_by' => $this->users['lead1']->id,
+                'assigned_to' => $this->users['tester3']->id,
             ],
         );
         $this->runs['pay-run'] = $payRun;
@@ -239,20 +245,20 @@ class BetaGammaSeeder extends Seeder
         $this->makeTest('auth-run', 'BC-003', $this->users['tester1']->id);
         $this->makeTest('auth-run', 'BC-004', $this->users['tester1']->id);
         $this->makeTest('auth-run', 'BC-005', $this->users['tester1']->id);
-        $this->makeTest('pay-run',  'BC-007', $this->users['tester3']->id);
-        $this->makeTest('pay-run',  'BC-008', $this->users['tester3']->id);
-        $this->makeTest('pay-run',  'BC-009', $this->users['tester3']->id);
-        $this->makeTest('pay-run',  'BC-010', $this->users['tester3']->id);
+        $this->makeTest('pay-run', 'BC-007', $this->users['tester3']->id);
+        $this->makeTest('pay-run', 'BC-008', $this->users['tester3']->id);
+        $this->makeTest('pay-run', 'BC-009', $this->users['tester3']->id);
+        $this->makeTest('pay-run', 'BC-010', $this->users['tester3']->id);
 
-        $this->addResult('auth-run', 'BC-001', 'passed',  90,  'tester1');
-        $this->addResult('auth-run', 'BC-002', 'passed',  60,  'tester1');
-        $this->addResult('auth-run', 'BC-003', 'passed',  40,  'tester1');
-        $this->addResult('auth-run', 'BC-004', 'passed',  30,  'tester1');
-        $this->addResult('auth-run', 'BC-005', 'failed',  45,  'tester1', 'Account not locking after 5th attempt — defect filed');
-        $this->addResult('pay-run',  'BC-007', 'passed',  120, 'tester3');
-        $this->addResult('pay-run',  'BC-008', 'passed',  55,  'tester3');
-        $this->addResult('pay-run',  'BC-009', 'passed',  50,  'tester3');
-        $this->addResult('pay-run',  'BC-010', 'blocked', null,'tester3', 'Fraud service unavailable in staging');
+        $this->addResult('auth-run', 'BC-001', 'passed', 90, 'tester1');
+        $this->addResult('auth-run', 'BC-002', 'passed', 60, 'tester1');
+        $this->addResult('auth-run', 'BC-003', 'passed', 40, 'tester1');
+        $this->addResult('auth-run', 'BC-004', 'passed', 30, 'tester1');
+        $this->addResult('auth-run', 'BC-005', 'failed', 45, 'tester1', 'Account not locking after 5th attempt — defect filed');
+        $this->addResult('pay-run', 'BC-007', 'passed', 120, 'tester3');
+        $this->addResult('pay-run', 'BC-008', 'passed', 55, 'tester3');
+        $this->addResult('pay-run', 'BC-009', 'passed', 50, 'tester3');
+        $this->addResult('pay-run', 'BC-010', 'blocked', null, 'tester3', 'Fraud service unavailable in staging');
 
         $authRun->update(['passed_count' => 4, 'failed_count' => 1]);
         $payRun->update(['passed_count' => 3, 'blocked_count' => 1]);
@@ -265,21 +271,21 @@ class BetaGammaSeeder extends Seeder
 
     private function seedGamma(): void
     {
-        $gamma   = $this->projects['project-gamma'];
+        $gamma = $this->projects['project-gamma'];
         $frontend = Suite::where('project_id', $gamma->id)->where('name', 'Frontend Suite')->firstOrFail();
-        $backend  = Suite::where('project_id', $gamma->id)->where('name', 'Backend Suite')->firstOrFail();
+        $backend = Suite::where('project_id', $gamma->id)->where('name', 'Backend Suite')->firstOrFail();
         $this->suites['Frontend Suite'] = $frontend;
-        $this->suites['Backend Suite']  = $backend;
+        $this->suites['Backend Suite'] = $backend;
 
         // ── Frontend Sections ──────────────────────────────────────────
-        $cart     = $this->makeSection($frontend, null, 'Cart & Checkout',   0, 0);
-        $search   = $this->makeSection($frontend, null, 'Search & Filters',  0, 1);
-        $pdp      = $this->makeSection($frontend, null, 'Product Detail',    0, 2);
+        $cart = $this->makeSection($frontend, null, 'Cart & Checkout', 0, 0);
+        $search = $this->makeSection($frontend, null, 'Search & Filters', 0, 1);
+        $pdp = $this->makeSection($frontend, null, 'Product Detail', 0, 2);
 
         // ── Backend Sections ───────────────────────────────────────────
-        $orders   = $this->makeSection($backend, null, 'Orders API',         0, 0);
-        $catalog  = $this->makeSection($backend, null, 'Catalog API',        0, 1);
-        $perf     = $this->makeSection($backend, null, 'Performance',        0, 2);
+        $orders = $this->makeSection($backend, null, 'Orders API', 0, 0);
+        $catalog = $this->makeSection($backend, null, 'Catalog API', 0, 1);
+        $perf = $this->makeSection($backend, null, 'Performance', 0, 2);
 
         // ── Frontend Test Cases ────────────────────────────────────────
         // Cart & Checkout
@@ -371,9 +377,9 @@ class BetaGammaSeeder extends Seeder
         $q3Launch = Milestone::updateOrCreate(
             ['project_id' => $gamma->id, 'parent_id' => null, 'name' => 'Q3 Platform Launch'],
             [
-                'status'     => 'active',
-                'start_on'   => $today->toDateString(),
-                'due_on'     => $today->copy()->addDays(60)->toDateString(),
+                'status' => 'active',
+                'start_on' => $today->toDateString(),
+                'due_on' => $today->copy()->addDays(60)->toDateString(),
                 'created_by' => $this->users['lead2']->id,
             ],
         );
@@ -382,11 +388,11 @@ class BetaGammaSeeder extends Seeder
         $featureFreezeMs = Milestone::updateOrCreate(
             ['project_id' => $gamma->id, 'parent_id' => $q3Launch->id, 'name' => 'Feature Freeze'],
             [
-                'status'       => 'completed',
-                'due_on'       => $today->copy()->subDays(3)->toDateString(),
+                'status' => 'completed',
+                'due_on' => $today->copy()->subDays(3)->toDateString(),
                 'is_completed' => true,
                 'completed_at' => now()->subDays(3),
-                'created_by'   => $this->users['lead2']->id,
+                'created_by' => $this->users['lead2']->id,
             ],
         );
         $this->miles['Feature Freeze'] = $featureFreezeMs;
@@ -394,8 +400,8 @@ class BetaGammaSeeder extends Seeder
         $regressionMs = Milestone::updateOrCreate(
             ['project_id' => $gamma->id, 'parent_id' => $q3Launch->id, 'name' => 'Regression Window'],
             [
-                'status'     => 'active',
-                'due_on'     => $today->copy()->addDays(14)->toDateString(),
+                'status' => 'active',
+                'due_on' => $today->copy()->addDays(14)->toDateString(),
                 'created_by' => $this->users['lead2']->id,
             ],
         );
@@ -405,11 +411,11 @@ class BetaGammaSeeder extends Seeder
         $frontendRun = TestRun::updateOrCreate(
             ['project_id' => $gamma->id, 'name' => 'Frontend Regression'],
             [
-                'suite_id'     => $frontend->id,
+                'suite_id' => $frontend->id,
                 'milestone_id' => $regressionMs->id,
-                'include_all'  => false,
-                'created_by'   => $this->users['lead2']->id,
-                'assigned_to'  => $this->users['tester2']->id,
+                'include_all' => false,
+                'created_by' => $this->users['lead2']->id,
+                'assigned_to' => $this->users['tester2']->id,
             ],
         );
         $this->runs['fe-run'] = $frontendRun;
@@ -418,11 +424,11 @@ class BetaGammaSeeder extends Seeder
         $backendRun = TestRun::updateOrCreate(
             ['project_id' => $gamma->id, 'name' => 'Backend API Run'],
             [
-                'suite_id'     => $backend->id,
+                'suite_id' => $backend->id,
                 'milestone_id' => $regressionMs->id,
-                'include_all'  => false,
-                'created_by'   => $this->users['lead2']->id,
-                'assigned_to'  => $this->users['tester3']->id,
+                'include_all' => false,
+                'created_by' => $this->users['lead2']->id,
+                'assigned_to' => $this->users['tester3']->id,
             ],
         );
         $this->runs['be-run'] = $backendRun;
@@ -431,9 +437,9 @@ class BetaGammaSeeder extends Seeder
         $perfRun = TestRun::updateOrCreate(
             ['project_id' => $gamma->id, 'name' => 'Performance Smoke'],
             [
-                'suite_id'    => $backend->id,
+                'suite_id' => $backend->id,
                 'include_all' => false,
-                'created_by'  => $this->users['admin']->id,
+                'created_by' => $this->users['admin']->id,
             ],
         );
         $this->runs['perf-run'] = $perfRun;
@@ -454,16 +460,16 @@ class BetaGammaSeeder extends Seeder
         $this->makeTest('perf-run', 'GC-016', null);
         $this->makeTest('perf-run', 'GC-017', null);
 
-        $this->addResult('fe-run', 'GC-001', 'passed',  70,   'tester2');
-        $this->addResult('fe-run', 'GC-002', 'passed',  45,   'tester2');
-        $this->addResult('fe-run', 'GC-003', 'failed',  200,  'tester2', 'Payment step crashes on Safari 17 — JS error in console');
-        $this->addResult('fe-run', 'GC-004', 'passed',  90,   'tester2');
-        $this->addResult('fe-run', 'GC-006', 'passed',  55,   'tester2');
-        $this->addResult('fe-run', 'GC-007', 'passed',  40,   'tester2');
-        $this->addResult('be-run', 'GC-011', 'passed',  80,   'tester3');
-        $this->addResult('be-run', 'GC-012', 'passed',  35,   'tester3');
-        $this->addResult('be-run', 'GC-013', 'passed',  60,   'tester3');
-        $this->addResult('be-run', 'GC-014', 'passed',  50,   'tester3');
+        $this->addResult('fe-run', 'GC-001', 'passed', 70, 'tester2');
+        $this->addResult('fe-run', 'GC-002', 'passed', 45, 'tester2');
+        $this->addResult('fe-run', 'GC-003', 'failed', 200, 'tester2', 'Payment step crashes on Safari 17 — JS error in console');
+        $this->addResult('fe-run', 'GC-004', 'passed', 90, 'tester2');
+        $this->addResult('fe-run', 'GC-006', 'passed', 55, 'tester2');
+        $this->addResult('fe-run', 'GC-007', 'passed', 40, 'tester2');
+        $this->addResult('be-run', 'GC-011', 'passed', 80, 'tester3');
+        $this->addResult('be-run', 'GC-012', 'passed', 35, 'tester3');
+        $this->addResult('be-run', 'GC-013', 'passed', 60, 'tester3');
+        $this->addResult('be-run', 'GC-014', 'passed', 50, 'tester3');
         $this->addResult('be-run', 'GC-015', 'blocked', null, 'tester3', 'Search index not deployed to staging yet');
         // perf-run tests left untested intentionally
 
@@ -485,18 +491,18 @@ class BetaGammaSeeder extends Seeder
     }
 
     /**
-     * @param list<array{content: string, expected: string}> $steps
-     * @param array<string, mixed> $extra
+     * @param  list<array{content: string, expected: string}>  $steps
+     * @param  array<string, mixed>  $extra
      */
     private function makeCase(
-        Suite   $suite,
+        Suite $suite,
         Section $section,
-        string  $title,
-        string  $template,
-        string  $priority,
-        string  $status,
-        array   $steps = [],
-        array   $extra = [],
+        string $title,
+        string $template,
+        string $priority,
+        string $status,
+        array $steps = [],
+        array $extra = [],
     ): TestCase {
         // Code = first 6 chars of title ("BC-001" / "GC-001" etc.)
         $code = substr($title, 0, 6);
@@ -505,9 +511,9 @@ class BetaGammaSeeder extends Seeder
             ['suite_id' => $suite->id, 'title' => $title],
             array_merge([
                 'section_id' => $section->id,
-                'template'   => $template,
-                'priority'   => $priority,
-                'status'     => $status,
+                'template' => $template,
+                'priority' => $priority,
+                'status' => $status,
                 'created_by' => $this->users['lead1']->id,
                 'updated_by' => $this->users['lead1']->id,
             ], $extra),
@@ -521,6 +527,7 @@ class BetaGammaSeeder extends Seeder
         }
 
         $this->cases[$code] = $tc;
+
         return $tc;
     }
 
@@ -528,39 +535,40 @@ class BetaGammaSeeder extends Seeder
     {
         $test = Test::firstOrCreate(
             [
-                'run_id'  => $this->runs[$runKey]->id,
+                'run_id' => $this->runs[$runKey]->id,
                 'case_id' => $this->cases[$caseCode]->id,
             ],
             ['assigned_to' => $assignedTo, 'status' => 'untested'],
         );
 
-        $this->tests[$runKey . '|' . $caseCode] = $test;
+        $this->tests[$runKey.'|'.$caseCode] = $test;
+
         return $test;
     }
 
     private function addResult(
-        string  $runKey,
-        string  $caseCode,
-        string  $status,
-        ?int    $elapsed,
-        string  $userKey,
+        string $runKey,
+        string $caseCode,
+        string $status,
+        ?int $elapsed,
+        string $userKey,
         ?string $comment = null,
     ): void {
-        $test = $this->tests[$runKey . '|' . $caseCode];
+        $test = $this->tests[$runKey.'|'.$caseCode];
 
         $result = TestResult::where('test_id', $test->id)
             ->where('status', $status)
             ->first();
 
         if (! $result) {
-            $result = new TestResult();
+            $result = new TestResult;
             $result->forceFill([
-                'test_id'    => $test->id,
-                'run_id'     => $test->run_id,
-                'case_id'    => $test->case_id,
-                'status'     => $status,
-                'elapsed'    => $elapsed,
-                'comment'    => $comment,
+                'test_id' => $test->id,
+                'run_id' => $test->run_id,
+                'case_id' => $test->case_id,
+                'status' => $status,
+                'elapsed' => $elapsed,
+                'comment' => $comment,
                 'created_by' => $this->users[$userKey]->id,
                 'created_at' => now(),
             ])->save();
@@ -574,7 +582,7 @@ class BetaGammaSeeder extends Seeder
     {
         foreach ($caseCodes as $code) {
             DB::table('test_run_cases')->updateOrInsert([
-                'test_run_id'  => $run->id,
+                'test_run_id' => $run->id,
                 'test_case_id' => $this->cases[$code]->id,
             ]);
         }

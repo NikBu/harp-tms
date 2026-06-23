@@ -30,11 +30,11 @@ class RequirementObserver
         foreach ($dirty as $field => $newValue) {
             $entries[] = [
                 'requirement_id' => $requirement->id,
-                'changed_by'     => Auth::id(),
-                'field_name'     => $field,
-                'old_value'      => $this->castForStorage($requirement->getOriginal($field)),
-                'new_value'      => $this->castForStorage($newValue),
-                'created_at'     => now(),
+                'changed_by' => Auth::id(),
+                'field_name' => $field,
+                'old_value' => $this->castForStorage($requirement->getOriginal($field)),
+                'new_value' => $this->castForStorage($newValue),
+                'created_at' => now(),
             ];
         }
 

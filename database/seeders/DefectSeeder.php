@@ -24,7 +24,7 @@ class DefectSeeder extends Seeder
         $project = Project::where('name', 'Project Alpha')->firstOrFail();
         $tester1 = User::where('email', 'tester1@harp.test')->firstOrFail();
         $tester2 = User::where('email', 'tester2@harp.test')->firstOrFail();
-        $lead    = User::where('email', 'lead1@harp.test')->firstOrFail();
+        $lead = User::where('email', 'lead1@harp.test')->firstOrFail();
 
         $runA = TestRun::where('project_id', $project->id)->where('name', 'Auth Suite Run')->firstOrFail();
         $runB = TestRun::where('project_id', $project->id)->where('name', 'Dashboard Run')->firstOrFail();
@@ -141,17 +141,17 @@ class DefectSeeder extends Seeder
         /** @var TestResult $result */
         $result = TestResult::firstOrNew([
             'test_id' => $test->id,
-            'status'  => 'failed',
+            'status' => 'failed',
         ]);
 
         if (! $result->exists) {
             $result->forceFill([
-                'test_id'    => $test->id,
-                'run_id'     => $run->id,
-                'case_id'    => $test->case_id,
-                'status'     => 'failed',
-                'comment'    => $comment,
-                'elapsed'    => $elapsed,
+                'test_id' => $test->id,
+                'run_id' => $run->id,
+                'case_id' => $test->case_id,
+                'status' => 'failed',
+                'comment' => $comment,
+                'elapsed' => $elapsed,
                 'created_by' => $user->id,
                 'created_at' => now(),
             ])->save();
@@ -163,7 +163,7 @@ class DefectSeeder extends Seeder
     /**
      * Idempotent defect link creation — skips if (result, tracker, external_id) already exists.
      *
-     * @param \DateTimeInterface $createdAt  Accepts both Carbon and CarbonImmutable (Laravel 11+)
+     * @param  \DateTimeInterface  $createdAt  Accepts both Carbon and CarbonImmutable (Laravel 11+)
      */
     private function createDefectLink(
         TestResult $result,
@@ -178,20 +178,20 @@ class DefectSeeder extends Seeder
         /** @var DefectLink $link */
         $link = DefectLink::firstOrNew([
             'test_result_id' => $result->id,
-            'tracker_type'   => $trackerType,
-            'external_id'    => $externalId,
+            'tracker_type' => $trackerType,
+            'external_id' => $externalId,
         ]);
 
         if (! $link->exists) {
             $link->forceFill([
                 'test_result_id' => $result->id,
-                'tracker_type'   => $trackerType,
-                'external_id'    => $externalId,
-                'external_url'   => $externalUrl,
-                'title'          => $title,
-                'status'         => $status,
-                'created_by'     => $createdBy,
-                'created_at'     => $createdAt,
+                'tracker_type' => $trackerType,
+                'external_id' => $externalId,
+                'external_url' => $externalUrl,
+                'title' => $title,
+                'status' => $status,
+                'created_by' => $createdBy,
+                'created_at' => $createdAt,
             ])->save();
         }
 

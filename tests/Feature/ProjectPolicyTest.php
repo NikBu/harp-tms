@@ -2,14 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Integration;
 use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\Suite;
 use App\Models\Test;
 use App\Models\TestCase;
 use App\Models\TestPlan;
-use App\Models\TestResult;
 use App\Models\TestRun;
 use App\Models\User;
 use App\Policies\ProjectPolicy;
@@ -38,7 +36,7 @@ class ProjectPolicyTest extends BaseTestCase
 
     private function userWithRole(string $role): array
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $project = Project::factory()->create();
         $project->members()->attach($user->id, ['role' => $role]);
 
@@ -159,7 +157,7 @@ class ProjectPolicyTest extends BaseTestCase
 
     public function test_global_admin_passes_all_abilities(): void
     {
-        $admin   = $this->globalAdmin();
+        $admin = $this->globalAdmin();
         $project = Project::factory()->create(); // admin is NOT a member
 
         foreach (['view', 'edit', 'submitResults', 'manageRuns', 'delete', 'manageMembers'] as $ability) {
@@ -177,7 +175,7 @@ class ProjectPolicyTest extends BaseTestCase
     public function test_non_member_fails_all_abilities(): void
     {
         $outsider = User::factory()->create();
-        $project  = Project::factory()->create();
+        $project = Project::factory()->create();
 
         foreach (['view', 'edit', 'submitResults', 'manageRuns', 'delete', 'manageMembers'] as $ability) {
             $this->assertFalse(
@@ -225,7 +223,7 @@ class ProjectPolicyTest extends BaseTestCase
 
         $this->actingAs($user)
             ->post("/projects/{$project->id}/milestones", [
-                'name'   => 'Should Fail',
+                'name' => 'Should Fail',
                 'status' => 'upcoming',
             ])
             ->assertForbidden();
@@ -237,7 +235,7 @@ class ProjectPolicyTest extends BaseTestCase
 
         $this->actingAs($user)
             ->post("/projects/{$project->id}/milestones", [
-                'name'   => 'Author Milestone',
+                'name' => 'Author Milestone',
                 'status' => 'upcoming',
             ])
             ->assertRedirect();
@@ -248,7 +246,7 @@ class ProjectPolicyTest extends BaseTestCase
     public function test_tester_cannot_delete_milestone(): void
     {
         [$owner, $project] = $this->userWithRole('project_admin');
-        $tester            = User::factory()->create();
+        $tester = User::factory()->create();
         $project->members()->attach($tester->id, ['role' => 'tester']);
         $milestone = Milestone::factory()->create(['project_id' => $project->id]);
 
@@ -288,8 +286,8 @@ class ProjectPolicyTest extends BaseTestCase
 
         $this->actingAs($user)
             ->post("/projects/{$project->id}/runs", [
-                'name'        => 'Should Fail',
-                'suite_id'    => $suite->id,
+                'name' => 'Should Fail',
+                'suite_id' => $suite->id,
                 'include_all' => false,
             ])
             ->assertForbidden();
@@ -302,8 +300,8 @@ class ProjectPolicyTest extends BaseTestCase
 
         $this->actingAs($user)
             ->post("/projects/{$project->id}/runs", [
-                'name'        => 'Lead Run',
-                'suite_id'    => $suite->id,
+                'name' => 'Lead Run',
+                'suite_id' => $suite->id,
                 'include_all' => false,
             ])
             ->assertRedirect();
@@ -317,10 +315,10 @@ class ProjectPolicyTest extends BaseTestCase
         $tester = User::factory()->create();
         $project->members()->attach($tester->id, ['role' => 'tester']);
 
-        $suite    = Suite::factory()->create(['project_id' => $project->id]);
-        $case     = TestCase::factory()->create(['suite_id' => $suite->id]);
-        $run      = TestRun::factory()->create(['project_id' => $project->id, 'suite_id' => $suite->id]);
-        $test     = Test::factory()->create(['run_id' => $run->id, 'case_id' => $case->id, 'status' => 'untested']);
+        $suite = Suite::factory()->create(['project_id' => $project->id]);
+        $case = TestCase::factory()->create(['suite_id' => $suite->id]);
+        $run = TestRun::factory()->create(['project_id' => $project->id, 'suite_id' => $suite->id]);
+        $test = Test::factory()->create(['run_id' => $run->id, 'case_id' => $case->id, 'status' => 'untested']);
 
         $this->actingAs($tester)
             ->post("/runs/{$run->id}/tests/{$test->id}/results", [
@@ -329,9 +327,9 @@ class ProjectPolicyTest extends BaseTestCase
             ->assertRedirect();
 
         $this->assertDatabaseHas('test_results', [
-            'run_id'  => $run->id,
+            'run_id' => $run->id,
             'case_id' => $case->id,
-            'status'  => 'passed',
+            'status' => 'passed',
         ]);
     }
 
@@ -342,9 +340,9 @@ class ProjectPolicyTest extends BaseTestCase
         $project->members()->attach($viewer->id, ['role' => 'viewer']);
 
         $suite = Suite::factory()->create(['project_id' => $project->id]);
-        $case  = TestCase::factory()->create(['suite_id' => $suite->id]);
-        $run   = TestRun::factory()->create(['project_id' => $project->id, 'suite_id' => $suite->id]);
-        $test  = Test::factory()->create(['run_id' => $run->id, 'case_id' => $case->id, 'status' => 'untested']);
+        $case = TestCase::factory()->create(['suite_id' => $suite->id]);
+        $run = TestRun::factory()->create(['project_id' => $project->id, 'suite_id' => $suite->id]);
+        $test = Test::factory()->create(['run_id' => $run->id, 'case_id' => $case->id, 'status' => 'untested']);
 
         $this->actingAs($viewer)
             ->post("/runs/{$run->id}/tests/{$test->id}/results", [
@@ -479,7 +477,7 @@ class ProjectPolicyTest extends BaseTestCase
         $this->actingAs($user)
             ->post("/projects/{$project->id}/integrations", [
                 'integration_type' => 'jira',
-                'is_active'        => true,
+                'is_active' => true,
             ])
             ->assertForbidden();
     }
@@ -491,14 +489,14 @@ class ProjectPolicyTest extends BaseTestCase
         $this->actingAs($user)
             ->post("/projects/{$project->id}/integrations", [
                 'integration_type' => 'jira',
-                'name'             => 'My Jira',
-                'config'           => ['base_url' => 'https://example.atlassian.net'],
-                'is_active'        => false,
+                'name' => 'My Jira',
+                'config' => ['base_url' => 'https://example.atlassian.net'],
+                'is_active' => false,
             ])
             ->assertRedirect();
 
         $this->assertDatabaseHas('integrations', [
-            'project_id'       => $project->id,
+            'project_id' => $project->id,
             'integration_type' => 'jira',
         ]);
     }
@@ -517,7 +515,7 @@ class ProjectPolicyTest extends BaseTestCase
     public function test_non_member_cannot_see_project_defects(): void
     {
         $outsider = User::factory()->create();
-        $project  = Project::factory()->create();
+        $project = Project::factory()->create();
 
         $this->actingAs($outsider)
             ->get("/projects/{$project->id}/defects")
@@ -528,7 +526,7 @@ class ProjectPolicyTest extends BaseTestCase
 
     public function test_global_admin_can_view_any_project(): void
     {
-        $admin   = $this->globalAdmin();
+        $admin = $this->globalAdmin();
         $project = Project::factory()->create(); // admin is NOT a member
 
         $this->actingAs($admin)
@@ -538,8 +536,8 @@ class ProjectPolicyTest extends BaseTestCase
 
     public function test_global_admin_can_delete_any_milestone(): void
     {
-        $admin     = $this->globalAdmin();
-        $project   = Project::factory()->create();
+        $admin = $this->globalAdmin();
+        $project = Project::factory()->create();
         $milestone = Milestone::factory()->create(['project_id' => $project->id]);
 
         $this->actingAs($admin)

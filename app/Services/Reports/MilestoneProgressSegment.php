@@ -37,37 +37,37 @@ class MilestoneProgressSegment
                 ->selectRaw('count(*) as total, sum(case when is_completed then 1 else 0 end) as done')
                 ->first();
 
-            $total    = (int) ($runStats->total ?? 0);
-            $done     = (int) ($runStats->done  ?? 0);
+            $total = (int) ($runStats->total ?? 0);
+            $done = (int) ($runStats->done ?? 0);
             $complete = (bool) $m->is_completed;
 
             return [
-                'id'           => $m->id,
-                'name'         => $m->name,
-                'due_on'       => $m->due_on,
-                'parent_id'    => $m->parent_id,
+                'id' => $m->id,
+                'name' => $m->name,
+                'due_on' => $m->due_on,
+                'parent_id' => $m->parent_id,
                 'is_completed' => $complete,
-                'run_count'    => $total,
-                'done_count'   => $done,
-                'pct_done'     => $total > 0
+                'run_count' => $total,
+                'done_count' => $done,
+                'pct_done' => $total > 0
                     ? round(($done / $total) * 100, 1)
                     : ($complete ? 100.0 : 0.0),
             ];
         })->values()->all();
 
-        $totalMilestones     = count($rows);
+        $totalMilestones = count($rows);
         $completedMilestones = collect($rows)->where('is_completed', true)->count();
-        $overallPct          = $totalMilestones > 0
+        $overallPct = $totalMilestones > 0
             ? round((collect($rows)->sum('pct_done') / $totalMilestones), 1)
             : 0.0;
 
         return [
             'milestones' => $rows,
-            'totals'     => [
-                'total'     => $totalMilestones,
+            'totals' => [
+                'total' => $totalMilestones,
                 'completed' => $completedMilestones,
-                'active'    => $totalMilestones - $completedMilestones,
-                'pct_done'  => $overallPct,
+                'active' => $totalMilestones - $completedMilestones,
+                'pct_done' => $overallPct,
             ],
         ];
     }
@@ -77,7 +77,7 @@ class MilestoneProgressSegment
     {
         return [
             'milestones' => [],
-            'totals'     => ['total' => 0, 'completed' => 0, 'active' => 0, 'pct_done' => 0.0],
+            'totals' => ['total' => 0, 'completed' => 0, 'active' => 0, 'pct_done' => 0.0],
         ];
     }
 }

@@ -53,14 +53,14 @@ class IntegrationController extends Controller
             ->keyBy('integration_type');
 
         return Inertia::render('integrations/index', [
-            'project'      => $project->only(['id', 'name']),
-            'catalogue'    => self::CATALOGUE,
-            'saved'        => $saved->map(fn (Integration $i) => [
-                'id'               => $i->id,
+            'project' => $project->only(['id', 'name']),
+            'catalogue' => self::CATALOGUE,
+            'saved' => $saved->map(fn (Integration $i) => [
+                'id' => $i->id,
                 'integration_type' => $i->integration_type,
-                'name'             => $i->name,
-                'config'           => $i->config ?? [],
-                'is_active'        => $i->is_active,
+                'name' => $i->name,
+                'config' => $i->config ?? [],
+                'is_active' => $i->is_active,
             ])->values(),
             'trackerTypes' => self::TRACKER_TYPES,
         ]);
@@ -72,21 +72,21 @@ class IntegrationController extends Controller
 
         $data = $request->validate([
             'integration_type' => ['required', 'string', Rule::in(self::TRACKER_TYPES)],
-            'name'             => ['nullable', 'string', 'max:120'],
-            'config'           => ['nullable', 'array'],
-            'credentials'      => ['nullable', 'array'],
-            'is_active'        => ['boolean'],
+            'name' => ['nullable', 'string', 'max:120'],
+            'config' => ['nullable', 'array'],
+            'credentials' => ['nullable', 'array'],
+            'is_active' => ['boolean'],
         ]);
 
         $integration = $project->integrations()
             ->firstOrNew(['integration_type' => $data['integration_type']]);
 
         $integration->fill([
-            'name'        => $data['name'] ?? $data['integration_type'],
-            'config'      => $data['config']      ?? [],
+            'name' => $data['name'] ?? $data['integration_type'],
+            'config' => $data['config'] ?? [],
             'credentials' => $data['credentials'] ?? [],
-            'is_active'   => $data['is_active']   ?? false,
-            'created_by'  => $request->user()->getKey(),
+            'is_active' => $data['is_active'] ?? false,
+            'created_by' => $request->user()->getKey(),
         ]);
 
         $integration->save();
@@ -100,17 +100,17 @@ class IntegrationController extends Controller
         abort_unless($integration->project_id === $project->id, 404);
 
         $data = $request->validate([
-            'name'        => ['nullable', 'string', 'max:120'],
-            'config'      => ['nullable', 'array'],
+            'name' => ['nullable', 'string', 'max:120'],
+            'config' => ['nullable', 'array'],
             'credentials' => ['nullable', 'array'],
-            'is_active'   => ['boolean'],
+            'is_active' => ['boolean'],
         ]);
 
         $integration->fill([
-            'name'        => $data['name']        ?? $integration->name,
-            'config'      => $data['config']      ?? $integration->config,
+            'name' => $data['name'] ?? $integration->name,
+            'config' => $data['config'] ?? $integration->config,
             'credentials' => $data['credentials'] ?? [],
-            'is_active'   => $data['is_active']   ?? $integration->is_active,
+            'is_active' => $data['is_active'] ?? $integration->is_active,
         ]);
 
         $integration->save();

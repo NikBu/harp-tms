@@ -29,9 +29,9 @@ return [
     ],
     'export' => [
         'button' => 'Экспорт',
-        'csv'  => 'Экспорт в CSV',
+        'csv' => 'Экспорт в CSV',
         'xlsx' => 'Экспорт в XLSX',
-        'pdf'  => 'Экспорт в PDF',
+        'pdf' => 'Экспорт в PDF',
     ],
     'dashboard' => [
         'run_summary' => 'Сводка по тест-ранам',

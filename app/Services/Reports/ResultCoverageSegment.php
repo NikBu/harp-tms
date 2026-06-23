@@ -4,7 +4,6 @@ namespace App\Services\Reports;
 
 use App\Models\TestCase;
 use App\Models\TestResult;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -31,14 +30,14 @@ class ResultCoverageSegment
         $runs = DB::table('test_runs')
             ->whereIn('project_id', $projectIds)
             ->get(['id', 'passed_count', 'failed_count', 'blocked_count',
-                   'untested_count', 'retest_count', 'skipped_count']);
+                'untested_count', 'retest_count', 'skipped_count']);
 
-        $passed   = (int) $runs->sum('passed_count');
-        $failed   = (int) $runs->sum('failed_count');
-        $blocked  = (int) $runs->sum('blocked_count');
+        $passed = (int) $runs->sum('passed_count');
+        $failed = (int) $runs->sum('failed_count');
+        $blocked = (int) $runs->sum('blocked_count');
         $untested = (int) $runs->sum('untested_count');
-        $retest   = (int) $runs->sum('retest_count');
-        $skipped  = (int) $runs->sum('skipped_count');
+        $retest = (int) $runs->sum('retest_count');
+        $skipped = (int) $runs->sum('skipped_count');
 
         $totalCases = TestCase::query()
             ->join('suites', 'test_cases.suite_id', '=', 'suites.id')
@@ -51,25 +50,25 @@ class ResultCoverageSegment
             ->distinct('test_results.case_id')
             ->count('test_results.case_id');
 
-        $casesRun  = min($casesRun, $totalCases);
-        $neverRun  = max($totalCases - $casesRun, 0);
+        $casesRun = min($casesRun, $totalCases);
+        $neverRun = max($totalCases - $casesRun, 0);
 
         // Pass rate by priority
         $byPriority = $this->passByPriority($projectIds);
 
         return [
-            'passed'    => $passed,
-            'failed'    => $failed,
-            'blocked'   => $blocked,
-            'untested'  => $untested,
-            'retest'    => $retest,
-            'skipped'   => $skipped,
+            'passed' => $passed,
+            'failed' => $failed,
+            'blocked' => $blocked,
+            'untested' => $untested,
+            'retest' => $retest,
+            'skipped' => $skipped,
             'run_count' => $runs->count(),
-            'coverage'  => [
-                'total'    => $totalCases,
-                'run'      => $casesRun,
+            'coverage' => [
+                'total' => $totalCases,
+                'run' => $casesRun,
                 'untested' => $neverRun,
-                'pct'      => $totalCases > 0
+                'pct' => $totalCases > 0
                     ? round(($casesRun / $totalCases) * 100, 1)
                     : 0.0,
             ],
@@ -93,13 +92,13 @@ class ResultCoverageSegment
 
         $result = [];
         foreach (['critical', 'high', 'medium', 'low'] as $p) {
-            $pRows  = $rows->where('priority', $p);
-            $total  = (int) $pRows->sum('cnt');
+            $pRows = $rows->where('priority', $p);
+            $total = (int) $pRows->sum('cnt');
             $passed = (int) $pRows->where('status', 'passed')->sum('cnt');
             $result[$p] = [
                 'passed' => $passed,
-                'total'  => $total,
-                'pct'    => $total > 0 ? round(($passed / $total) * 100, 1) : 0.0,
+                'total' => $total,
+                'pct' => $total > 0 ? round(($passed / $total) * 100, 1) : 0.0,
             ];
         }
 
@@ -117,8 +116,8 @@ class ResultCoverageSegment
         return [
             'passed' => 0, 'failed' => 0, 'blocked' => 0,
             'untested' => 0, 'retest' => 0, 'skipped' => 0,
-            'run_count'   => 0,
-            'coverage'    => ['total' => 0, 'run' => 0, 'untested' => 0, 'pct' => 0.0],
+            'run_count' => 0,
+            'coverage' => ['total' => 0, 'run' => 0, 'untested' => 0, 'pct' => 0.0],
             'by_priority' => $byPriority,
         ];
     }
