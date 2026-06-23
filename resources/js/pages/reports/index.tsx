@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { BarChart2, Download } from 'lucide-react';
+import { BarChart2, Download } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +26,12 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
     ReportDashboard,
     type DashboardData,
 } from '@/components/reports/report-dashboard';
@@ -35,6 +42,35 @@ interface ReportType {
 }
 
 type ProjectOption = { id: number; name: string };
+
+function DashboardExportButton({ projectId }: { projectId?: number }) {
+    const base = projectId
+        ? `/projects/${projectId}/reports/dashboard/export`
+        : '/reports/dashboard/export';
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1.5 px-3 text-xs">
+                    <Download className="h-3.5 w-3.5" />
+                    Export
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                    <a href={`${base}?format=xlsx`} download>
+                        Excel (.xlsx)
+                    </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <a href={`${base}?format=pdf`} download>
+                        Print / PDF (.html)
+                    </a>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
 
 function DashboardExportButton({ projectId }: { projectId?: number }) {
     const base = projectId
@@ -94,6 +130,7 @@ export default function ReportsIndex({
 
     function runCrossReport() {
         if (selectedProjects.length === 0) return;
+        if (selectedProjects.length === 0) return;
         setRunning(true);
         router.post(
             '/reports/cross-project',
@@ -131,6 +168,8 @@ export default function ReportsIndex({
 
     const crossProjects = projects ?? [];
 
+    const crossProjects = projects ?? [];
+
     const crossPanel = (
         <Card>
             <CardHeader>
@@ -146,10 +185,12 @@ export default function ReportsIndex({
                     <Label>{t('reports.cross.projects')}</Label>
                     <div className="grid max-h-56 gap-1 overflow-y-auto rounded-md border p-2">
                         {crossProjects.length === 0 ? (
+                        {crossProjects.length === 0 ? (
                             <p className="px-1 py-2 text-sm text-muted-foreground">
                                 {t('projects.empty_title')}
                             </p>
                         ) : (
+                            crossProjects.map((p) => (
                             crossProjects.map((p) => (
                                 <label
                                     key={p.id}
@@ -157,6 +198,7 @@ export default function ReportsIndex({
                                 >
                                     <input
                                         type="checkbox"
+                                        checked={selectedProjects.includes(p.id)}
                                         checked={selectedProjects.includes(p.id)}
                                         onChange={() => toggleProject(p.id)}
                                         className="size-4 accent-primary"
@@ -205,6 +247,15 @@ export default function ReportsIndex({
         </div>
     );
 
+    const dashboardTab = (
+        <div className="grid gap-4">
+            <div className="flex justify-end">
+                <DashboardExportButton projectId={project?.id} />
+            </div>
+            <ReportDashboard data={dashboard} />
+        </div>
+    );
+
     return (
         <>
             <Head title={t('reports.title')} />
@@ -229,6 +280,7 @@ export default function ReportsIndex({
                             </TabsTrigger>
                         </TabsList>
                         <TabsContent value="dashboard">{dashboardTab}</TabsContent>
+                        <TabsContent value="dashboard">{dashboardTab}</TabsContent>
                         <TabsContent value="cross">{crossPanel}</TabsContent>
                     </Tabs>
                 ) : (
@@ -245,6 +297,7 @@ export default function ReportsIndex({
                             </TabsTrigger>
                         </TabsList>
                         <TabsContent value="dashboard">{dashboardTab}</TabsContent>
+                        <TabsContent value="dashboard">{dashboardTab}</TabsContent>
                         <TabsContent value="project">
                             {projectCards}
                         </TabsContent>
@@ -257,6 +310,9 @@ export default function ReportsIndex({
 }
 
 ReportsIndex.layout = {
+    breadcrumbs: [
+        { title: 'Reports', href: '/reports' },
+    ],
     breadcrumbs: [
         { title: 'Reports', href: '/reports' },
     ],

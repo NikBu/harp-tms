@@ -1,5 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { CheckCircle2, Trash2, XCircle } from 'lucide-react';
+import { CheckCircle2, Trash2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,9 +12,22 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { DefectBadge, type DefectLinkData } from '@/components/defects/DefectBadge';
 import { DefectLinkInput } from '@/components/defects/DefectLinkInput';
 import { DefectCreateDialog } from '@/components/defects/DefectCreateDialog';
+import { DefectBadge, type DefectLinkData } from '@/components/defects/DefectBadge';
+import { DefectLinkInput } from '@/components/defects/DefectLinkInput';
+import { DefectCreateDialog } from '@/components/defects/DefectCreateDialog';
 import { useTrans } from '@/hooks/use-trans';
 import { index as projectsIndex } from '@/routes/projects';
 import type { BulkResultItem, TestInstance, TestRun, TestStatus } from '@/types/test-run';
+
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+
+interface Integration {
+    id: number;
+    provider: string;   // integration_type column
+    name: string | null;
+}
 
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -113,17 +127,21 @@ function ResultDialog({
     test,
     runId,
     runIsCompleted,
+    runIsCompleted,
     open,
     onClose,
     statuses,
+    integrations,
     integrations,
 }: {
     test: TestInstance;
     runId: number;
     runIsCompleted: boolean;
+    runIsCompleted: boolean;
     open: boolean;
     onClose: () => void;
     statuses: TestStatus[];
+    integrations: Integration[];
     integrations: Integration[];
 }) {
     const t = useTrans();
@@ -148,8 +166,23 @@ function ResultDialog({
         setPendingLinks(prev => [...prev, { integrationId, issueId }]);
     }
 
+    // Defect links on the *latest* result — shown read-only while submitting a new one
+    const existingDefects: DefectLinkData[] =
+        (test.latest_result as any)?.defect_links ?? [];
+
+    // Local state for newly linked defects within this dialog session
+    const [pendingLinks, setPendingLinks] = useState<{ integrationId: number; issueId: string }[]>([]);
+
+    const hasIntegrations = integrations.length > 0;
+
+    function handleLink(integrationId: number, issueId: string) {
+        setPendingLinks(prev => [...prev, { integrationId, issueId }]);
+    }
+
     function submit(e: React.FormEvent) {
         e.preventDefault();
+        post(route('runs.tests.results.store', { testRun: runId, test: test.id }), {
+            onSuccess: () => { reset(); setPendingLinks([]); onClose(); },
         post(route('runs.tests.results.store', { testRun: runId, test: test.id }), {
             onSuccess: () => { reset(); setPendingLinks([]); onClose(); },
         });
@@ -174,6 +207,11 @@ function ResultDialog({
                                     key={s}
                                     type="button"
                                     onClick={() => setData('status', s)}
+                                    className={`rounded-full border px-3 py-1 text-xs font-medium capitalize transition-opacity ${STATUS_BADGE[s]} ${
+                                        data.status === s
+                                            ? 'opacity-100 ring-2 ring-offset-1 ring-current'
+                                            : 'opacity-60 hover:opacity-90'
+                                    }`}
                                     className={`rounded-full border px-3 py-1 text-xs font-medium capitalize transition-opacity ${STATUS_BADGE[s]} ${
                                         data.status === s
                                             ? 'opacity-100 ring-2 ring-offset-1 ring-current'
@@ -219,6 +257,7 @@ function ResultDialog({
                         </div>
                     </div>
 
+                    {/* ── Defects section ── */}
                     {/* ── Defects section ── */}
                     <div className="grid gap-2">
                         <Label>{t('runs.result.defects')}</Label>
@@ -342,6 +381,7 @@ function BulkResultDialog({
         setProcessing(true);
         router.post(
             route('runs.results.bulk', { testRun: runId }),
+            route('runs.results.bulk', { testRun: runId }),
             { results: JSON.stringify(results) },
             {
                 onFinish: () => { setProcessing(false); onClose(); },
@@ -369,6 +409,11 @@ function BulkResultDialog({
                                         key={s}
                                         type="button"
                                         onClick={() => setBulkStatus(s)}
+                                        className={`rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize transition-opacity ${STATUS_BADGE[s]} ${
+                                            bulkStatus === s
+                                                ? 'opacity-100 ring-2 ring-offset-1 ring-current'
+                                                : 'opacity-60 hover:opacity-90'
+                                        }`}
                                         className={`rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize transition-opacity ${STATUS_BADGE[s]} ${
                                             bulkStatus === s
                                                 ? 'opacity-100 ring-2 ring-offset-1 ring-current'
@@ -478,9 +523,11 @@ export default function RunsShow({
     run,
     statuses,
     integrations,
+    integrations,
 }: {
     run: TestRun;
     statuses: TestStatus[];
+    integrations: Integration[];
     integrations: Integration[];
 }) {
     const t = useTrans();
@@ -490,7 +537,9 @@ export default function RunsShow({
     function toggleClose() {
         if (run.is_completed) {
             router.patch(route('runs.reopen', { testRun: run.id }));
+            router.patch(route('runs.reopen', { testRun: run.id }));
         } else {
+            router.patch(route('runs.close', { testRun: run.id }));
             router.patch(route('runs.close', { testRun: run.id }));
         }
     }
@@ -640,9 +689,11 @@ export default function RunsShow({
                     test={activeTest}
                     runId={run.id}
                     runIsCompleted={run.is_completed}
+                    runIsCompleted={run.is_completed}
                     open={activeTest !== null}
                     onClose={() => setActiveTest(null)}
                     statuses={statuses}
+                    integrations={integrations}
                     integrations={integrations}
                 />
             )}
@@ -666,3 +717,4 @@ RunsShow.layout = {
         { title: 'Runs', href: '' },
     ],
 };
+

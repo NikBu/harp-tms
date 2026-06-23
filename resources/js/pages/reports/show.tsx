@@ -1,7 +1,14 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,12 +22,22 @@ import { useTrans } from '@/hooks/use-trans';
 interface ActivityData {
     daily: { date: string; new_cases: number; new_results: number; updated_cases: number }[];
     totals: { new_cases: number; new_results: number; updated_cases: number };
+
+// ── Type definitions ───────────────────────────────────────────────────────────
+
+interface ActivityData {
+    daily: { date: string; new_cases: number; new_results: number; updated_cases: number }[];
+    totals: { new_cases: number; new_results: number; updated_cases: number };
 }
 
 interface CoverageData {
     passed: number; failed: number; blocked: number;
     retest: number; skipped: number; untested: number;
+    passed: number; failed: number; blocked: number;
+    retest: number; skipped: number; untested: number;
     run_count: number;
+    coverage: { total: number; run: number; untested: number; pct: number };
+    by_priority: Record<string, { passed: number; total: number; pct: number }>;
     coverage: { total: number; run: number; untested: number; pct: number };
     by_priority: Record<string, { passed: number; total: number; pct: number }>;
 }
@@ -51,8 +68,36 @@ interface WorkloadMember {
 
 interface WorkloadData {
     members: WorkloadMember[];
+    byPriority: { critical: number; high: number; medium: number; low: number; total: number };
+    byType: { type: string; count: number }[];
+    bySection: { section: string; count: number }[];
+    byTemplate: Record<string, number>;
 }
 
+interface MilestoneData {
+    milestones: {
+        id: number; name: string; due_on: string | null;
+        is_completed: boolean; run_count: number; done_count: number; pct_done: number;
+    }[];
+    totals: { total: number; completed: number; active: number; pct_done: number };
+}
+
+interface WorkloadMember {
+    user_id: number;
+    name: string;
+    assigned_cases: number;
+    results_logged: number;
+    pass_rate: number;
+    statuses: Record<string, number>;
+}
+
+interface WorkloadData {
+    members: WorkloadMember[];
+}
+
+type ReportData = ActivityData | CoverageData | DistributionData | MilestoneData | WorkloadData | null;
+
+// ── Colour maps ────────────────────────────────────────────────────────────────
 type ReportData = ActivityData | CoverageData | DistributionData | MilestoneData | WorkloadData | null;
 
 // ── Colour maps ────────────────────────────────────────────────────────────────
@@ -60,10 +105,24 @@ type ReportData = ActivityData | CoverageData | DistributionData | MilestoneData
 const STATUS_COLORS: Record<string, string> = {
     passed: 'bg-green-500', failed: 'bg-red-500', blocked: 'bg-orange-400',
     retest: 'bg-yellow-400', skipped: 'bg-gray-400', untested: 'bg-slate-300',
+const STATUS_COLORS: Record<string, string> = {
+    passed: 'bg-green-500', failed: 'bg-red-500', blocked: 'bg-orange-400',
+    retest: 'bg-yellow-400', skipped: 'bg-gray-400', untested: 'bg-slate-300',
 };
 const PRIORITY_COLORS: Record<string, string> = {
     critical: 'bg-red-500', high: 'bg-orange-400', medium: 'bg-yellow-400', low: 'bg-sky-400',
+    critical: 'bg-red-500', high: 'bg-orange-400', medium: 'bg-yellow-400', low: 'bg-sky-400',
 };
+const STATUS_TEXT_COLORS: Record<string, string> = {
+    passed: 'text-green-600', failed: 'text-red-600', blocked: 'text-orange-500',
+    retest: 'text-yellow-600', skipped: 'text-gray-500', untested: 'text-slate-400',
+};
+
+const STATUS_KEYS = ['passed', 'failed', 'blocked', 'retest', 'skipped', 'untested'] as const;
+
+// ── Sub-renderers ─────────────────────────────────────────────────────────────
+
+function ActivityReport({ data }: { data: ActivityData }) {
 const STATUS_TEXT_COLORS: Record<string, string> = {
     passed: 'text-green-600', failed: 'text-red-600', blocked: 'text-orange-500',
     retest: 'text-yellow-600', skipped: 'text-gray-500', untested: 'text-slate-400',
@@ -117,10 +176,14 @@ function CoverageReport({ data }: { data: CoverageData }) {
     const priorities = ['critical', 'high', 'medium', 'low'] as const;
     return (
         <div className="grid gap-6">
+        <div className="grid gap-6">
             <p className="text-sm text-muted-foreground">
                 {data.run_count} {t('reports.runs_analyzed')}
             </p>
             <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+                {total > 0 && keys.filter((k) => data[k] > 0).map((k) => (
+                    <div key={k} className={STATUS_COLORS[k]} style={{ width: `${(data[k] / total) * 100}%` }} title={`${k}: ${data[k]}`} />
+                ))}
                 {total > 0 && keys.filter((k) => data[k] > 0).map((k) => (
                     <div key={k} className={STATUS_COLORS[k]} style={{ width: `${(data[k] / total) * 100}%` }} title={`${k}: ${data[k]}`} />
                 ))}
@@ -170,6 +233,7 @@ function CoverageReport({ data }: { data: CoverageData }) {
     );
 }
 
+function DistributionReport({ data }: { data: DistributionData }) {
 function DistributionReport({ data }: { data: DistributionData }) {
     const t = useTrans();
     const priorities = ['critical', 'high', 'medium', 'low'] as const;
@@ -398,6 +462,15 @@ function WorkloadReport({ data }: { data: WorkloadData }) {
                                 ))}
                             </div>
                         )}
+                        {Object.values(m.statuses).some((v) => v > 0) && (
+                            <div className="mt-2 flex gap-1">
+                                {STATUS_KEYS.filter((k) => (m.statuses[k] ?? 0) > 0).map((k) => (
+                                    <span key={k} className={`text-xs ${STATUS_TEXT_COLORS[k]}`} title={k}>
+                                        {m.statuses[k]}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
@@ -443,9 +516,11 @@ function ExportMenu({ projectId, type }: { projectId: number; type: string }) {
 export default function ReportsShow({
     project,
     type,
+    type,
     data,
 }: {
     project: { id: number; name: string };
+    type: string;
     type: string;
     data: ReportData;
 }) {
@@ -496,6 +571,7 @@ export default function ReportsShow({
                         <CardTitle className="text-base">{t('reports.summary')}</CardTitle>
                     </CardHeader>
                     <CardContent>{renderReport()}</CardContent>
+                    <CardContent>{renderReport()}</CardContent>
                 </Card>
 
                 <div>
@@ -512,6 +588,10 @@ export default function ReportsShow({
 }
 
 ReportsShow.layout = {
+    breadcrumbs: [
+        { title: 'Projects', href: '/projects' },
+        { title: 'Reports' },
+    ],
     breadcrumbs: [
         { title: 'Projects', href: '/projects' },
         { title: 'Reports' },

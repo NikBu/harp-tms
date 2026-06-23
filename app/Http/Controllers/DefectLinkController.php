@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\RefreshDefectMetadataJob;
 use App\Models\DefectLink;
-use App\Models\Integration;
+use App\Models\Integration;     
 use App\Models\TestResult;
 use App\Services\Integrations\TrackerClientFactory;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +27,7 @@ class DefectLinkController extends Controller
             'integration_id' => ['required', 'integer', 'exists:integrations,id'],
             'external_id' => ['required', 'string', 'max:255'],
         ]);
-
+      
         $integration = Integration::findOrFail($data['integration_id']);
         $client = $this->factory->make($integration);
         $issue = $client->findIssue($data['external_id']);

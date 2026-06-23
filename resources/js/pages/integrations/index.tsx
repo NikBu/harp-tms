@@ -157,222 +157,9 @@ function ConfigureDialog({
 }) {
     const t = useTrans();
 
-    const { data, setData, post, patch, processing, reset } = useForm<ConfigureForm>({
-        credentials: {},
-        config:      existing?.config ?? {},
-        is_active:   existing?.is_active ?? true,
-    });
-
-    const [testing, setTesting]       = useState(false);
-    const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
-
-    const credFields   = CRED_FIELDS[providerKey]   ?? [];
-    const configFields = CONFIG_FIELDS[providerKey] ?? [];
-
-    function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
-        const url = existing
-            ? `/projects/${project.id}/integrations/${existing.id}`
-            : `/projects/${project.id}/integrations`;
-
-        const opts = { onSuccess: () => { reset(); onClose(); } };
-
-        const payload = {
-            integration_type: providerKey,
-            name:             providerName,
-            credentials:      data.credentials,
-            config:           data.config,
-            is_active:        data.is_active,
-        };
-
-        if (existing) {
-            patch(url, { ...opts, data: payload } as Parameters<typeof patch>[1]);
-        } else {
-            post(url, { ...opts, data: payload } as Parameters<typeof post>[1]);
-        }
+    function configure() {
+        toast.info(t('app.integrations.coming_soon'));
     }
-
-    function handleDelete() {
-        if (!existing) return;
-        if (!window.confirm(t('common.confirm_delete'))) return;
-        router.delete(`/projects/${project.id}/integrations/${existing.id}`, {
-            onSuccess: () => onClose(),
-        });
-    }
-
-    async function handleTest() {
-        if (!existing) return;
-        setTesting(true);
-        setTestResult(null);
-        try {
-            const res = await fetch(
-                `/projects/${project.id}/integrations/${existing.id}/test`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '',
-                    },
-                },
-            );
-            const json = await res.json() as { ok: boolean; message: string };
-            setTestResult(json);
-        } catch {
-            setTestResult({ ok: false, message: t('integrations.test_failed') });
-        } finally {
-            setTesting(false);
-        }
-    }
-
-    // Non-tracker providers: coming soon
-    if (!isTracker) {
-        return (
-            <Dialog open={open} onOpenChange={onClose}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{providerName}</DialogTitle>
-                    </DialogHeader>
-                    <p className="text-sm text-muted-foreground">
-                        {t('integrations.coming_soon_body')}
-                    </p>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={onClose}>{t('common.cancel')}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        );
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-lg">
-                <form onSubmit={handleSubmit} className="grid gap-5">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {t('integrations.configure_title', { name: providerName })}
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    {/* Credential fields */}
-                    {credFields.length > 0 && (
-                        <div className="grid gap-3">
-                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                {t('integrations.credentials')}
-                            </p>
-                            {credFields.map(f => (
-                                <div key={f.key} className="grid gap-1.5">
-                                    <Label htmlFor={`cred-${f.key}`}>{f.label}</Label>
-                                    <input
-                                        id={`cred-${f.key}`}
-                                        type={f.type ?? 'text'}
-                                        autoComplete="off"
-                                        placeholder={f.placeholder ?? ''}
-                                        value={data.credentials[f.key] ?? ''}
-                                        onChange={e => setData('credentials', { ...data.credentials, [f.key]: e.target.value })}
-                                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Config fields */}
-                    {configFields.length > 0 && (
-                        <div className="grid gap-3">
-                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                {t('integrations.configuration')}
-                            </p>
-                            {configFields.map(f => (
-                                <div key={f.key} className="grid gap-1.5">
-                                    <Label htmlFor={`cfg-${f.key}`}>{f.label}</Label>
-                                    <input
-                                        id={`cfg-${f.key}`}
-                                        type="text"
-                                        placeholder={f.placeholder ?? ''}
-                                        value={data.config[f.key] ?? ''}
-                                        onChange={e => setData('config', { ...data.config, [f.key]: e.target.value })}
-                                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Active toggle */}
-                    <label className="flex cursor-pointer items-center gap-3">
-                        <input
-                            type="checkbox"
-                            checked={data.is_active}
-                            onChange={e => setData('is_active', e.target.checked)}
-                            className="size-4 rounded border-input accent-primary"
-                        />
-                        <span className="text-sm">{t('integrations.enable')}</span>
-                    </label>
-
-                    {/* Test result */}
-                    {testResult && (
-                        <div className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${
-                            testResult.ok
-                                ? 'border-green-200 bg-green-50 text-green-700'
-                                : 'border-red-200 bg-red-50 text-red-700'
-                        }`}>
-                            {testResult.ok
-                                ? <CheckCircle2 className="size-4 shrink-0" />
-                                : <XCircle className="size-4 shrink-0" />}
-                            {testResult.message}
-                        </div>
-                    )}
-
-                    <DialogFooter className="flex-wrap gap-2">
-                        {/* Delete — only when editing */}
-                        {existing && (
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                className="mr-auto"
-                                onClick={handleDelete}
-                            >
-                                <Trash2 className="size-3.5" />
-                                {t('common.delete')}
-                            </Button>
-                        )}
-
-                        {/* Test connection — only when editing */}
-                        {existing && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={testing}
-                                onClick={handleTest}
-                            >
-                                {testing ? t('common.loading') : t('integrations.test_connection')}
-                            </Button>
-                        )}
-
-                        <Button type="button" variant="outline" onClick={onClose}>
-                            {t('common.cancel')}
-                        </Button>
-                        <Button type="submit" disabled={processing}>
-                            {t('common.save')}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-// ── Main page ─────────────────────────────────────────────────────────────────
-
-export default function IntegrationsIndex({ project, catalogue, saved, trackerTypes }: Props) {
-    const t = useTrans();
-
-    const [configuring, setConfiguring] = useState<CatalogueItem | null>(null);
-
-    const savedMap = Object.fromEntries(saved.map(s => [s.integration_type, s]));
 
     return (
         <>
@@ -403,26 +190,13 @@ export default function IntegrationsIndex({ project, catalogue, saved, trackerTy
                                         <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
                                             <Icon className="size-5 text-muted-foreground" />
                                         </div>
-                                        {existing ? (
-                                            <Badge
-                                                variant={existing.is_active ? 'default' : 'secondary'}
-                                                className="text-xs"
-                                            >
-                                                {existing.is_active
-                                                    ? t('status.active')
-                                                    : t('status.inactive')}
-                                            </Badge>
-                                        ) : (
-                                            <Badge variant="outline" className="text-xs">
-                                                {isTracker
-                                                    ? t('integrations.not_configured')
-                                                    : t('integrations.coming_soon_badge')}
-                                            </Badge>
-                                        )}
+                                        <Badge variant="secondary" className="text-xs">
+                                            {t('app.integrations.coming_soon')}
+                                        </Badge>
                                     </div>
-                                    <CardTitle className="text-base">{item.name}</CardTitle>
-                                    <CardDescription className="text-xs">
-                                        {t(`integrations.providers.${item.key}`)}
+                                    <CardTitle className="text-base">{integration.name}</CardTitle>
+                                    <CardDescription>
+                                        {t(`app.integrations.providers.${integration.key}`)}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="mt-auto pt-0">
@@ -432,10 +206,7 @@ export default function IntegrationsIndex({ project, catalogue, saved, trackerTy
                                         className="w-full justify-between"
                                         onClick={(e) => { e.stopPropagation(); setConfiguring(item); }}
                                     >
-                                        {existing
-                                            ? t('integrations.edit')
-                                            : t('integrations.configure')}
-                                        <ChevronRight className="size-3.5" />
+                                        {t('app.integrations.configure')}
                                     </Button>
                                 </CardContent>
                             </Card>
